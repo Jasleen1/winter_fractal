@@ -1,0 +1,13 @@
+[workspace]
+members = [
+  "models",
+  "math"
+]
+
+[profile.release]
+codegen-units = 1
+lto = true
+
+[profile.bench]
+codegen-units = 1
+lto = true
