@@ -1,7 +1,8 @@
 [workspace]
 members = [
-  "models",
-  "math"
+  "fractal_utils",
+  "fractal_math",
+  "models"
 ]
 
 [profile.release]

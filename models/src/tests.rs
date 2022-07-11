@@ -1,9 +1,8 @@
+use fractal_math::smallprimefield;
 use winter_math::{
-    fields::{ 
-        f128::{self, BaseElement}},
+    fields::f128::{self, BaseElement},
     FieldElement,
 };
-use fractal_math::smallprimefield;
 
 use crate::{
     errors::R1CSError,
@@ -56,9 +55,16 @@ fn test_construct_r1cs() {
     let r1cs_instance = R1CS::new(matrix_a, matrix_b, matrix_c);
     assert!(r1cs_instance.is_ok());
     let unwrapped = r1cs_instance.unwrap();
-    assert!(unwrapped.num_rows() == 1, "Matrix should have had 1 row, instead got {}", unwrapped.num_rows());
-    assert!(unwrapped.num_cols() == 1, "Matrix should have had 1 col, instead got {}", unwrapped.num_cols());
-    
+    assert!(
+        unwrapped.num_rows() == 1,
+        "Matrix should have had 1 row, instead got {}",
+        unwrapped.num_rows()
+    );
+    assert!(
+        unwrapped.num_cols() == 1,
+        "Matrix should have had 1 col, instead got {}",
+        unwrapped.num_cols()
+    );
 }
 
 /// ***************  HELPERS *************** \\\

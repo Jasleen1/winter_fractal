@@ -1,5 +1,5 @@
-use winter_math::StarkField;
 use sscanf::scanf;
+use winter_math::StarkField;
 
 use crate::errors::*;
 use crate::io::LineProcessor;

@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
-use winter_math::StarkField;
 use regex::Regex;
 use sscanf::scanf;
+use winter_math::StarkField;
 
 use crate::errors::*;
 use crate::r1cs::*;

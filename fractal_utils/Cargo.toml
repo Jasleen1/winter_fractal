@@ -1,21 +1,18 @@
 [package]
-name = "winter-models"
+name = "fractal_utils"
 version = "0.1.0"
-edition = "2021"
+authors = ["harjasleenmalvai <harjasleen_malvai@brown.edu>"]
+edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[lib]
-bench = false
 
 [dependencies]
 displaydoc = "0.1.7"
-winter-math = "0.4.0"
-winter-utils = "0.4.0"
-winter-crypto = "0.4.0"
 fractal-math = { version = "0.1.0", path = "../fractal_math", package = "fractal-math", default-features = false }
 log = { version = "0.4", default-features = false }
 serde = { version = "1.0.117", features = ["derive"] }
 thiserror = "1.0.22"
-regex = "1"
-lazy_static = "1.4.0"
-sscanf = "0.1.4"
+winter-crypto = "0.4.0"
+winter-fri = "0.4.0"
+winter-math = "0.4.0"
+winter-utils = "0.4.0"

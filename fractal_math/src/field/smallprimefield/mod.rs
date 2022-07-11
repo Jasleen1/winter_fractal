@@ -1,6 +1,3 @@
-use crate::fft;
-
-use winter_math::{FieldElement, StarkField};
 use core::{
     convert::{TryFrom, TryInto},
     fmt::{Debug, Display, Formatter},
@@ -8,6 +5,7 @@ use core::{
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
     slice,
 };
+use winter_math::{FieldElement, StarkField};
 use winter_utils::{
     collections::Vec,
     string::{String, ToString},
@@ -73,7 +71,7 @@ impl<const M: u64, const G: u64, const T: u32> BaseElement<M, G, T> {
         for i in 1..result.len() {
             result[i] = result[i - 1] * b;
         }
-        result.iter().map(|&x| eta*x).collect::<Vec<Self>>()
+        result.iter().map(|&x| eta * x).collect::<Vec<Self>>()
     }
 
     // pub unsafe fn get_twiddles(domain_size: usize) -> Vec<Self> {
