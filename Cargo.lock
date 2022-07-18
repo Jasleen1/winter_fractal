@@ -335,6 +335,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "fractal_proofs"
+version = "0.1.0"
+dependencies = [
+ "displaydoc",
+ "fractal_utils",
+ "log",
+ "serde",
+ "thiserror",
+ "winter-crypto",
+ "winter-fri",
+ "winter-math",
+ "winter-utils",
+]
+
+[[package]]
 name = "fractal_utils"
 version = "0.1.0"
 dependencies = [
