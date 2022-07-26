@@ -335,6 +335,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "fractal_indexer"
+version = "0.1.0"
+dependencies = [
+ "displaydoc",
+ "fractal-math",
+ "fractal_utils",
+ "lazy_static",
+ "log",
+ "regex",
+ "serde",
+ "sscanf",
+ "thiserror",
+ "winter-crypto",
+ "winter-fri",
+ "winter-math",
+ "winter-models",
+ "winter-rand-utils",
+ "winter-utils",
+]
+
+[[package]]
 name = "fractal_proofs"
 version = "0.1.0"
 dependencies = [
