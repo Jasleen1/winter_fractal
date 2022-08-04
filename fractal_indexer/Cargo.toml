@@ -11,12 +11,8 @@ bench = false
 displaydoc = "0.1.7"
 fractal-math = { version = "0.1.0", path = "../fractal_math", package = "fractal-math", default-features = false }
 fractal_utils = { path = "../fractal_utils" }
-#crypto = { version = "0.3.1", path = "../crypto", package = "winter-crypto", default-features = false }
-#fri = { version = "0.3.0", path = '../fri', package = "winter-fri", default-features = false }
 log = { version = "0.4", default-features = false }
-#math = { version = "0.3.0", path = "../math", package = "winter-math", default-features = false }
 models = { version = "0.1.0", path = "../models", package = "winter-models", default-features = false }
-#utils = { version = "0.3.0", path = "../utils/core", package = "winter-utils", default-features = false }
 serde = { version = "1.0.117", features = ["derive"] }
 thiserror = "1.0.22"
 regex = "1"

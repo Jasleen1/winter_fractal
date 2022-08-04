@@ -3,6 +3,7 @@ members = [
   "fractal_indexer",
   "fractal_math",
   "fractal_proofs",
+  "fractal_sumcheck",
   "fractal_utils",
   "models"
 ]
