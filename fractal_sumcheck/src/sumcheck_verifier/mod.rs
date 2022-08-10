@@ -1,6 +1,6 @@
-use fractal_proofs::{FieldElement, SumcheckProof};
+use crate::errors::SumcheckVerifierError;
 
-use crate::errors::SumcheckError;
+use fractal_proofs::{FieldElement, SumcheckProof};
 
 use winter_crypto::{ElementHasher, RandomCoin};
 use winter_fri::{DefaultVerifierChannel, FriVerifier};
@@ -17,7 +17,7 @@ pub fn verify_sumcheck_proof<
     H: ElementHasher<BaseField = B>,
 >(
     proof: SumcheckProof<B, E, H>,
-) -> Result<(), SumcheckError> {
+) -> Result<(), SumcheckVerifierError> {
     // let mut public_coin_seed = Vec::new();
     // proof.write_into(&mut public_coin_seed);
     // let mut public_coin = RandomCoin::new(&public_coin_seed);

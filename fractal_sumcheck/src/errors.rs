@@ -9,35 +9,33 @@
 use winter_fri::VerifierError;
 use winter_utils::DeserializationError;
 
-/// Symbolizes a AkdError, thrown by the akd.
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub enum SumcheckError {
+#[derive(Debug, PartialEq)]
+pub enum SumcheckVerifierError {
     /// Error propagation
     FriVerifierErr(VerifierError),
     /// Error propagation
     DeserializationErr(DeserializationError),
 }
 
-impl From<VerifierError> for SumcheckError {
+impl From<VerifierError> for SumcheckVerifierError {
     fn from(error: VerifierError) -> Self {
         Self::FriVerifierErr(error)
     }
 }
 
-impl From<DeserializationError> for SumcheckError {
+impl From<DeserializationError> for SumcheckVerifierError {
     fn from(error: DeserializationError) -> Self {
         Self::DeserializationErr(error)
     }
 }
 
-impl std::fmt::Display for SumcheckError {
+impl std::fmt::Display for SumcheckVerifierError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            SumcheckError::FriVerifierErr(err) => {
+            SumcheckVerifierError::FriVerifierErr(err) => {
                 writeln!(f, "FRI Verifier Error: {}", err)
             }
-            SumcheckError::DeserializationErr(err) => {
+            SumcheckVerifierError::DeserializationErr(err) => {
                 writeln!(f, "Winterfell Utils Deserialization Error: {}", err)
             }
         }

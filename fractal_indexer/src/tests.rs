@@ -2,11 +2,11 @@ use std::vec;
 
 use crate::{index::*, *};
 use indexed_matrix::IndexedMatrix;
-use math::{fields::f128::BaseElement, FieldElement, StarkField};
 use models::r1cs::Matrix;
 use models::{errors::R1CSError, r1cs::*};
+use winter_math::{fields::f128::BaseElement, FieldElement, StarkField};
 
-type SmallFieldElement17 = math::fields::smallprimefield::BaseElement<17, 3, 4>;
+type SmallFieldElement17 = fractal_math::smallprimefield::BaseElement<17, 3, 4>;
 
 #[test]
 fn test_indexing() {

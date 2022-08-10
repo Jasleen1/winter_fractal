@@ -6,6 +6,7 @@ members = [
   "fractal_prover",
   "fractal_sumcheck",
   "fractal_utils",
+  "fractal_verifier",
   "models"
 ]
 
