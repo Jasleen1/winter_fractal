@@ -1,0 +1,41 @@
+[package]
+name = "fractal_examples"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "jsnark-parser"
+path = "src/jsnark_parser_example.rs"
+bench = false
+doc = false
+debug = 1
+
+[[bin]]
+name = "fractal-orchestrator"
+path = "src/sample_r1cs_proof.rs"
+bench = false
+doc = false
+debug = 1
+
+[dependencies]
+displaydoc = "0.1.7"
+fractal_utils = { path = "../fractal_utils" }
+fractal_proofs = {path = "../fractal_proofs" }
+fractal_indexer = {path = "../fractal_indexer" }
+fractal_sumcheck = {path = "../fractal_sumcheck" }
+fractal_prover = {path = "../fractal_prover" }
+fractal_verifier = {path = "../fractal_verifier" }
+lazy_static = "1.4.0"
+log = { version = "0.4", default-features = false }
+models = { version = "0.1.0", path = "../models", package = "winter-models", default-features = false }
+regex = "1"
+serde = { version = "1.0.117", features = ["derive"] }
+sscanf = "0.1.4"
+structopt = { version = "0.3", default-features = false }
+thiserror = "1.0.22"
+winter-crypto = "0.4.0"
+winter-fri = "0.4.0"
+winter-math = "0.4.0"
+winter-utils = "0.4.0"
