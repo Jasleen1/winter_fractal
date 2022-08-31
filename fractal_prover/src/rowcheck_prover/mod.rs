@@ -73,7 +73,8 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let hashed_evaluations = hash_values::<H, E, 1>(&transposed_evaluations);
         let s_tree = MerkleTree::<H>::new(hashed_evaluations)?;
         
-        let s_comp_coeffs = get_complementary_poly::<B>(self.size_subgroup_h - 2, self.max_degree - 1);
+        //let s_comp_coeffs = get_complementary_poly::<B>(self.size_subgroup_h - 2, self.max_degree - 1);
+        let s_comp_coeffs = get_complementary_poly::<B>(polynom::degree_of(&s_coeffs), self.max_degree - 1);
         let new_s = polynom::mul(&s_coeffs, &s_comp_coeffs);
 
         let s_evals_b: Vec<B> = polynom::eval_many(new_s.clone().as_slice(), self.evaluation_domain.clone().as_slice());// Vec::new();

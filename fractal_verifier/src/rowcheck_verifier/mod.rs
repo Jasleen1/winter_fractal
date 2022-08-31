@@ -31,7 +31,7 @@ pub fn verify_rowcheck_proof<
     
     let s_original_proof = proof.s_original_proof;
     MerkleTree::verify_batch(&proof.s_eval_root, &proof.queried_positions.clone(), &s_original_proof).map_err(|err| RowcheckVerifierError::MerkleTreeErr(err))?;
-    verify_lower_degree::<B, E, H>(4 * verifier_key.params.max_degree, verifier_key.params.num_input_variables - 2, verifier_key.params.max_degree, s_original_evals, s_queried_evals.clone(), proof.queried_positions.clone())?;
+    verify_lower_degree::<B, E, H>(4 * verifier_key.params.max_degree, verifier_key.params.num_input_variables - 1, verifier_key.params.max_degree, s_original_evals, s_queried_evals.clone(), proof.queried_positions.clone())?;
     
 
     let fri_verifier = FriVerifier::<B, E, DefaultVerifierChannel<E, H>, H>::new(
