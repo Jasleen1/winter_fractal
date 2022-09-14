@@ -120,8 +120,8 @@ pub fn build_index_domains<E: StarkField>(params: IndexParams<E>) -> IndexDomain
 
     //let i_field = utils::get_power_series(i_field_base, i_field_size);
     //let h_field = utils::get_power_series_with_offset(h_field_base, params.eta, h_field_size);
-    let i_field = winter_math::utils::get_power_series(i_field_base, i_field_size);
-    let h_field = winter_math::utils::get_power_series_with_offset(h_field_base, params.eta, h_field_size);
+    let i_field = winter_math::get_power_series(i_field_base, i_field_size);
+    let h_field = winter_math::get_power_series_with_offset(h_field_base, params.eta, h_field_size);
 
     println!(
         "i: {}    k: {}    h: {}   L: {}",
