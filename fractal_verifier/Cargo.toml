@@ -11,6 +11,7 @@ displaydoc = "0.1.7"
 log = { version = "0.4", default-features = false }
 fractal_utils = { path = "../fractal_utils" }
 fractal_proofs = {path = "../fractal_proofs"}
+fractal_prover = {path = "../fractal_prover" }
 fractal_sumcheck = {path = "../fractal_sumcheck"}
 fractal_indexer = {path = "../fractal_indexer" }
 serde = { version = "1.0.117", features = ["derive"] }

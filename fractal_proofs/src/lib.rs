@@ -153,3 +153,33 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
         self.queried_proofs.write_into(target);
     }
 }
+
+pub struct LowDegreeProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
+    pub options: FriOptions,
+    pub num_evaluations: usize,
+    pub queried_positions: Vec<usize>,
+    pub unpadded_queried_evaluations: Vec<E>,
+    pub padded_queried_evaluations: Vec<E>,
+    pub commitments: Vec<<H>::Digest>,
+    pub tree_root: H::Digest,
+    pub tree_proof: BatchMerkleProof<H>,
+    pub fri_proof: FriProof,
+    pub max_degree: usize,
+    pub fri_max_degree: usize,
+}
+// TODO: fix once interface is finalized (should this just be a serde macro?)
+impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
+    for LowDegreeProof<B, E, H>
+{
+    /// Serializes `self` and writes the resulting bytes into the `target` writer.
+    fn write_into<W: ByteWriter>(&self, target: &mut W) {
+        target.write_u8(self.num_evaluations as u8);
+        target.write_u8(self.queried_positions.len() as u8);
+        for pos in 0..self.queried_positions.len() {
+            target.write_u8(self.queried_positions[pos] as u8);
+        }
+        self.fri_proof.write_into(target);
+        //self.queried.write_into(target);
+        target.write_u8(self.max_degree as u8);
+    }
+}

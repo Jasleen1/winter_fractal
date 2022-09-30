@@ -5,6 +5,7 @@ mod errors;
 mod lincheck_prover;
 pub mod prover;
 mod rowcheck_prover;
+pub mod low_degree_prover;
 #[cfg(test)]
 mod tests;
 
@@ -19,6 +20,8 @@ pub struct FractalOptions<B: StarkField> {
     pub evaluation_domain: Vec<B>,
     // H domain in paper
     pub h_domain: Vec<B>,
+    pub eta: B,
+    pub eta_k: B,
     pub fri_options: FriOptions,
     pub num_queries: usize,
 }

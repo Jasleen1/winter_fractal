@@ -77,6 +77,7 @@ pub(crate) fn orchestrate_r1cs_example<
     let max_degree = get_max_degree(num_input_variables, num_non_zero, num_constraints);
     // TODO: make the calculation of eta automated
     let eta = B::GENERATOR.exp(B::PositiveInteger::from(2 * B::TWO_ADICITY));
+    let eta_k = B::GENERATOR.exp(B::PositiveInteger::from(1337 * B::TWO_ADICITY));
     // if num_non_zero <= num_vars {
     //     num_non_zero = num_non_zero * 2;
     // }
@@ -87,12 +88,15 @@ pub(crate) fn orchestrate_r1cs_example<
         num_non_zero,
         max_degree,
         eta,
+        eta_k,
     };
 
     let index_domains = build_index_domains::<B>(index_params.clone());
+    println!("build index domains");
     let indexed_a = index_matrix::<B>(&r1cs.A, &index_domains);
     let indexed_b = index_matrix::<B>(&r1cs.B, &index_domains);
     let indexed_c = index_matrix::<B>(&r1cs.C, &index_domains);
+    println!("indexed matries");
     // This is the index i.e. the pre-processed data for this r1cs
     let index = Index::new(index_params.clone(), indexed_a, indexed_b, indexed_c);
 
@@ -102,18 +106,21 @@ pub(crate) fn orchestrate_r1cs_example<
 
     let degree_fs = r1cs.num_cols();
     let size_subgroup_h = index_domains.h_field.len().next_power_of_two();
-    let size_subgroup_k = index_domains.k_field_len.next_power_of_two();
+    let size_subgroup_k = index_domains.k_field.len().next_power_of_two();
 
-    // to get evals for L, using fft.evaluate
-
-    let summing_domain =
-        utils::get_power_series(index_domains.k_field_base, index_domains.k_field_len);
     let evaluation_domain =
         utils::get_power_series(index_domains.l_field_base, index_domains.l_field_len);
+
+    //let summing_domain = winter_math::utils::get_power_series_with_offset(index_domains.k_field_base, eta_k, index_domains.k_field_len);
+    let summing_domain = index_domains.k_field;
+    println!("len(summing_domain): {}", &summing_domain.len());
+    //let evaluation_domain = winter_math::utils::get_power_series_with_offset(index_domains.l_field_base, eta3, index_domains.l_field_len);
+
     let h_domain = index_domains.h_field;
     let lde_blowup = 4;
     let num_queries = 16;
     let fri_options = FriOptions::new(lde_blowup, 4, 32);
+    //println!("h_domain: {:?}, summing_domain: {:?}, evaluation_domain: {:?}", &h_domain, &summing_domain, &evaluation_domain);
     let options: FractalOptions<B> = FractalOptions::<B> {
         degree_fs,
         size_subgroup_h,
@@ -121,6 +128,8 @@ pub(crate) fn orchestrate_r1cs_example<
         summing_domain,
         evaluation_domain,
         h_domain,
+        eta,
+        eta_k,
         fri_options,
         num_queries,
     };

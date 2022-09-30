@@ -17,6 +17,7 @@ pub struct IndexParams<E: StarkField> {
     pub num_non_zero: usize,
     pub max_degree: usize,
     pub eta: E,
+    pub eta_k: E,
 }
 #[derive(Clone, Debug)]
 pub struct Index<E: StarkField> {
@@ -52,12 +53,13 @@ pub struct IndexDomains<E: FieldElement> {
     pub h_field_base: E, // Generate sufficiently large set to enumerate each row or each column.
     pub l_field_base: E, // For Reed Solomon code.
     pub i_field: Vec<E>,
-    pub k_field_len: usize,
+    pub k_field: Vec<E>,
     pub h_field: Vec<E>,
     pub l_field_len: usize,
     pub inv_twiddles_k_elts: Vec<E>,
     pub twiddles_l_elts: Vec<E>,
     pub eta: E,
+    pub eta_k: E,
 }
 
 /// ***************  HELPERS *************** \\\
@@ -123,6 +125,8 @@ pub fn build_index_domains<E: StarkField>(params: IndexParams<E>) -> IndexDomain
     let i_field = winter_math::utils::get_power_series(i_field_base, i_field_size);
     let h_field = winter_math::utils::get_power_series_with_offset(h_field_base, params.eta, h_field_size);
 
+    let k_field = winter_math::utils::get_power_series_with_offset(k_field_base, params.eta_k, k_field_size);
+
     println!(
         "i: {}    k: {}    h: {}   L: {}",
         i_field_size, k_field_size, h_field_size, l_field_size
@@ -138,12 +142,13 @@ pub fn build_index_domains<E: StarkField>(params: IndexParams<E>) -> IndexDomain
         h_field_base: h_field_base,
         l_field_base: l_field_base,
         i_field: i_field,
-        k_field_len: k_field_size,
+        k_field: k_field,
         h_field: h_field,
         l_field_len: l_field_size,
         inv_twiddles_k_elts: inv_twiddles_k_elts,
         twiddles_l_elts: twiddles_l_elts,
-        eta: params.eta
+        eta: params.eta,
+        eta_k: params.eta_k,
     }
 }
 
@@ -200,6 +205,7 @@ pub fn build_primefield_index_domains(params: IndexParams<SmallFieldElement17>) 
         // Find elements in F which generate each subfield.
         let i_field = SmallFieldElement17::get_power_series(i_field_base, i_field_size);
         let h_field = SmallFieldElement17::get_power_series(h_field_base, h_field_size);
+        let k_field = SmallFieldElement17::get_power_series(k_field_base, k_field_size);
 
         // Prepare the FFT coefficients (twiddles).
         let inv_twiddles_k_elts = winter_math::fft::get_inv_twiddles(k_field_size);
@@ -211,12 +217,13 @@ pub fn build_primefield_index_domains(params: IndexParams<SmallFieldElement17>) 
             h_field_base: h_field_base,
             l_field_base: l_field_base,
             i_field: i_field,
-            k_field_len: k_field_size,
+            k_field: k_field,
             h_field: h_field,
             l_field_len: l_field_size,
             inv_twiddles_k_elts: inv_twiddles_k_elts,
             twiddles_l_elts: twiddles_l_elts,
-            eta: params.eta
+            eta: params.eta,
+            eta_k: params.eta_k,
         }
     }
 }

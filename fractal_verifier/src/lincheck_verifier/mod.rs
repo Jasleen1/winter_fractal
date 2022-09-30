@@ -36,10 +36,12 @@ pub fn verify_lincheck_proof<
     // let _public_coin: RandomCoin<B, H> = RandomCoin::new(&public_coin_seed);
 
     let _alpha = proof.alpha;
+    println!("verifier alpha: {}", &_alpha);
     let _t_alpha_commitment = proof.t_alpha_commitment;
     let _t_alpha_queried = proof.t_alpha_queried;
     
     let products_sumcheck_proof = proof.products_sumcheck_proof;
+    println!("Lincheck verifier indexes: {:?}", &products_sumcheck_proof.queried_positions);
     verify_sumcheck_proof(products_sumcheck_proof)
     .map_err(|err| LincheckVerifierError::UnsoundProduct(err))?;
 

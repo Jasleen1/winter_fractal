@@ -26,7 +26,8 @@ fn test_indexing() {
         num_constraints: 2,
         num_non_zero: 4,
         max_degree: get_max_degree(2, 2, 4),
-        eta: BaseElement::ONE
+        eta: BaseElement::ONE,
+        eta_k: BaseElement::ONE,
     };
     let domains = build_index_domains(params.clone());
     let indexed_a = IndexedMatrix::new(&r1cs_instance.A, &domains);
@@ -44,6 +45,7 @@ fn test_domain_building_17() {
         num_non_zero: 4,
         max_degree: get_max_degree(2, 2, 4),
         eta: SmallFieldElement17::ONE,
+        eta_k: SmallFieldElement17::ONE,
     };
     let domains = build_primefield_index_domains(params.clone());
     let i_field_base = domains.i_field_base;
@@ -94,6 +96,7 @@ fn test_single_indexed_matrix_17() {
         num_non_zero: 4,
         max_degree: get_max_degree(2, 2, 4),
         eta: SmallFieldElement17::ONE,
+        eta_k: SmallFieldElement17::ONE,
     };
     let domains = build_index_domains(params.clone());
     println!("Domains {:?}", domains);
@@ -131,6 +134,7 @@ fn test_indexing_f17() {
         num_non_zero: 4,
         max_degree: get_max_degree(2, 2, 4),
         eta: SmallFieldElement17::ONE,
+        eta_k: SmallFieldElement17::ONE,
     };
     let domains = build_primefield_index_domains(params.clone());
     let indexed_a = IndexedMatrix::new(&r1cs_instance.A, &domains);
