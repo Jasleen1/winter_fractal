@@ -73,8 +73,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let hashed_evaluations = hash_values::<H, E, 1>(&transposed_evaluations);
         let s_tree = MerkleTree::<H>::new(hashed_evaluations)?;
         
-        //let s_comp_coeffs = get_complementary_poly::<B>(self.size_subgroup_h - 2, self.max_degree - 1);
-        println!("Rowcheck prove polynomial max_degree: {}", self.max_degree);
         let s_comp_coeffs = get_complementary_poly::<B>(polynom::degree_of(&s_coeffs), self.max_degree - 1);
         let new_s = polynom::mul(&s_coeffs, &s_comp_coeffs);
 
@@ -103,7 +101,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             .iter()
             .map(|&p| s_evals[p])
             .collect::<Vec<_>>();
-        println!("Eval domain val {:?}", self.evaluation_domain[180]);
         let s_commitments = channel.layer_commitments().to_vec();
         Ok(RowcheckProof {
             options: self.fri_options.clone(),

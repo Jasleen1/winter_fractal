@@ -117,15 +117,15 @@ pub fn build_index_domains<E: StarkField>(params: IndexParams<E>) -> IndexDomain
     let k_field_base = E::get_root_of_unity(k_field_size.trailing_zeros());
     let h_field_base = E::get_root_of_unity(h_field_size.trailing_zeros());
 
-    let l_field_size = 4 * max_degree; // this should actually be 3*k_field_size - 3 but will change later.
+    // / |L| >= 3*k_field_size - 3. For the rest of our code, we need to use powers of 2, hence we multiply by 4.
+    let l_field_size = 4 * max_degree; 
     let l_field_base = E::get_root_of_unity(l_field_size.trailing_zeros());
 
-    //let i_field = utils::get_power_series(i_field_base, i_field_size);
-    //let h_field = utils::get_power_series_with_offset(h_field_base, params.eta, h_field_size);
+    
     let i_field = winter_math::get_power_series(i_field_base, i_field_size);
     let h_field = winter_math::get_power_series_with_offset(h_field_base, params.eta, h_field_size);
 
-    let k_field = winter_math::utils::get_power_series_with_offset(k_field_base, params.eta_k, k_field_size);
+    let k_field = winter_math::get_power_series_with_offset(k_field_base, params.eta_k, k_field_size);
 
     println!(
         "i: {}    k: {}    h: {}   L: {}",

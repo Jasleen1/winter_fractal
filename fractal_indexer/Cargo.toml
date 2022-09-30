@@ -20,6 +20,8 @@ lazy_static = "1.4.0"
 sscanf = "0.1.4"
 winter-crypto = "0.4.0"
 winter-fri = "0.4.0"
+# For now let's use the main from github
+#winter-fri = { git = "https://github.com/novifinancial/winterfell", package = "winter_fri"}
 winter-math = "0.4.0"
 winter-rand-utils = "0.4.0"
 winter-utils = "0.4.0"

@@ -20,7 +20,6 @@ pub fn verify_low_degree_proof<
         proof.num_evaluations,
         proof.options.folding_factor(),
     )?;
-    println!("proof.num_evaluations={}", proof.num_evaluations);
 
     let fri_verifier = FriVerifier::<B, E, DefaultVerifierChannel<E, H>, H>::new(
         &mut channel,

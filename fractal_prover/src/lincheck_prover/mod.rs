@@ -12,7 +12,7 @@ use winter_fri::ProverChannel;
 use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
-use crate::{errors::LincheckError, FractalOptions};
+use crate::{errors::LincheckError, FractalOptions, log::debug};
 
 const n: usize = 1;
 // TODO: Will need to ask Irakliy whether a channel should be passed in here
@@ -104,15 +104,12 @@ impl<
 
     pub fn generate_t_alpha_on_h(&self, t_evals: Vec<B>) -> Vec<B> {
         let mut t_alpha_h_domain_poly: Vec<B> = t_evals.clone();
-        // println!("t_alpha on h is {:?}", t_alpha_h_domain_poly);
-        // let twiddles_evaluation_domain: Vec<B> =
-        //     fft::get_twiddles(self.options.evaluation_domain.len());
+
         let twiddles_h_domain: Vec<B> =
             fft::get_inv_twiddles(self.options.h_domain.len());
-        println!("h twidz len = {:?}", twiddles_h_domain.len());
-        println!("t_alpha len = {:?}", t_alpha_h_domain_poly.len());
+        
         fft::interpolate_poly(&mut t_alpha_h_domain_poly, &twiddles_h_domain);
-        // println!("t_alpha on h is {:?}", t_alpha_h_domain_poly);
+        
         t_alpha_h_domain_poly
     }
 
@@ -120,16 +117,7 @@ impl<
         let mut t_alpha_eval_domain_poly: Vec<B> = t_evals.clone()[0..self.options.h_domain.len()].to_vec();
         let twiddles_evaluation_domain: Vec<B> =
             fft::get_inv_twiddles(self.options.h_domain.len());
-        let out = polynom::interpolate(&self.options.evaluation_domain.to_vec(), &t_evals.to_vec(), true);
-        println!("degree of t_alpha (non-fft) {} ", polynom::degree_of(&out));
-        out
-
-        //println!("t_alpha (non-fft_ = {:?}", &out);
-        //println!("t_alpha = {:?}", t_alpha_eval_domain_poly);
-        //should t_alpha be constrained by the matrix size?
-        // fractal_utils::polynomial_utils::get_to_degree_size(&mut t_alpha_eval_domain_poly);
-
-        //t_alpha_eval_domain_poly
+        polynom::interpolate(&self.options.evaluation_domain.to_vec(), &t_evals.to_vec(), true)        
     }
 
     pub fn generate_poly_prod(&self, t_alpha_coeffs: &Vec<B>) -> Vec<B> {
@@ -154,19 +142,14 @@ impl<
         let u_alpha_coeffs2 = polynom::interpolate(&self.options.evaluation_domain, &u_alpha_evals, true);
         let mut u_alpha_coeffs = polynom::div(&u_numerator, &u_denominator);
         let reconstituted = polynom::mul(&u_alpha_coeffs, &u_denominator);
-        println!("negative one {}", B::ZERO - B::ONE);
-        //fractal_utils::polynomial_utils::get_to_degree_size(&mut u_alpha_coeffs);
-        println!("u_alpha_len = {}", u_alpha_coeffs.len());
-        println!("u_alpha_coffs degree = {}", polynom::degree_of(&u_alpha_coeffs));
-        println!("f_1_len = {}", self.f_1_poly_coeffs.len());
-        println!("f_2_len = {}", self.f_2_poly_coeffs.len());
+        
         let mut poly = polynom::sub(
             &polynom::mul(&u_alpha_coeffs, &self.f_1_poly_coeffs),
             &polynom::mul(t_alpha_coeffs, &self.f_2_poly_coeffs),
         );
         
         fractal_utils::polynomial_utils::get_to_degree_size(&mut poly);
-        println!("Poly size = {:?}", poly.len());
+        
         poly
     }
 
@@ -178,22 +161,17 @@ impl<
         // 2. Polynom includes a mul and a sub function, use these to do the respective ops
         // botttom of page 29
         let alpha_to_h_size = self.alpha.exp(B::PositiveInteger::from(self.options.size_subgroup_h as u64));
-        println!("alpha, alpha_to_h_size: {}, {}", &self.alpha, &alpha_to_h_size);
         let mut u_numerator = vec![B::ZERO; (self.options.size_subgroup_h).try_into().unwrap()];
         u_numerator[0] = alpha_to_h_size.neg();//self.alpha.neg();
         u_numerator.push(B::ONE);
         let u_denominator = vec![self.alpha.neg(), B::ONE];
         let mut u_alpha = polynom::div(&u_numerator, &u_denominator);
-        // fractal_utils::polynomial_utils::get_to_degree_size(&mut u_alpha_coeffs);
-        println!("u_alpha_len = {}", u_alpha.len());
-        println!("u_alpha = {:?}", u_alpha);
-        println!("f_1_len = {}", self.f_1_poly_coeffs.len());
-        println!("f_2_len = {}", self.f_2_poly_coeffs.len());
+        
         let mut prod = Vec::<B>::new();
         let eval_twiddles = fft::get_twiddles(self.options.evaluation_domain.len());
         let mut f_1_eval = self.f_1_poly_coeffs.clone();
         fractal_utils::polynomial_utils::pad_with_zeroes(&mut f_1_eval, self.options.evaluation_domain.len());
-        println!("degree of f_1_eval: {}", polynom::degree_of(&f_1_eval));
+        
         fft::evaluate_poly(&mut f_1_eval, &mut eval_twiddles.clone());
         let mut f_2_eval = self.f_2_poly_coeffs.clone();
         fractal_utils::polynomial_utils::pad_with_zeroes(&mut f_2_eval, self.options.evaluation_domain.len());
@@ -213,32 +191,25 @@ impl<
 
     pub fn generate_lincheck_proof(&self) -> Result<LincheckProof<B, E, H>, LincheckError> {
         let t_alpha_evals = self.generate_t_alpha_evals();
-        let mut t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
-        println!("t_alpha degree: {}", &t_alpha.len() - 1);
-        // let eval_twiddles = fft::get_twiddles::<B>(self.options.evaluation_domain.len());
-        // let mut f_1_eval = self.f_1_poly_coeffs.clone();
-        // fractal_utils::polynomial_utils::get_to_degree_size(f_1_eval, self.options.evaluation_domain.len());
-        // fft::evaluate_poly(&mut f_1_eval, eval_twiddles);
-        // // println!("t_alpha = {:?}", t_alpha);
-        // get_to_degree_size(&mut t_alpha);
-        // println!("t_alpha_size = {}", t_alpha.len());
+        let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
+        debug!("t_alpha degree: {}", &t_alpha.len() - 1);
+        
         let poly_prod = self.generate_poly_prod_evals(&t_alpha_evals);
         let poly_prod_coeffs = self.generate_poly_prod(&t_alpha);
-        println!("poly_prof_coeffs degree {}", polynom::degree_of(&poly_prod_coeffs));
+        debug!("poly_prod_coeffs degree {}", polynom::degree_of(&poly_prod_coeffs));
 
         //poly_prod_coeffs should evaluate to 0 when summed over H. Let's double check this
-        let mut pp_sum = B::ONE - B::ONE;
+        let mut pp_sum = B::ZERO;
         for h in self.options.h_domain.iter(){
             let temp = polynom::eval(&poly_prod_coeffs, *h);
             pp_sum += temp;
         }
-        println!("ppsum: {}", &pp_sum);
+        debug_assert!(pp_sum == B::ZERO, "Sum of product polynomials over h domain is not 0");
 
         // Next use poly_beta in a sumcheck proof but
         // the sumcheck domain is H, which isn't included here
         // Use that to produce the sumcheck proof.
-        println!("Poly prod len = {}", poly_prod.len());
-        // println!("Poly prod= {:?}", poly_prod);
+        debug!("Poly prod len = {}", poly_prod.len());
 
         //let denom_eval = vec![B::ONE; self.options.evaluation_domain.len()];
         let denom_eval = vec![B::ONE; self.options.h_domain.len()];
@@ -246,12 +217,9 @@ impl<
         // use h_domain rather than eval_domain
         let poly_prod = polynom::eval_many(&poly_prod_coeffs, &self.options.h_domain);
 
-        println!("denom_eval_len: {}", &denom_eval.len());
         let g_degree = self.options.h_domain.len() - 2;
         let e_degree = self.options.h_domain.len() - 1;
-        //let g_max_degree = g_degree.next_power_of_two();
-        //let e_max_degree = e_degree.next_power_of_two();
-        //let e_max_degree = (self.options.h_domain.len() - 1) * 2 - 1;
+
         let mut product_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
             poly_prod_coeffs.clone(),
             vec![B::ONE],
@@ -296,8 +264,7 @@ impl<
             let temp = polynom::eval(&matrix_proof_numerator, *k)/polynom::eval(&matrix_proof_denominator, *k);
             mat_sum += temp;
         }
-        println!("matsum: {}", &mat_sum);
-        println!("gamma: {}", &gamma);
+        
 
         let mut matrix_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
             matrix_proof_numerator,

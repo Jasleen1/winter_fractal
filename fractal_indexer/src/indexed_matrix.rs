@@ -21,9 +21,6 @@ pub struct IndexedMatrix<E: StarkField> {
     pub col_poly: Vec<E>,
     pub val_poly: Vec<E>,
 
-    // row_evals_on_k: &[E],
-    // col_evals_on_k: &[E],
-    // val_evals_on_k: &[E],
     pub row_evals_on_l: Vec<E>,
     pub col_evals_on_l: Vec<E>,
     pub val_evals_on_l: Vec<E>,
@@ -63,7 +60,6 @@ pub fn index_matrix<E: StarkField>(
 
     let mut count = 0;
 
-    //println!("loop start:  {} x {}", num_rows, num_cols);
     for r_int in 0..num_rows {
         for c_int in 0..num_cols {
             if mat.mat[r_int][c_int] == E::ZERO {
@@ -71,23 +67,16 @@ pub fn index_matrix<E: StarkField>(
             }
             let c = h_field[c_int];
             let r = h_field[r_int];
-            //println!("loop at nonzero: count={}    rc_int=({}, {})   cr=({},{})", count, r_int, c_int, r, c);
+
             row_elts[count] = c;
             col_elts[count] = r;
             val_elts[count] = mat.mat[r_int][c_int]* polynomial_utils::compute_derivative_on_single_val(r, h_size)
                 / (compute_derivative(c, h_size) * compute_derivative(r, h_size));
-            //* polynomial_utils::compute_derivative_on_single_val(index_field[j], dom_size);
             count += 1;
         }
     }
 
     let inv_twiddles_k_elts = index_domains.inv_twiddles_k_elts.clone();
-
-    /*
-    row_elts = polynom::interpolate(&row_elts, &index_domains.k_field, true);
-    col_elts = polynom::interpolate(&col_elts, &index_domains.k_field, true);
-    val_elts = polynom::interpolate(&val_elts, &index_domains.k_field, true);
-    */
 
     // interpolate row_elts into a polynomial
     fft::interpolate_poly_with_offset(&mut row_elts, &inv_twiddles_k_elts, index_domains.eta_k);

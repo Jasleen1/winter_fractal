@@ -164,30 +164,5 @@ impl<
         );
         let lincheck_proof = lincheck_prover.generate_lincheck_proof()?;
         Ok(lincheck_proof)
-        // let mut matrix = Matrix::new(matrix_label, Vec::<Vec<B>>::new())?;
-        // match matrix_label {
-        //     "a" => {
-        //         matrix = self.prover_key.matrix_a_index.matrix.clone();
-        //     }
-        //     "b" => {
-        //         matrix = self.prover_key.matrix_b_index.matrix.clone();
-        //     }
-        //     "c" => {
-        //         matrix = self.prover_key.matrix_c_index.matrix.clone();
-        //     }
-        //     _ => {}
-        // }
-        // if matrix.mat.len() == 0 {
-        //     return Err(ProverError::InvalidMatrixName(matrix_label.to_string()));
-        // }
-        // let mut f_2_vals = matrix.dot(self.variable_assignment.clone());
-        // println!(
-        //     "Matrix rows = {}, matrix cols = {}",
-        //     matrix.dims.0, matrix.dims.1
-        // );
-        // println!("Len f_2 = {}", f_2_vals.len());
-        // println!("Len twiddles = {}", inv_twiddles.len());
-        // fft::interpolate_poly(&mut f_2_vals, inv_twiddles);
-        // Ok(f_2_vals)
     }
 }

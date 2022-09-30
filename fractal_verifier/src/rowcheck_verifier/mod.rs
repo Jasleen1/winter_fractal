@@ -3,6 +3,7 @@ use crate::errors::RowcheckVerifierError;
 use fractal_indexer::snark_keys::VerifierKey;
 use fractal_proofs::{FieldElement, RowcheckProof, get_complementary_poly, polynom, TryInto};
 
+use fractal_sumcheck::log::debug;
 use winter_crypto::{ElementHasher, RandomCoin, MerkleTree};
 use winter_fri::{DefaultVerifierChannel, FriVerifier};
 use winter_math::StarkField;
@@ -16,8 +17,7 @@ pub fn verify_rowcheck_proof<
     proof: RowcheckProof<B, E, H>,
     // Change to include public seed
 ) -> Result<(), RowcheckVerifierError> {
-    // let mut public_coin_seed = Vec::new();
-    // proof.write_into(&mut public_coin_seed);
+
     let mut public_coin = RandomCoin::new(&[]);
 
     let mut channel = DefaultVerifierChannel::new(
@@ -40,8 +40,7 @@ pub fn verify_rowcheck_proof<
         proof.options.clone(),
         verifier_key.params.max_degree - 1,
     )?;
-    println!("rowcheck max_poly_degree {}", verifier_key.params.max_degree - 1);
-    //fri_verifier.verify(&mut channel, &s_queried_evals, &proof.queried_positions)
+    debug!("rowcheck max_poly_degree {}", verifier_key.params.max_degree - 1);
     fri_verifier.verify(&mut channel, &s_queried_evals, &proof.queried_positions).map_err(|err| RowcheckVerifierError::FriVerifierErr(err))
 }
 

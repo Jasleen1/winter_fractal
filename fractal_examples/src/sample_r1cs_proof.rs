@@ -111,11 +111,8 @@ pub(crate) fn orchestrate_r1cs_example<
     let evaluation_domain =
         utils::get_power_series(index_domains.l_field_base, index_domains.l_field_len);
 
-    //let summing_domain = winter_math::utils::get_power_series_with_offset(index_domains.k_field_base, eta_k, index_domains.k_field_len);
     let summing_domain = index_domains.k_field;
-    println!("len(summing_domain): {}", &summing_domain.len());
-    //let evaluation_domain = winter_math::utils::get_power_series_with_offset(index_domains.l_field_base, eta3, index_domains.l_field_len);
-
+    
     let h_domain = index_domains.h_field;
     let lde_blowup = 4;
     let num_queries = 16;

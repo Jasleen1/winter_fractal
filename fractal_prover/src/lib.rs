@@ -1,6 +1,6 @@
 use winter_fri::FriOptions;
 use winter_math::StarkField;
-
+use log;
 mod errors;
 mod lincheck_prover;
 pub mod prover;
