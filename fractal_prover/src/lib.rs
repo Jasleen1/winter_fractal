@@ -19,6 +19,8 @@ pub struct FractalOptions<B: StarkField> {
     pub evaluation_domain: Vec<B>,
     // H domain in paper
     pub h_domain: Vec<B>,
+    pub eta: B,
+    pub eta_k: B,
     pub fri_options: FriOptions,
     pub num_queries: usize,
 }

@@ -74,6 +74,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let s_tree = MerkleTree::<H>::new(hashed_evaluations)?;
         
         //let s_comp_coeffs = get_complementary_poly::<B>(self.size_subgroup_h - 2, self.max_degree - 1);
+        println!("Rowcheck prove polynomial max_degree: {}", self.max_degree);
         let s_comp_coeffs = get_complementary_poly::<B>(polynom::degree_of(&s_coeffs), self.max_degree - 1);
         let new_s = polynom::mul(&s_coeffs, &s_comp_coeffs);
 

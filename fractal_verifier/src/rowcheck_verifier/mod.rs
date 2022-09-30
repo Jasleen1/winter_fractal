@@ -40,6 +40,7 @@ pub fn verify_rowcheck_proof<
         proof.options.clone(),
         verifier_key.params.max_degree - 1,
     )?;
+    println!("rowcheck max_poly_degree {}", verifier_key.params.max_degree - 1);
     //fri_verifier.verify(&mut channel, &s_queried_evals, &proof.queried_positions)
     fri_verifier.verify(&mut channel, &s_queried_evals, &proof.queried_positions).map_err(|err| RowcheckVerifierError::FriVerifierErr(err))
 }

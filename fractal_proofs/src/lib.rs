@@ -66,21 +66,20 @@ pub struct SumcheckProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hashe
     // Question: is it ok to use the same queried positions for both
     // g and e of different degrees?
     pub queried_positions: Vec<usize>,
-    pub g_proof: FriProof,
-    pub g_queried: OracleQueries<B, E, H>,
+    pub g_proof: LowDegreeProof<B,E,H>,
     pub g_max_degree: usize,
-    pub e_proof: FriProof,
-    pub e_queried: OracleQueries<B, E, H>,
+    pub e_proof: LowDegreeProof<B,E,H>,
     pub e_max_degree: usize,
 }
 
+// TODO: FIX once interface is stable
 impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
     for SumcheckProof<B, E, H>
 {
     /// Serializes `self` and writes the resulting bytes into the `target` writer.
     fn write_into<W: ByteWriter>(&self, target: &mut W) {
         target.write_u8(self.num_evaluations as u8);
-        target.write_u8(self.queried_positions.len() as u8);
+        /*target.write_u8(self.queried_positions.len() as u8);
         for pos in 0..self.queried_positions.len() {
             target.write_u8(self.queried_positions[pos] as u8);
         }
@@ -90,7 +89,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
 
         self.e_proof.write_into(target);
         self.e_queried.write_into(target);
-        target.write_u8(self.e_max_degree as u8);
+        target.write_u8(self.e_max_degree as u8);*/
     }
 }
 
@@ -151,5 +150,35 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
     fn write_into<W: ByteWriter>(&self, target: &mut W) {
         self.queried_evals.write_into(target);
         self.queried_proofs.write_into(target);
+    }
+}
+
+pub struct LowDegreeProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
+    pub options: FriOptions,
+    pub num_evaluations: usize,
+    pub queried_positions: Vec<usize>,
+    pub unpadded_queried_evaluations: Vec<E>,
+    pub padded_queried_evaluations: Vec<E>,
+    pub commitments: Vec<<H>::Digest>,
+    pub tree_root: H::Digest,
+    pub tree_proof: BatchMerkleProof<H>,
+    pub fri_proof: FriProof,
+    pub max_degree: usize,
+    pub fri_max_degree: usize,
+}
+// TODO: fix once interface is finalized (should this just be a serde macro?)
+impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
+    for LowDegreeProof<B, E, H>
+{
+    /// Serializes `self` and writes the resulting bytes into the `target` writer.
+    fn write_into<W: ByteWriter>(&self, target: &mut W) {
+        target.write_u8(self.num_evaluations as u8);
+        target.write_u8(self.queried_positions.len() as u8);
+        for pos in 0..self.queried_positions.len() {
+            target.write_u8(self.queried_positions[pos] as u8);
+        }
+        self.fri_proof.write_into(target);
+        //self.queried.write_into(target);
+        target.write_u8(self.max_degree as u8);
     }
 }

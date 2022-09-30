@@ -21,6 +21,7 @@ pub fn verify_fractal_proof<
     
     verify_rowcheck_proof(&verifier_key, proof.rowcheck_proof)?;
     println!("Rowcheck verified");
+    println!("Lincheck a indexes: {:?}", &proof.lincheck_a.products_sumcheck_proof.queried_positions);
     verify_lincheck_proof(&verifier_key, proof.lincheck_a, expected_alpha)?;
     println!("Lincheck a verified");
     verify_lincheck_proof(&verifier_key, proof.lincheck_b, expected_alpha)?;

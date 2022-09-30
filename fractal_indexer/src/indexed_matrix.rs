@@ -4,6 +4,8 @@ use std::convert::TryInto;
 
 // TODO: This implementation assumes all matrices are square and all inputs are public, ie no witness. Update to accomodate this.
 use crate::index::*;
+use fractal_math::polynom;
+use fractal_utils::polynomial_utils;
 use winter_math::{fft, StarkField};
 use models::r1cs::*;
 
@@ -49,7 +51,7 @@ pub fn index_matrix<E: StarkField>(
     let num_rows = mat.dims.0;
     let num_cols = mat.dims.1;
 
-    let k_field_size = index_domains.k_field_len;
+    let k_field_size = index_domains.k_field.len();
 
     // K is chosen large enough to enumerate the nonzero elements of M.
     // H is chosen large enough to enumerate the rows (or cols) of M.
@@ -72,22 +74,29 @@ pub fn index_matrix<E: StarkField>(
             //println!("loop at nonzero: count={}    rc_int=({}, {})   cr=({},{})", count, r_int, c_int, r, c);
             row_elts[count] = c;
             col_elts[count] = r;
-            val_elts[count] = mat.mat[r_int][c_int]
+            val_elts[count] = mat.mat[r_int][c_int]* polynomial_utils::compute_derivative_on_single_val(r, h_size)
                 / (compute_derivative(c, h_size) * compute_derivative(r, h_size));
+            //* polynomial_utils::compute_derivative_on_single_val(index_field[j], dom_size);
             count += 1;
         }
     }
 
     let inv_twiddles_k_elts = index_domains.inv_twiddles_k_elts.clone();
 
+    /*
+    row_elts = polynom::interpolate(&row_elts, &index_domains.k_field, true);
+    col_elts = polynom::interpolate(&col_elts, &index_domains.k_field, true);
+    val_elts = polynom::interpolate(&val_elts, &index_domains.k_field, true);
+    */
+
     // interpolate row_elts into a polynomial
-    fft::interpolate_poly(&mut row_elts, &inv_twiddles_k_elts);
+    fft::interpolate_poly_with_offset(&mut row_elts, &inv_twiddles_k_elts, index_domains.eta_k);
 
     // interpolate col_elts into a polynomial
-    fft::interpolate_poly(&mut col_elts, &inv_twiddles_k_elts);
+    fft::interpolate_poly_with_offset(&mut col_elts, &inv_twiddles_k_elts, index_domains.eta_k);
 
     // interpolate val_elts into a polynomial
-    fft::interpolate_poly(&mut val_elts, &inv_twiddles_k_elts);
+    fft::interpolate_poly_with_offset(&mut val_elts, &inv_twiddles_k_elts, index_domains.eta_k);
 
     let twiddles_l_elts = index_domains.twiddles_l_elts.clone();
 

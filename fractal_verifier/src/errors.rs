@@ -6,7 +6,9 @@
 // of this source tree.
 
 //! Errors for various data structure operations.
+use fractal_proofs::DeserializationError;
 use fractal_sumcheck::errors::SumcheckVerifierError;
+use winter_fri::VerifierError;
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
@@ -114,6 +116,43 @@ impl std::fmt::Display for FractalVerifierError {
             }
             FractalVerifierError::RowcheckVerifierErr(err) => {
                 writeln!(f, "Rowcheck error: {}", err)
+            }
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum LowDegreeVerifierError {
+    /// Error propagation
+    FriVerifierErr(VerifierError),
+    /// Error propagation
+    DeserializationErr(DeserializationError),
+    PaddingErr,
+}
+
+impl From<VerifierError> for LowDegreeVerifierError {
+    fn from(error: VerifierError) -> Self {
+        Self::FriVerifierErr(error)
+    }
+}
+
+impl From<DeserializationError> for LowDegreeVerifierError {
+    fn from(error: DeserializationError) -> Self {
+        Self::DeserializationErr(error)
+    }
+}
+
+impl std::fmt::Display for LowDegreeVerifierError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            LowDegreeVerifierError::FriVerifierErr(err) => {
+                writeln!(f, "FRI Verifier Error: {}", err)
+            }
+            LowDegreeVerifierError::DeserializationErr(err) => {
+                writeln!(f, "Winterfell Utils Deserialization Error: {}", err)
+            }
+            LowDegreeVerifierError::PaddingErr => {
+                writeln!(f, "Complimentary Polynomial Check Failed")
             }
         }
     }

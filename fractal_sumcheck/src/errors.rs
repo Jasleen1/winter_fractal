@@ -6,19 +6,20 @@
 // of this source tree.
 
 //! Errors for various data structure operations.
-use winter_fri::VerifierError;
+//use winter_fri::VerifierError;
 use winter_utils::DeserializationError;
+use low_degree::errors::LowDegreeVerifierError;
 
 #[derive(Debug, PartialEq)]
 pub enum SumcheckVerifierError {
     /// Error propagation
-    FriVerifierErr(VerifierError),
+    FriVerifierErr(LowDegreeVerifierError),
     /// Error propagation
     DeserializationErr(DeserializationError),
 }
 
-impl From<VerifierError> for SumcheckVerifierError {
-    fn from(error: VerifierError) -> Self {
+impl From<LowDegreeVerifierError> for SumcheckVerifierError {
+    fn from(error: LowDegreeVerifierError) -> Self {
         Self::FriVerifierErr(error)
     }
 }
