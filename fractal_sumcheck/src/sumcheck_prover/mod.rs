@@ -72,7 +72,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     pub fn generate_proof(&mut self) -> SumcheckProof<B, E, H> {
         // compute the polynomial g such that Sigma(g, sigma) = summing_poly
         // compute the polynomial e such that e = (Sigma(g, sigma) - summing_poly)/v_H over the summing domain H.
-        println!("Starting a sumcheck proof");
+        debug!("Starting a sumcheck proof");
         let _sigma_inv = self.sigma.inv();
         
 

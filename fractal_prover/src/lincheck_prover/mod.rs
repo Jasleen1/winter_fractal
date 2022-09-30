@@ -128,12 +128,8 @@ impl<
         // 2. Polynom includes a mul and a sub function, use these to do the respective ops
         //eta_to_h_size = eta.exp(B::PositiveInteger::from(self.options.size_subgroup_h));
         let mut alpha_to_h_size = self.alpha.exp(B::PositiveInteger::from(self.options.size_subgroup_h as u64));
-        println!("alpha_to_h_size: {}", &alpha_to_h_size);
-        alpha_to_h_size = B::ONE;
-        for _ in 0..self.options.size_subgroup_h{
-            alpha_to_h_size *= self.alpha;
-        }
-        println!("alpha_to_h_size: {}", &alpha_to_h_size);
+        debug!("alpha_to_h_size: {}", &alpha_to_h_size);
+
         let mut u_numerator = vec![B::ZERO; (self.options.size_subgroup_h).try_into().unwrap()];
         u_numerator[0] = alpha_to_h_size.neg();
         u_numerator.push(B::ONE);
@@ -162,7 +158,7 @@ impl<
         // botttom of page 29
         let alpha_to_h_size = self.alpha.exp(B::PositiveInteger::from(self.options.size_subgroup_h as u64));
         let mut u_numerator = vec![B::ZERO; (self.options.size_subgroup_h).try_into().unwrap()];
-        u_numerator[0] = alpha_to_h_size.neg();//self.alpha.neg();
+        u_numerator[0] = alpha_to_h_size.neg();
         u_numerator.push(B::ONE);
         let u_denominator = vec![self.alpha.neg(), B::ONE];
         let mut u_alpha = polynom::div(&u_numerator, &u_denominator);
