@@ -2,6 +2,7 @@ use crate::errors::SumcheckVerifierError;
 
 use fractal_proofs::{FieldElement, SumcheckProof};
 
+use low_degree::low_degree_verifier::verify_low_degree_proof;
 use winter_crypto::{ElementHasher, RandomCoin};
 use winter_fri::{DefaultVerifierChannel, FriVerifier};
 use winter_math::StarkField;
@@ -17,12 +18,17 @@ pub fn verify_sumcheck_proof<
     H: ElementHasher<BaseField = B>,
 >(
     proof: SumcheckProof<B, E, H>,
+    g_max_degree: usize,
+    e_max_degree: usize,
 ) -> Result<(), SumcheckVerifierError> {
     // let mut public_coin_seed = Vec::new();
     // proof.write_into(&mut public_coin_seed);
     // let mut public_coin = RandomCoin::new(&public_coin_seed);
     let mut public_coin = RandomCoin::new(&[]);
-    println!("proof.g_max_degree = {}", proof.g_max_degree);
+    verify_low_degree_proof(proof.g_proof, 63, &mut public_coin)?;
+    verify_low_degree_proof(proof.e_proof, 63, &mut public_coin)?;
+    Ok(())
+    /*println!("proof.g_max_degree = {}", proof.g_max_degree);
     println!("sumcheck verifier: proof.num_evaluations:{} ", proof.num_evaluations);
 
     let mut g_channel = DefaultVerifierChannel::<E, H>::new(
@@ -66,5 +72,5 @@ pub fn verify_sumcheck_proof<
 
     let e_queried_evals = proof.e_queried.queried_evals;
     println!("calling verify");
-    Ok(e_verifier.verify(&mut e_channel, &e_queried_evals, &proof.queried_positions)?)
+    Ok(e_verifier.verify(&mut e_channel, &e_queried_evals, &proof.queried_positions)?)*/
 }

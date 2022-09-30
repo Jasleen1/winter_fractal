@@ -5,7 +5,6 @@ mod errors;
 mod lincheck_prover;
 pub mod prover;
 mod rowcheck_prover;
-pub mod low_degree_prover;
 #[cfg(test)]
 mod tests;
 

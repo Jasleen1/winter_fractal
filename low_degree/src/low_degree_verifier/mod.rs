@@ -62,7 +62,7 @@ fn verify_lower_degree<
 
 #[cfg(test)]
 mod test{
-    use fractal_prover::low_degree_prover::LowDegreeProver;
+    use crate::low_degree_prover::LowDegreeProver;
     use super::verify_low_degree_proof;
     use fractal_proofs::{FieldElement, SumcheckProof};
     use winter_crypto::{ElementHasher, RandomCoin};
@@ -102,14 +102,13 @@ mod test{
         let poly2 = nonrand_poly(max_degree2);
         let prover = LowDegreeProver::<B, E, H>::from_polynomial(&poly2, &evaluation_domain, max_degree2, fri_options.clone());
         let proof2 = prover.generate_proof(&mut channel);
-        verify_low_degree_proof(proof2, 17, &mut public_coin).unwrap();
-        //assert!(verify_low_degree_proof(proof2, 17, &mut public_coin).is_ok());
+        assert!(verify_low_degree_proof(proof2, 17, &mut public_coin).is_ok());
     }
 
     // a random-ish polynomial that isn't actually random at all. Instead, it uses the system clock since that doesn't require a new crate import
     fn nonrand_poly<B: StarkField>(degree: usize) -> Vec<B>{
         let mut out: Vec<B> = Vec::new();
-        for i in 0..degree+1{
+        for _ in 0..degree+1{
             let nanos = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()

@@ -8,6 +8,7 @@ members = [
   "fractal_sumcheck",
   "fractal_utils",
   "fractal_verifier",
+  "low_degree",
   "models"
 ]
 

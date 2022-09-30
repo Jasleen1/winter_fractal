@@ -1,6 +1,7 @@
 use std::{convert::TryInto, marker::PhantomData};
 
 use fractal_utils::polynomial_utils::*;
+use low_degree::low_degree_prover::LowDegreeProver;
 use winter_crypto::ElementHasher;
 use winter_fri::{DefaultProverChannel, FriOptions};
 use winter_math::{fft, FieldElement, StarkField};
@@ -101,9 +102,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         // compute the polynomial g such that Sigma(g, sigma) = summing_poly
         // compute the polynomial e such that e = (Sigma(g, sigma) - summing_poly)/v_H over the summing domain H.
         println!("Starting a sumcheck proof");
-        let mut g_eval_domain_evals: Vec<E> = Vec::new();
-        let mut e_eval_domain_evals: Vec<E> = Vec::new();
-        let mut f_hat_evals: Vec<E> = Vec::new();
         let _sigma_inv = self.sigma.inv();
         /*for i in 0..self.summing_poly_numerator_evals.len() {
             let summing_poly_eval = B::div(
@@ -164,15 +162,15 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         //let g_evals = polynom::eval_many(&new_g, &eval_domain_e);
         //g_eval_domain_evals = g_evals;
 
-        let g_eval_domain_evals = polynom::eval_many(&g_hat_coeffs, &eval_domain_e);
+        let g_eval_domain_evals = polynom::eval_many(&g_hat_coeffs, &self.evaluation_domain);
 
-        let p_eval_domain_evals = polynom::eval_many(&self.numerator_coeffs, &eval_domain_e);
-        let q_eval_domain_evals = polynom::eval_many(&self.denominator_coeffs, &eval_domain_e);
+        let p_eval_domain_evals = polynom::eval_many(&self.numerator_coeffs, &self.evaluation_domain);
+        let q_eval_domain_evals = polynom::eval_many(&self.denominator_coeffs, &self.evaluation_domain);
 
-        let mut e_eval_domain_evals: Vec<E> = Vec::new();
+        let mut e_eval_domain_evals: Vec<B> = Vec::new();
         for i in 0..self.evaluation_domain.len() {
             let e_val = self.compute_e_poly_on_val(
-                E::from(self.evaluation_domain[i]),
+                self.evaluation_domain[i],
                 g_eval_domain_evals[i],
                 p_eval_domain_evals[i],
                 q_eval_domain_evals[i],
@@ -181,7 +179,8 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             e_eval_domain_evals.push(e_val);
         }
 
-        println!("degree of e: {}", polynom::degree_of(&polynom::interpolate(&eval_domain_e, &e_eval_domain_evals, true)));
+        let e_hat_coeffs = polynom::interpolate(&self.evaluation_domain, &e_eval_domain_evals, true);
+        println!("degree of e: {}", polynom::degree_of(&e_hat_coeffs));
         
         //let inv_twiddles_eval_domain: Vec<B> = fft::get_inv_twiddles(self.evaluation_domain.len());
         //let mut g_poly = g_eval_domain_evals.clone(); //g_summing_domain_evals.clone();
@@ -202,7 +201,15 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let queried_positions = query_positions.clone();
 
         // Build proofs for the polynomial g
-        let mut fri_prover =
+        let g_prover = LowDegreeProver::<B, E, H>::from_polynomial(&g_hat_coeffs, &self.evaluation_domain, self.g_degree, self.fri_options.clone());
+        let g_proof = g_prover.generate_proof(&mut self.channel);
+
+        let e_prover = LowDegreeProver::<B, E, H>::from_polynomial(&e_hat_coeffs, &self.evaluation_domain, self.e_degree, self.fri_options.clone());
+        let e_proof = e_prover.generate_proof(&mut self.channel);
+
+        // Build proofs for the polynomial e
+
+        /*let mut fri_prover =
             winter_fri::FriProver::<B, E, DefaultProverChannel<B, E, H>, H>::new(self.fri_options.clone());
         fri_prover.build_layers(&mut self.channel, g_eval_domain_evals.clone());
         let fri_proof_g = fri_prover.build_proof(&query_positions);
@@ -210,10 +217,10 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             .iter()
             .map(|&p| g_eval_domain_evals[p])
             .collect::<Vec<_>>();
-        let g_commitments = self.channel.layer_commitments().to_vec();
+        let g_commitments = self.channel.layer_commitments().to_vec();*/
 
         // reset to build proofs for the polynomial e
-        fri_prover.reset();
+        /*fri_prover.reset();
         fri_prover.build_layers(&mut self.channel, e_eval_domain_evals.clone());
         let fri_proof_e = fri_prover.build_proof(&query_positions);
         let e_queried_evaluations = query_positions
@@ -222,17 +229,15 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             .collect::<Vec<_>>();
         //todo: consider being less hacky
         let e_commitments = self.channel.layer_commitments()[self.channel.layer_commitments().len()/2..].to_vec();
-        println!("@@@@@@@@@@@@Prover's queried positions {:?} ", &queried_positions);
+        println!("@@@@@@@@@@@@Prover's queried positions {:?} ", &queried_positions);*/
 
         SumcheckProof {
             options: self.fri_options.clone(),
             num_evaluations: self.evaluation_domain.len(),
             queried_positions,
-            g_proof: fri_proof_g,
-            g_queried: OracleQueries::new(g_queried_evaluations, vec![g_commitments]),
+            g_proof: g_proof,
             g_max_degree: self.g_degree,
-            e_proof: fri_proof_e,
-            e_queried: OracleQueries::new(e_queried_evaluations, vec![e_commitments]),
+            e_proof: e_proof,
             e_max_degree: self.e_degree,
         }
     }
@@ -247,23 +252,23 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         dividing_factor * (f_x_val - E::from(subtracting_factor))
     }
 
-    pub fn compute_sigma_function_on_val(&self, x_val: E, g_val: E) -> E {
+    pub fn compute_sigma_function_on_val(&self, x_val: B, g_val: B) -> B {
         let dividing_factor: u64 = self.summing_domain.len().try_into().unwrap();
-        x_val * g_val + (E::from(self.sigma) * E::from(dividing_factor).inv())
+        x_val * g_val + (B::from(self.sigma) * B::from(dividing_factor).inv())
     }
 
     pub fn compute_e_poly_on_val(
         &self,
-        x_val: E,
-        g_val: E,
-        summing_poly_numerator_val: E,
-        summing_poly_denominator_val: E,
+        x_val: B,
+        g_val: B,
+        summing_poly_numerator_val: B,
+        summing_poly_denominator_val: B,
         eta: B,
-    ) -> E {
+    ) -> B {
         let sigma_function = self.compute_sigma_function_on_val(x_val, g_val);
         let sigma_minus_f =
             sigma_function * summing_poly_denominator_val - summing_poly_numerator_val;
-        let vanishing_on_x = compute_vanishing_poly(x_val, E::from(eta), self.summing_domain.len());
+        let vanishing_on_x = compute_vanishing_poly(x_val, eta, self.summing_domain.len());
             //vanishing_poly_for_mult_subgroup(x_val, self.summing_domain.len().try_into().unwrap());
         sigma_minus_f * vanishing_on_x.inv()
     }

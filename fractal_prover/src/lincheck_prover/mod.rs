@@ -249,10 +249,9 @@ impl<
         println!("denom_eval_len: {}", &denom_eval.len());
         let g_degree = self.options.h_domain.len() - 2;
         let e_degree = self.options.h_domain.len() - 1;
-        let g_max_degree = g_degree.next_power_of_two();
-        let e_max_degree = e_degree.next_power_of_two();
-        let e_max_degree = (self.options.h_domain.len() - 1) * 2 - 1;
-        println!("prover g_degree={} g_max_degree={}", g_degree, g_max_degree);
+        //let g_max_degree = g_degree.next_power_of_two();
+        //let e_max_degree = e_degree.next_power_of_two();
+        //let e_max_degree = (self.options.h_domain.len() - 1) * 2 - 1;
         let mut product_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
             poly_prod_coeffs.clone(),
             vec![B::ONE],
@@ -260,8 +259,8 @@ impl<
             self.options.h_domain.clone(),
             self.options.eta,
             self.options.evaluation_domain.clone(),
-            64, //g_max_degree, 
-            e_max_degree,
+            g_degree, 
+            e_degree,
             self.options.fri_options.clone(),
             self.options.num_queries,
         );

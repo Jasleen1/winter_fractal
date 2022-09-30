@@ -1,7 +1,7 @@
 [package]
-name = "fractal_verifier"
+name = "low_degree"
 version = "0.1.0"
-authors = ["harjasleenmalvai <harjasleen_malvai@brown.edu>"]
+authors = ["tyurek <tomyurek@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,13 +9,14 @@ edition = "2018"
 [dependencies]
 displaydoc = "0.1.7"
 log = { version = "0.4", default-features = false }
+models = { version = "0.1.0", path = "../models", package = "winter-models", default-features = false }
+fractal_indexer = { path = "../fractal_indexer" }
 fractal_utils = { path = "../fractal_utils" }
-fractal_proofs = {path = "../fractal_proofs"}
-fractal_sumcheck = {path = "../fractal_sumcheck"}
-fractal_indexer = {path = "../fractal_indexer" }
+fractal_proofs = {path = "../fractal_proofs" }
 serde = { version = "1.0.117", features = ["derive"] }
 thiserror = "1.0.22"
 winter-crypto = "0.4.0"
 winter-fri = "0.4.0"
 winter-math = "0.4.0"
+winter-rand-utils = "0.4.0"
 winter-utils = "0.4.0"
