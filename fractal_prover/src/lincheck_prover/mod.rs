@@ -58,7 +58,7 @@ impl<
 
     /// The polynomial t_alpha(X) = u_M(X, alpha). 
     /// We also know that u_M(X, alpha) = M_star(X, alpha).
-    /// Further, (X, Y) = 
+    /// Further, M_star(X, Y) = 
     /// sum_{k in summing domain} (v_H(X)/ (X - row(k))) * (v_H(Y)/ (Y - col(k))) * val(k).
     /// Fixing Y = alpha, this gives us t_alpha(X) = sum_k (v_H(X)/ (X - row(k))) * (v_H(alpha)/ (alpha - col(k))) * val(k).
     /// = v_H(alpha) * sum_k (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
