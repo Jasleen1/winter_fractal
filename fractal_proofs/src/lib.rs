@@ -182,3 +182,16 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
         target.write_u8(self.max_degree as u8);
     }
 }
+pub struct LowDegreeBatchProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
+    pub options: FriOptions,
+    pub num_evaluations: usize,
+    pub queried_positions: Vec<usize>,
+    pub all_unpadded_queried_evaluations: Vec<Vec<E>>,
+    pub composed_queried_evaluations: Vec<E>,
+    pub commitments: Vec<<H>::Digest>,
+    pub tree_roots: Vec<H::Digest>,
+    pub tree_proofs: Vec<BatchMerkleProof<H>>,
+    pub fri_proof: FriProof,
+    pub max_degrees: Vec<usize>,
+    pub fri_max_degree: usize,
+}
