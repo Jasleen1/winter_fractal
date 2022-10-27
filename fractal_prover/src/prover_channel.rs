@@ -27,16 +27,12 @@ where
     H: ElementHasher<BaseField = B>,
 {    
     pub(crate) index_commitments: VerifierKey<H, B>, 
-    pub(crate) evaluation_domain_size: usize,
-    pub(crate) num_queries: usize,
 }
 
 impl<H: ElementHasher + ElementHasher<BaseField = B>, B: StarkField> Serializable for FractalContext<B, H> {
     /// Serializes `self` and writes the resulting bytes into the `target`.
     fn write_into<W: ByteWriter>(&self, target: &mut W) {
         self.index_commitments.write_into(target);
-        target.write_u16(self.evaluation_domain_size as u16);
-        target.write_u16(self.num_queries as u16);
     }
 }
 
@@ -129,11 +125,15 @@ where
 
     /// Returns an out-of-domain point drawn uniformly at random from the public coin. 
     /// This is used in lincheck to get the beta value.
+    /// Beta should be selected from Field \ h_domain, and we know h_domain is a multiplicative
+    /// coset, so we just check that before returning.
     pub fn get_lincheck_beta(&mut self) -> E {
         let mut drawn_pt: E = self.public_coin.draw().expect("failed to draw OOD point");
         let eta = E::from(self.context.index_commitments.params.eta);
         let h_domain_size = self.context.index_commitments.params.num_input_variables;
-        while  (drawn_pt.div(eta)).exp(E::PositiveInteger::from(h_domain_size as u64)) == E::ONE {
+        let h_domain_size_exp = E::PositiveInteger::from(h_domain_size as u64);
+        while  (drawn_pt.div(eta)).exp(h_domain_size_exp) == E::ONE {
+            self.public_coin.reseed(H::hash(&drawn_pt.to_bytes()));
             drawn_pt = self.public_coin.draw().expect("failed to draw OOD point");
         }
         drawn_pt
@@ -141,11 +141,15 @@ where
 
     /// Returns an out-of-domain point drawn uniformly at random from the public coin. 
     /// This is used in lincheck to get the alpha value.
+    /// Alpha should be selected from Field \ h_domain, and we know h_domain is a multiplicative
+    /// coset, so we just check that before returning.
     pub fn get_lincheck_alpha(&mut self) -> E {
         let mut drawn_pt: E = self.public_coin.draw().expect("failed to draw OOD point");
         let eta = E::from(self.context.index_commitments.params.eta);
         let h_domain_size = self.context.index_commitments.params.num_input_variables;
-        while  (drawn_pt.div(eta)).exp(E::PositiveInteger::from(h_domain_size as u64)) == E::ONE {
+        let h_domain_size_exp = E::PositiveInteger::from(h_domain_size as u64);
+        while  (drawn_pt.div(eta)).exp(h_domain_size_exp) == E::ONE {
+            self.public_coin.reseed(H::hash(&drawn_pt.to_bytes()));
             drawn_pt = self.public_coin.draw().expect("failed to draw OOD point");
         }
         drawn_pt
@@ -157,8 +161,8 @@ where
     ///
     /// The positions are drawn from the public coin uniformly at random.
     pub fn get_query_positions(&mut self) -> Vec<usize> {
-        let num_queries = self.context.num_queries;
-        let eval_domain_size = self.context.evaluation_domain_size;
+        let num_queries = self.context.index_commitments.params.num_queries;
+        let eval_domain_size = self.context.index_commitments.params.blowup_factor * self.context.index_commitments.params.max_degree;
         self.public_coin
             .draw_integers(num_queries, eval_domain_size)
             .expect("failed to draw query position")

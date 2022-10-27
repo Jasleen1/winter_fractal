@@ -80,7 +80,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
 
     pub fn generate_proof(&self, channel: &mut FractalProverChannel<B, E, H>) -> LowDegreeProof<B, E, H> {
         let queried_positions = channel.get_query_positions();
-        // let commitment_idx = channel.commitments.0.len();
+        let commitment_idx = channel.commitments.0.len();
         let unpadded_queried_evaluations = queried_positions
             .iter()
             .map(|&p| self.polynomial_evals[p])
@@ -101,7 +101,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         fri_prover.build_layers(channel, padded_evals.clone());
         let fri_proof = fri_prover.build_proof(&queried_positions);
         // use only the commitments that we just added
-        // let commitments = channel.commitments[commitment_idx..].to_vec();
+        let commitments = channel.commitments.0[commitment_idx..].to_vec();
         let padded_queried_evaluations = queried_positions
             .iter()
             .map(|&p| padded_evals[p])

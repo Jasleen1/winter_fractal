@@ -16,7 +16,9 @@ pub struct IndexParams<B: StarkField> {
     // num_witness_variables: usize,
     pub num_constraints: usize,
     pub num_non_zero: usize,
+    pub num_queries: usize,
     pub max_degree: usize,
+    pub blowup_factor: usize,
     pub eta: B,
     pub eta_k: B,
 }
@@ -28,7 +30,9 @@ impl<B: StarkField> Serializable for IndexParams<B> {
         target.write_u16(self.num_input_variables as u16);
         target.write_u16(self.num_constraints as u16);
         target.write_u16(self.num_non_zero as u16);
+        target.write_u16(self.num_queries as u16);
         target.write_u16(self.max_degree as u16);
+        target.write_u16(self.blowup_factor as u16);
         self.eta.write_into(target);
         self.eta_k.write_into(target);
     }
@@ -134,7 +138,7 @@ pub fn build_index_domains<E: StarkField>(params: IndexParams<E>) -> IndexDomain
     let h_field_base = E::get_root_of_unity(h_field_size.trailing_zeros());
 
     // / |L| >= 3*k_field_size - 3. For the rest of our code, we need to use powers of 2, hence we multiply by 4.
-    let l_field_size = 4 * max_degree; 
+    let l_field_size = params.blowup_factor * max_degree; 
     let l_field_base = E::get_root_of_unity(l_field_size.trailing_zeros());
 
     

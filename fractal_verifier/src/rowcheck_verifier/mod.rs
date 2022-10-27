@@ -16,6 +16,7 @@ pub fn verify_rowcheck_proof<
 >(
     verifier_key: &VerifierKey<H, B>,
     proof: RowcheckProof<B, E, H>,
+    public_coin: &mut RandomCoin::<B, H>,
     // Change to include public seed
 ) -> Result<(), RowcheckVerifierError> {
 

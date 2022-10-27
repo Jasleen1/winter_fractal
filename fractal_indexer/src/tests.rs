@@ -25,7 +25,9 @@ fn test_indexing() {
         num_input_variables: 2,
         num_constraints: 2,
         num_non_zero: 4,
+        num_queries: 1,
         max_degree: get_max_degree(2, 2, 4),
+        blowup_factor: 4,
         eta: BaseElement::ONE,
         eta_k: BaseElement::ONE,
     };
@@ -43,7 +45,9 @@ fn test_domain_building_17() {
         num_input_variables: 2,
         num_constraints: 2,
         num_non_zero: 4,
+        num_queries: 1,
         max_degree: get_max_degree(2, 2, 4),
+        blowup_factor: 4,
         eta: SmallFieldElement17::ONE,
         eta_k: SmallFieldElement17::ONE,
     };
@@ -94,7 +98,9 @@ fn test_single_indexed_matrix_17() {
         num_input_variables: 2,
         num_constraints: 2,
         num_non_zero: 4,
+        num_queries: 1,
         max_degree: get_max_degree(2, 2, 4),
+        blowup_factor: 4,
         eta: SmallFieldElement17::ONE,
         eta_k: SmallFieldElement17::ONE,
     };
@@ -132,7 +138,9 @@ fn test_indexing_f17() {
         num_input_variables: 2,
         num_constraints: 2,
         num_non_zero: 4,
+        num_queries: 1,
         max_degree: get_max_degree(2, 2, 4),
+        blowup_factor: 4,
         eta: SmallFieldElement17::ONE,
         eta_k: SmallFieldElement17::ONE,
     };

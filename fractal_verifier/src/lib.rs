@@ -3,6 +3,7 @@ mod lincheck_verifier;
 mod rowcheck_verifier;
 mod tests;
 pub mod verifier;
+pub mod verifier_channel;
 
 // pub use fractal_sumcheck;
 pub use fractal_indexer;

@@ -63,8 +63,6 @@ impl<
         // not z = (x, w)
         let fractal_context = FractalContext{
             index_commitments: verifier_key,
-            num_queries: self.options.num_queries, 
-            evaluation_domain_size: self.options.evaluation_domain.len(),
         };
         let mut channel = FractalProverChannel::<B, E, H>::new(fractal_context, self.pub_inputs_bytes.clone());
         let alpha = channel.public_coin.draw().expect("failed to draw OOD point");
@@ -141,7 +139,7 @@ impl<
             self.prover_key.params.max_degree,
             self.prover_key.params.eta,
         );
-        let rowcheck_proof = rowcheck_prover.generate_proof()?;
+        let rowcheck_proof = rowcheck_prover.generate_proof(&mut channel)?;
         println!("Done with rowcheck");
         // 3. Build and return an overall fractal proof.
         Ok(FractalProof {

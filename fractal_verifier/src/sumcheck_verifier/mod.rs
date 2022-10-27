@@ -20,9 +20,9 @@ pub fn verify_sumcheck_proof<
     proof: SumcheckProof<B, E, H>,
     g_max_degree: usize,
     e_max_degree: usize,
+    public_coin: &mut RandomCoin<B, H>,
 ) -> Result<(), SumcheckVerifierError> {
 
-    let mut public_coin = RandomCoin::new(&[]);
     verify_low_degree_proof(proof.g_proof, g_max_degree, &mut public_coin)?;
     verify_low_degree_proof(proof.e_proof, e_max_degree, &mut public_coin)?;
     // FIXME: This proof verification should also check that e and g are correct wrt the Az, Bz and Cz.

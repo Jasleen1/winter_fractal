@@ -6,7 +6,7 @@ use crate::sumcheck_verifier::verify_sumcheck_proof;
 
 // use fractal_sumcheck::{sumcheck_verifier::verify_sumcheck_proof, log::debug};
 
-use winter_crypto::{ElementHasher};
+use winter_crypto::{ElementHasher, RandomCoin};
 use winter_math::StarkField;
 
 pub fn verify_lincheck_proof<
@@ -16,11 +16,15 @@ pub fn verify_lincheck_proof<
 >(
     verifier_key: &VerifierKey<H, B>,
     proof: LincheckProof<B, E, H>,
-    _expected_alpha: B,
+    public_coin: &mut RandomCoin::<B, H>,
+    expected_alpha: B,
 ) -> Result<(), LincheckVerifierError> {
 
-    let _alpha = proof.alpha;
-    debug!("verifier alpha: {}", &_alpha);
+    let alpha = proof.alpha;
+    if alpha != expected_alpha {
+        return Err(LincheckVerifierError::RandomValueMismatch("Mismatched random values of alpha in lincheck".to_string()));
+    }
+    debug!("verifier alpha: {}", &alpha);
     let _t_alpha_commitment = proof.t_alpha_commitment;
     let _t_alpha_queried = proof.t_alpha_queried;
     
@@ -30,7 +34,7 @@ pub fn verify_lincheck_proof<
     let h_field_size = std::cmp::max(verifier_key.params.num_input_variables, verifier_key.params.num_constraints);
     let g_degree = h_field_size - 2;
     let e_degree = h_field_size - 1;
-    verify_sumcheck_proof(products_sumcheck_proof, g_degree, e_degree)
+    verify_sumcheck_proof(products_sumcheck_proof, g_degree, e_degree, public_coin)
     .map_err(|err| LincheckVerifierError::UnsoundProduct(err))?;
 
     debug!("Verified sumcheck for product");
@@ -42,7 +46,7 @@ pub fn verify_lincheck_proof<
     let k_field_size = verifier_key.params.num_non_zero;
     let g_degree = k_field_size - 2;
     let e_degree = 2 * k_field_size - 3;
-    verify_sumcheck_proof(matrix_sumcheck_proof, g_degree, e_degree)
+    verify_sumcheck_proof(matrix_sumcheck_proof, g_degree, e_degree, public_coin)
     .map_err(|err| LincheckVerifierError::UnsoundMatrix(err))?;
     // Need to do the checking of beta and channel passing etc.
     // Also need to make sure that the queried evals are dealt with

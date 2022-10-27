@@ -1,5 +1,8 @@
 mod tests;
 
+pub mod commitments;
+pub use commitments::FractalCommitments;
+
 pub use std::convert::TryInto;
 use std::{marker::PhantomData, usize};
 
@@ -39,7 +42,7 @@ pub struct RowcheckProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hashe
     pub s_original_proof: BatchMerkleProof<H>,
     pub s_proof: FriProof,
     pub s_queried_evals: Vec<E>,
-    pub s_commitments: Vec<<H>::Digest>,
+    // pub s_commitments: Vec<<H>::Digest>,
     pub s_max_degree: usize,
 }
 
@@ -55,7 +58,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
         }
         self.s_proof.write_into(target);
         self.s_queried_evals.write_into(target);
-        self.s_commitments.write_into(target);
+        // self.s_commitments.write_into(target);
         target.write_u8(self.s_max_degree as u8);
     }
 }

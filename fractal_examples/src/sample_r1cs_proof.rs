@@ -75,18 +75,23 @@ pub(crate) fn orchestrate_r1cs_example<
     let num_non_zero = r1cs.max_num_nonzero().next_power_of_two();
     let num_constraints = max(max(r1cs.A.l0_norm(), r1cs.B.l0_norm()), r1cs.C.l0_norm()).next_power_of_two();
     let max_degree = get_max_degree(num_input_variables, num_non_zero, num_constraints);
+    let blowup_factor = 4;
+    let num_queries = 16;
     // TODO: make the calculation of eta automated
     let eta = B::GENERATOR.exp(B::PositiveInteger::from(2 * B::TWO_ADICITY));
     let eta_k = B::GENERATOR.exp(B::PositiveInteger::from(1337 * B::TWO_ADICITY));
     // if num_non_zero <= num_vars {
     //     num_non_zero = num_non_zero * 2;
     // }
+
     println!("Eta is = {}", eta);
     let index_params = IndexParams::<B> {
         num_input_variables,
         num_constraints,
         num_non_zero,
+        num_queries,
         max_degree,
+        blowup_factor,
         eta,
         eta_k,
     };
@@ -114,9 +119,8 @@ pub(crate) fn orchestrate_r1cs_example<
     let summing_domain = index_domains.k_field;
     
     let h_domain = index_domains.h_field;
-    let lde_blowup = 4;
-    let num_queries = 16;
-    let fri_options = FriOptions::new(lde_blowup, 4, 32);
+    
+    let fri_options = FriOptions::new(blowup_factor, 4, 32);
     //println!("h_domain: {:?}, summing_domain: {:?}, evaluation_domain: {:?}", &h_domain, &summing_domain, &evaluation_domain);
     let options: FractalOptions<B> = FractalOptions::<B> {
         degree_fs,

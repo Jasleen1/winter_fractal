@@ -15,6 +15,8 @@ use winter_fri::VerifierError;
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub enum LincheckVerifierError {
+    /// Fiat-Shamir issue
+    RandomValueMismatch(String),
     /// Error propagation
     UnsoundProduct(SumcheckVerifierError),
     /// Error propagation
@@ -30,6 +32,9 @@ impl From<SumcheckVerifierError> for LincheckVerifierError {
 impl std::fmt::Display for LincheckVerifierError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
+            LincheckVerifierError::RandomValueMismatch(err) => {
+                writeln!(f, "Lincheck error: mismatch of drawn value and value from prover: {}", err)
+            }
             LincheckVerifierError::UnsoundProduct(err) => {
                 writeln!(f, "Lincheck error: unsound product: {}", err)
             }
