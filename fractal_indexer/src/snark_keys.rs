@@ -8,7 +8,7 @@ use winter_fri::utils::hash_values;
 use models::r1cs::{Matrix, R1CS};
 use winter_crypto::{ElementHasher, MerkleTree};
 use winter_math::{FieldElement, StarkField, polynom};
-use winter_utils::{transpose_slice, ByteWriter, Serializable};
+use winter_utils::transpose_slice;
 
 #[derive(Debug)]  // Clone
 pub struct ProverIndexPolynomial<H: ElementHasher + ElementHasher<BaseField = E>, E: FieldElement> {
@@ -69,40 +69,19 @@ pub struct ProverKey<H: ElementHasher + ElementHasher<BaseField = B>, B: StarkFi
     pub matrix_c_index: ProverMatrixIndex<H, B>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct VerifierMatrixIndex<H: ElementHasher + ElementHasher<BaseField = B>, B: StarkField> {
     pub row_poly_commitment: H::Digest,
     pub col_poly_commitment: H::Digest,
     pub val_poly_commitment: H::Digest,
 }
 
-
-impl<H: ElementHasher + ElementHasher<BaseField = B>, B: StarkField> Serializable for VerifierMatrixIndex<H, B> {
-    /// Serializes `self` and writes the resulting bytes into the `target`.
-    fn write_into<W: ByteWriter>(&self, target: &mut W) {
-        self.row_poly_commitment.write_into(target);
-        self.col_poly_commitment.write_into(target);
-        self.val_poly_commitment.write_into(target);
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct VerifierKey<H: ElementHasher + ElementHasher<BaseField = B>, B: StarkField> {
     pub params: IndexParams<B>,
     pub matrix_a_commitments: VerifierMatrixIndex<H, B>,
     pub matrix_b_commitments: VerifierMatrixIndex<H, B>,
     pub matrix_c_commitments: VerifierMatrixIndex<H, B>,
-}
-
-
-impl<H: ElementHasher + ElementHasher<BaseField = B>, B: StarkField> Serializable for VerifierKey<H, B> {
-    /// Serializes `self` and writes the resulting bytes into the `target`.
-    fn write_into<W: ByteWriter>(&self, target: &mut W) {
-        self.params.write_into(target);
-        self.matrix_a_commitments.write_into(target);
-        self.matrix_b_commitments.write_into(target);
-        self.matrix_c_commitments.write_into(target);
-    }
 }
 
 // QUESTION: Currently using the utils hash_values function which uses quartic folding.

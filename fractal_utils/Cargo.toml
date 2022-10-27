@@ -14,6 +14,5 @@ serde = { version = "1.0.117", features = ["derive"] }
 thiserror = "1.0.22"
 winter-crypto = "0.4.0"
 winter-fri = "0.4.0"
-winter-air = "0.4.0"
 winter-math = "0.4.0"
 winter-utils = "0.4.0"

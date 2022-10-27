@@ -10,11 +10,9 @@ use winter_math::{FieldElement, StarkField};
 use crate::{
     errors::ProverError,
     lincheck_prover::LincheckProver,
-    rowcheck_prover::RowcheckProver, prover_channel::{FractalProverChannel, FractalContext},
-    
+    rowcheck_prover::RowcheckProver,
+    FractalOptions,
 };
-
-use fractal_utils::FractalOptions;
 
 pub struct FractalProver<
     B: StarkField,
@@ -25,8 +23,7 @@ pub struct FractalProver<
     options: FractalOptions<B>,
     witness: Vec<B>,
     variable_assignment: Vec<B>,
-    pub_inputs_bytes: Vec<u8>,
-    // channel: FractalProverChannel<B, E, H>,
+    public_coin: RandomCoin<B, H>,
     _e: PhantomData<E>,
 }
 
@@ -43,31 +40,21 @@ impl<
         variable_assignment: Vec<B>,
         pub_inputs_bytes: Vec<u8>,
     ) -> Self {
-        // let coin_seed = pub_inputs_bytes;
-        
-        
+        let coin_seed = pub_inputs_bytes;
         FractalProver {
             prover_key,
             options,
             witness,
             variable_assignment,
-            pub_inputs_bytes,
-            // channel,
+            public_coin: RandomCoin::new(&coin_seed),
             _e: PhantomData,
-            
         }
     }
 
-    pub fn generate_proof(&mut self, verifier_key: VerifierKey<H, B>) -> Result<FractalProof<B, E, H>, ProverError> {
+    pub fn generate_proof(&mut self) -> Result<FractalProof<B, E, H>, ProverError> {
         // This is the less efficient version and assumes only dealing with the var assignment,
         // not z = (x, w)
-        let fractal_context = FractalContext{
-            index_commitments: verifier_key,
-            num_queries: self.options.num_queries, 
-            evaluation_domain_size: self.options.evaluation_domain.len(),
-        };
-        let mut channel = FractalProverChannel::<B, E, H>::new(fractal_context, self.pub_inputs_bytes.clone());
-        let alpha = channel.public_coin.draw().expect("failed to draw OOD point");
+        let alpha = self.public_coin.draw().expect("failed to draw OOD point");
         let inv_twiddles_h = fft::get_inv_twiddles(self.variable_assignment.len());
 
         // 1. Generate lincheck proofs for the A,B,C matrices.
@@ -82,9 +69,7 @@ impl<
             alpha,
             &self.prover_key.matrix_a_index,
             &z_coeffs.clone(),
-            &f_az_coeffs,
-            &mut channel,     
-        )?;
+            &f_az_coeffs)?;
 
         let f_bz_coeffs = self.compute_matrix_mul_poly_coeffs(
             &self.prover_key.matrix_b_index.matrix, 
@@ -95,8 +80,7 @@ impl<
             alpha,
             &self.prover_key.matrix_b_index,
             &z_coeffs.clone(),
-            &f_bz_coeffs,
-            &mut channel)?;
+            &f_bz_coeffs)?;
 
         let f_cz_coeffs = self.compute_matrix_mul_poly_coeffs(
             &self.prover_key.matrix_c_index.matrix, 
@@ -107,9 +91,7 @@ impl<
             alpha,
             &self.prover_key.matrix_c_index,
             &z_coeffs.clone(),
-            &f_cz_coeffs,
-            &mut channel
-        )?;
+            &f_cz_coeffs)?;
         
         println!("Done with linchecks");
         
@@ -171,18 +153,16 @@ impl<
         alpha: B,
         matrix_index: &ProverMatrixIndex<H, B>,
         z_coeffs: &Vec<B>,
-        prod_m_z_coeffs: &Vec<B>,
-        channel: &mut FractalProverChannel<B, E, H>,
-    ) -> Result<LincheckProof<B, E, H>, ProverError> {
+        prod_m_z_coeffs: &Vec<B>) -> Result<LincheckProof<B, E, H>, ProverError> {
 
         let lincheck_prover = LincheckProver::<B, E, H>::new(
             alpha,
             &matrix_index,
             prod_m_z_coeffs.to_vec(),
             z_coeffs.to_vec(),
-            &self.options
+            &self.options,
         );
-        let lincheck_proof = lincheck_prover.generate_lincheck_proof(channel)?;
+        let lincheck_proof = lincheck_prover.generate_lincheck_proof()?;
         Ok(lincheck_proof)
     }
 }

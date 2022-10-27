@@ -2,38 +2,23 @@ use std::cmp::max;
 
 // TODO: This class will include the indexes of 3 matrices
 // Should domain info be in here or in a separate class?
-use winter_math::{fft, FieldElement, StarkField};
-use winter_utils::{Serializable, ByteWriter}; // utils
+use winter_math::{fft, FieldElement, StarkField}; // utils
 
 type SmallFieldElement17 = fractal_math::smallprimefield::BaseElement<17, 3, 4>;
 
 use crate::indexed_matrix::IndexedMatrix;
 use models::r1cs::R1CS;
 
-#[derive(Clone, Debug, Copy)]
-pub struct IndexParams<B: StarkField> {
+#[derive(Clone, Debug)]
+pub struct IndexParams<E: StarkField> {
     pub num_input_variables: usize,
     // num_witness_variables: usize,
     pub num_constraints: usize,
     pub num_non_zero: usize,
     pub max_degree: usize,
-    pub eta: B,
-    pub eta_k: B,
+    pub eta: E,
+    pub eta_k: E,
 }
-
-
-impl<B: StarkField> Serializable for IndexParams<B> {
-    /// Serializes `self` and writes the resulting bytes into the `target`.
-    fn write_into<W: ByteWriter>(&self, target: &mut W) {
-        target.write_u16(self.num_input_variables as u16);
-        target.write_u16(self.num_constraints as u16);
-        target.write_u16(self.num_non_zero as u16);
-        target.write_u16(self.max_degree as u16);
-        self.eta.write_into(target);
-        self.eta_k.write_into(target);
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct Index<E: StarkField> {
     pub params: IndexParams<E>,
@@ -76,7 +61,6 @@ pub struct IndexDomains<E: FieldElement> {
     pub eta: E,
     pub eta_k: E,
 }
-
 
 /// ***************  HELPERS *************** \\\
 

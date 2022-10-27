@@ -134,7 +134,7 @@ pub(crate) fn orchestrate_r1cs_example<
     let pub_inputs_bytes = vec![0u8];
     let mut prover =
         FractalProver::<B, E, H>::new(prover_key, options, vec![], wires, pub_inputs_bytes.clone());
-    let proof = prover.generate_proof(verifier_key.clone());
+    let proof = prover.generate_proof();
 
     println!(
         "Verified: {:?}",
