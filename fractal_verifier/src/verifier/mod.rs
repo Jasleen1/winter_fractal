@@ -1,9 +1,9 @@
 use crate::errors::FractalVerifierError;
-
+use log::debug;
 use fractal_indexer::snark_keys::*;
 use fractal_proofs::{FieldElement, FractalProof, StarkField};
 
-use fractal_sumcheck::log::debug;
+// use fractal_sumcheck::log::debug;
 use winter_crypto::{ElementHasher, RandomCoin};
 
 use crate::{lincheck_verifier::verify_lincheck_proof, rowcheck_verifier::verify_rowcheck_proof};

@@ -1,8 +1,9 @@
 use std::{convert::TryInto, marker::PhantomData};
 
-use fractal_utils::polynomial_utils::*;
+use fractal_utils::{polynomial_utils::*, FractalOptions};
+use crate::prover_channel::FractalProverChannel;
 use winter_crypto::{ElementHasher, Hasher, MerkleTree};
-use winter_fri::{DefaultProverChannel, FriOptions};
+use winter_fri::{FriOptions};
 use winter_math::{fft, FieldElement, StarkField};
 use winter_utils::{transpose_slice};
 use fractal_indexer::hash_values;
@@ -77,9 +78,9 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         }
     }
 
-    pub fn generate_proof(&self, channel: &mut DefaultProverChannel<B, E, H>) -> LowDegreeProof<B, E, H> {
-        let queried_positions = channel.draw_query_positions();
-        let commitment_idx = channel.layer_commitments().len();
+    pub fn generate_proof(&self, channel: &mut FractalProverChannel<B, E, H>) -> LowDegreeProof<B, E, H> {
+        let queried_positions = channel.get_query_positions();
+        // let commitment_idx = channel.commitments.0.len();
         let unpadded_queried_evaluations = queried_positions
             .iter()
             .map(|&p| self.polynomial_evals[p])
@@ -96,11 +97,11 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let padded_evals: Vec<E> = polynom::eval_many(&padded_coeffs, &self.evaluation_domain);
 
         let mut fri_prover =
-            winter_fri::FriProver::<B, E, DefaultProverChannel<B, E, H>, H>::new(self.fri_options.clone());
+            winter_fri::FriProver::<B, E, FractalProverChannel<B, E, H>, H>::new(self.fri_options.clone());
         fri_prover.build_layers(channel, padded_evals.clone());
         let fri_proof = fri_prover.build_proof(&queried_positions);
         // use only the commitments that we just added
-        let commitments = channel.layer_commitments()[commitment_idx..].to_vec();
+        // let commitments = channel.commitments[commitment_idx..].to_vec();
         let padded_queried_evaluations = queried_positions
             .iter()
             .map(|&p| padded_evals[p])
@@ -112,7 +113,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             queried_positions: queried_positions.to_vec(),
             unpadded_queried_evaluations,
             padded_queried_evaluations,
-            commitments,
+            // commitments,
             tree_root,
             tree_proof,
             fri_proof: fri_proof,

@@ -3,7 +3,7 @@ use std::{marker::PhantomData, usize};
 use fractal_indexer::{hash_values, snark_keys::*};
 use fractal_utils::polynomial_utils::*;
 
-use fractal_sumcheck::sumcheck_prover::*;
+use crate::sumcheck_prover::*;
 
 use fractal_proofs::{fft, polynom, LincheckProof, OracleQueries, TryInto};
 
@@ -12,7 +12,9 @@ use winter_fri::ProverChannel;
 use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
-use crate::{errors::LincheckError, FractalOptions, log::debug};
+use crate::{errors::LincheckError, prover_channel::FractalProverChannel, log::debug};
+use fractal_utils::FractalOptions;
+
 
 const n: usize = 1;
 // TODO: Will need to ask Irakliy whether a channel should be passed in here
@@ -51,6 +53,7 @@ impl<
             f_1_poly_coeffs,
             f_2_poly_coeffs,
             options,
+            // channel,
             _h: PhantomData,
             _e: PhantomData,
         }
@@ -185,7 +188,7 @@ impl<
         prod
     }
 
-    pub fn generate_lincheck_proof(&self) -> Result<LincheckProof<B, E, H>, LincheckError> {
+    pub fn generate_lincheck_proof(&self, channel: &mut  FractalProverChannel<B, E, H>) -> Result<LincheckProof<B, E, H>, LincheckError> {
         let t_alpha_evals = self.generate_t_alpha_evals();
         let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
         debug!("t_alpha degree: {}", &t_alpha.len() - 1);
@@ -228,9 +231,9 @@ impl<
             self.options.fri_options.clone(),
             self.options.num_queries,
         );
-        let products_sumcheck_proof = product_sumcheck_prover.generate_proof();
+        let products_sumcheck_proof = product_sumcheck_prover.generate_proof(channel);
         let beta =
-            FieldElement::as_base_elements(&[product_sumcheck_prover.channel.draw_fri_alpha()])[0];
+            FieldElement::as_base_elements(&[channel.draw_fri_alpha()])[0];
         let gamma = polynom::eval(&t_alpha, beta);
         let matrix_proof_numerator = polynom::mul_by_scalar(
             &self.prover_matrix_index.val_poly.polynomial,
@@ -274,7 +277,7 @@ impl<
             self.options.fri_options.clone(),
             self.options.num_queries,
         );
-        let matrix_sumcheck_proof = matrix_sumcheck_prover.generate_proof();
+        let matrix_sumcheck_proof = matrix_sumcheck_prover.generate_proof(channel);
 
         let queried_positions = matrix_sumcheck_proof.queried_positions.clone();
 

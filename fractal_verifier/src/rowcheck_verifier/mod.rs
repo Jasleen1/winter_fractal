@@ -1,9 +1,10 @@
 use crate::errors::RowcheckVerifierError;
+use log::debug;
 
 use fractal_indexer::snark_keys::VerifierKey;
 use fractal_proofs::{FieldElement, RowcheckProof, get_complementary_poly, polynom, TryInto};
 
-use fractal_sumcheck::log::debug;
+// use fractal_sumcheck::log::debug;
 use winter_crypto::{ElementHasher, RandomCoin, MerkleTree};
 use winter_fri::{DefaultVerifierChannel, FriVerifier};
 use winter_math::StarkField;

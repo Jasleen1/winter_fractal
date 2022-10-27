@@ -3,6 +3,8 @@ pub mod index;
 pub mod indexed_matrix;
 pub mod snark_keys;
 
+pub use snark_keys::*;
+
 #[cfg(test)]
 mod tests;
 

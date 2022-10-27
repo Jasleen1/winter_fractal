@@ -24,7 +24,6 @@ displaydoc = "0.1.7"
 fractal_utils = { path = "../fractal_utils" }
 fractal_proofs = {path = "../fractal_proofs" }
 fractal_indexer = {path = "../fractal_indexer" }
-fractal_sumcheck = {path = "../fractal_sumcheck" }
 fractal_prover = {path = "../fractal_prover" }
 fractal_verifier = {path = "../fractal_verifier" }
 lazy_static = "1.4.0"

@@ -159,7 +159,8 @@ pub struct LowDegreeProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hash
     pub queried_positions: Vec<usize>,
     pub unpadded_queried_evaluations: Vec<E>,
     pub padded_queried_evaluations: Vec<E>,
-    pub commitments: Vec<<H>::Digest>,
+    // @Tom removing commitments because they should probably be contained in the fri_proof.
+    // pub commitments: Vec<<H>::Digest>,
     pub tree_root: H::Digest,
     pub tree_proof: BatchMerkleProof<H>,
     pub fri_proof: FriProof,

@@ -11,6 +11,8 @@ use fractal_indexer::hash_values;
 
 use fractal_proofs::{OracleQueries, polynom::{self, eval}, LowDegreeBatchProof};
 
+use crate::prover_channel::FractalProverChannel;
+
 //This should be able to accumulate polynomials over time and prove at the end
 pub struct LowDegreeBatchProver<
     B: StarkField,
@@ -57,7 +59,7 @@ LowDegreeBatchProver<B, E, H>
         &mut self,
         polynomial_coeffs: &Vec<B>,
         max_degree: usize,
-        channel: &mut DefaultProverChannel<B, E, H>
+        channel: &mut FractalProverChannel<B, E, H>
     ){
         let polynomial_coeffs_e: Vec<E> = polynomial_coeffs.iter().map(|y| E::from(*y)).collect();
         let alpha = channel.public_coin.draw().unwrap();

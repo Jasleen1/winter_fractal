@@ -1,8 +1,10 @@
 use crate::errors::LincheckVerifierError;
-
+use log::debug;
 use fractal_indexer::snark_keys::VerifierKey;
 use fractal_proofs::{FieldElement, LincheckProof};
-use fractal_sumcheck::{sumcheck_verifier::verify_sumcheck_proof, log::debug};
+use crate::sumcheck_verifier::verify_sumcheck_proof;
+
+// use fractal_sumcheck::{sumcheck_verifier::verify_sumcheck_proof, log::debug};
 
 use winter_crypto::{ElementHasher};
 use winter_math::StarkField;

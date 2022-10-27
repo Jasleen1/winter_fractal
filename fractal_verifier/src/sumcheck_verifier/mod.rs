@@ -2,7 +2,7 @@ use crate::errors::SumcheckVerifierError;
 
 use fractal_proofs::{FieldElement, SumcheckProof};
 
-use low_degree::low_degree_verifier::verify_low_degree_proof;
+use crate::low_degree_verifier::verify_low_degree_proof;
 use winter_crypto::{ElementHasher, RandomCoin};
 use winter_fri::{DefaultVerifierChannel, FriVerifier};
 use winter_math::StarkField;
