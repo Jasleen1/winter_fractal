@@ -1,8 +1,8 @@
 use std::{convert::TryInto, marker::PhantomData};
 
 use fractal_indexer::hash_values;
+use fractal_proofs::{polynom, RowcheckProof};
 use fractal_utils::polynomial_utils::*;
-use fractal_proofs::{RowcheckProof, polynom};
 
 use winter_crypto::{ElementHasher, Hasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions};
@@ -58,30 +58,41 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     }
 
     pub fn generate_proof(&self) -> Result<RowcheckProof<B, E, H>, ProverError> {
-        let mut denom_poly = vec![B::ZERO; self.size_subgroup_h-1];
+        let mut denom_poly = vec![B::ZERO; self.size_subgroup_h - 1];
         denom_poly.push(B::ONE);
         let h_size_32: u32 = self.size_subgroup_h.try_into().unwrap();
         let eta_pow = B::PositiveInteger::from(h_size_32);
         denom_poly[0] = self.eta.exp(eta_pow).neg();
         let s_coeffs = polynom::div(
-            &polynom::sub(&polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs), &self.f_cz_coeffs),
-            &denom_poly
-        );   
-        let old_s_evals_b: Vec<B> = polynom::eval_many(s_coeffs.clone().as_slice(), self.evaluation_domain.clone().as_slice());// Vec::new();
-        let old_s_evals: Vec<E> = old_s_evals_b.into_iter().map(|x: B| {E::from(x)}).collect();
+            &polynom::sub(
+                &polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs),
+                &self.f_cz_coeffs,
+            ),
+            &denom_poly,
+        );
+        let old_s_evals_b: Vec<B> = polynom::eval_many(
+            s_coeffs.clone().as_slice(),
+            self.evaluation_domain.clone().as_slice(),
+        ); // Vec::new();
+        let old_s_evals: Vec<E> = old_s_evals_b.into_iter().map(|x: B| E::from(x)).collect();
         let transposed_evaluations = transpose_slice(&old_s_evals);
         let hashed_evaluations = hash_values::<H, E, 1>(&transposed_evaluations);
         let s_tree = MerkleTree::<H>::new(hashed_evaluations)?;
-        
-        let s_comp_coeffs = get_complementary_poly::<B>(polynom::degree_of(&s_coeffs), self.max_degree - 1);
+
+        let s_comp_coeffs =
+            get_complementary_poly::<B>(polynom::degree_of(&s_coeffs), self.max_degree - 1);
         let new_s = polynom::mul(&s_coeffs, &s_comp_coeffs);
 
-        let s_evals_b: Vec<B> = polynom::eval_many(new_s.clone().as_slice(), self.evaluation_domain.clone().as_slice());// Vec::new();
-        let s_evals: Vec<E> = s_evals_b.into_iter().map(|x: B| {E::from(x)}).collect();
-        
+        let s_evals_b: Vec<B> = polynom::eval_many(
+            new_s.clone().as_slice(),
+            self.evaluation_domain.clone().as_slice(),
+        ); // Vec::new();
+        let s_evals: Vec<E> = s_evals_b.into_iter().map(|x: B| E::from(x)).collect();
+
         let mut channel = DefaultProverChannel::new(self.evaluation_domain.len(), self.num_queries);
-        let mut fri_prover =
-            winter_fri::FriProver::<B, E, DefaultProverChannel<B, E, H>, H>::new(self.fri_options.clone());
+        let mut fri_prover = winter_fri::FriProver::<B, E, DefaultProverChannel<B, E, H>, H>::new(
+            self.fri_options.clone(),
+        );
 
         let query_positions = channel.draw_query_positions();
         let queried_positions = query_positions.clone();
@@ -91,7 +102,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             .iter()
             .map(|&p| old_s_evals[p])
             .collect::<Vec<_>>();
-        
+
         let s_original_proof = s_tree.prove_batch(&queried_positions)?;
 
         // Build proofs for the polynomial g

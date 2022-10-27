@@ -4,7 +4,7 @@ pub use std::convert::TryInto;
 use std::{marker::PhantomData, usize};
 
 pub use fractal_utils::{errors::MatrixError, matrix_utils::*, polynomial_utils::*, *};
-use winter_crypto::{Hasher, BatchMerkleProof};
+use winter_crypto::{BatchMerkleProof, Hasher};
 pub use winter_fri::{DefaultProverChannel, FriOptions, FriProof};
 pub use winter_math::{fft, fields::f128::BaseElement, FieldElement, StarkField, *};
 pub use winter_utils::{
@@ -66,9 +66,9 @@ pub struct SumcheckProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hashe
     // Question: is it ok to use the same queried positions for both
     // g and e of different degrees?
     pub queried_positions: Vec<usize>,
-    pub g_proof: LowDegreeProof<B,E,H>,
+    pub g_proof: LowDegreeProof<B, E, H>,
     pub g_max_degree: usize,
-    pub e_proof: LowDegreeProof<B,E,H>,
+    pub e_proof: LowDegreeProof<B, E, H>,
     pub e_max_degree: usize,
 }
 

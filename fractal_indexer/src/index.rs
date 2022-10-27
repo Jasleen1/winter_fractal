@@ -118,14 +118,14 @@ pub fn build_index_domains<E: StarkField>(params: IndexParams<E>) -> IndexDomain
     let h_field_base = E::get_root_of_unity(h_field_size.trailing_zeros());
 
     // / |L| >= 3*k_field_size - 3. For the rest of our code, we need to use powers of 2, hence we multiply by 4.
-    let l_field_size = 4 * max_degree; 
+    let l_field_size = 4 * max_degree;
     let l_field_base = E::get_root_of_unity(l_field_size.trailing_zeros());
 
-    
     let i_field = winter_math::get_power_series(i_field_base, i_field_size);
     let h_field = winter_math::get_power_series_with_offset(h_field_base, params.eta, h_field_size);
 
-    let k_field = winter_math::get_power_series_with_offset(k_field_base, params.eta_k, k_field_size);
+    let k_field =
+        winter_math::get_power_series_with_offset(k_field_base, params.eta_k, k_field_size);
 
     println!(
         "i: {}    k: {}    h: {}   L: {}",
@@ -153,7 +153,9 @@ pub fn build_index_domains<E: StarkField>(params: IndexParams<E>) -> IndexDomain
 }
 
 // Same as build_basefield_index_domains but for a prime field of size 17
-pub fn build_primefield_index_domains(params: IndexParams<SmallFieldElement17>) -> IndexDomains<SmallFieldElement17> {
+pub fn build_primefield_index_domains(
+    params: IndexParams<SmallFieldElement17>,
+) -> IndexDomains<SmallFieldElement17> {
     let num_input_variables = params.num_input_variables;
     let num_constraints = params.num_constraints;
     let num_non_zero = params.num_non_zero;
@@ -252,7 +254,14 @@ pub fn create_primefield_index_from_r1cs(
     Index::new(params, indexed_a, indexed_b, indexed_c)
 }
 
-pub fn get_max_degree(num_input_variables: usize, _num_constraints: usize, num_non_zero: usize) -> usize {
-    let max_whole = max(num_input_variables - 1, max(2*num_non_zero-3, num_non_zero - 2)) + 1;
+pub fn get_max_degree(
+    num_input_variables: usize,
+    _num_constraints: usize,
+    num_non_zero: usize,
+) -> usize {
+    let max_whole = max(
+        num_input_variables - 1,
+        max(2 * num_non_zero - 3, num_non_zero - 2),
+    ) + 1;
     max_whole.next_power_of_two()
-}   
+}

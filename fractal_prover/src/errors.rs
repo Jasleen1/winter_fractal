@@ -2,10 +2,10 @@
 
 use core::fmt;
 
-use winter_crypto::MerkleTreeError;
 use displaydoc::Display;
 use models::errors::R1CSError;
 use thiserror::Error;
+use winter_crypto::MerkleTreeError;
 
 #[derive(Debug, Error)]
 pub enum ProverError {

@@ -1,15 +1,16 @@
 use std::{convert::TryInto, marker::PhantomData};
 
+use fractal_indexer::hash_values;
 use fractal_utils::polynomial_utils::*;
 use winter_crypto::{ElementHasher, Hasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions};
 use winter_math::{fft, FieldElement, StarkField};
-use winter_utils::{transpose_slice};
-use fractal_indexer::hash_values;
+use winter_utils::transpose_slice;
 
-
-
-use fractal_proofs::{OracleQueries, LowDegreeProof, polynom::{self, eval}};
+use fractal_proofs::{
+    polynom::{self, eval},
+    LowDegreeProof, OracleQueries,
+};
 
 pub struct LowDegreeProver<
     B: StarkField,
@@ -28,10 +29,10 @@ pub struct LowDegreeProver<
     // (Derived automatically by doing the opposite of how eval_domain size is derived in the winterfell fri verifier)
     fri_max_degree: usize,
     fri_options: FriOptions,
-    _h: PhantomData<H>
+    _h: PhantomData<H>,
 }
 
-impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField = B>,>
+impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField = B>>
     LowDegreeProver<B, E, H>
 {
     pub fn from_polynomial(
@@ -40,9 +41,12 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         max_degree: usize,
         fri_options: FriOptions,
     ) -> Self {
-        let polynomial_evals = polynom::eval_many(&polynomial, &evaluation_domain).iter().map(|x| E::from(*x)).collect();
+        let polynomial_evals = polynom::eval_many(&polynomial, &evaluation_domain)
+            .iter()
+            .map(|x| E::from(*x))
+            .collect();
         let polynomial_e = polynomial.iter().map(|c| E::from(*c)).collect();
-        let fri_max_degree = evaluation_domain.len() / fri_options.blowup_factor() -1;
+        let fri_max_degree = evaluation_domain.len() / fri_options.blowup_factor() - 1;
         assert!(polynom::degree_of(&polynomial) <= max_degree);
         let evaluation_domain_e = evaluation_domain.iter().map(|y| E::from(*y)).collect();
         LowDegreeProver {
@@ -52,7 +56,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             max_degree,
             fri_max_degree,
             fri_options,
-            _h: PhantomData
+            _h: PhantomData,
         }
     }
 
@@ -65,7 +69,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         assert_eq!(polynomial_evals.len(), evaluation_domain.len());
         let polynomial_coeffs = polynom::interpolate(&evaluation_domain, &polynomial_evals, true);
         assert!(polynom::degree_of(&polynomial_coeffs) <= max_degree);
-        let fri_max_degree = evaluation_domain.len() / fri_options.blowup_factor() -1;
+        let fri_max_degree = evaluation_domain.len() / fri_options.blowup_factor() - 1;
         LowDegreeProver {
             polynomial_coeffs,
             polynomial_evals,
@@ -73,11 +77,14 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             max_degree,
             fri_max_degree,
             fri_options,
-            _h: PhantomData
+            _h: PhantomData,
         }
     }
 
-    pub fn generate_proof(&self, channel: &mut DefaultProverChannel<B, E, H>) -> LowDegreeProof<B, E, H> {
+    pub fn generate_proof(
+        &self,
+        channel: &mut DefaultProverChannel<B, E, H>,
+    ) -> LowDegreeProof<B, E, H> {
         let queried_positions = channel.draw_query_positions();
         let commitment_idx = channel.layer_commitments().len();
         let unpadded_queried_evaluations = queried_positions
@@ -95,8 +102,9 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let padded_coeffs = polynom::mul(&self.polynomial_coeffs, &comp_coeffs);
         let padded_evals: Vec<E> = polynom::eval_many(&padded_coeffs, &self.evaluation_domain);
 
-        let mut fri_prover =
-            winter_fri::FriProver::<B, E, DefaultProverChannel<B, E, H>, H>::new(self.fri_options.clone());
+        let mut fri_prover = winter_fri::FriProver::<B, E, DefaultProverChannel<B, E, H>, H>::new(
+            self.fri_options.clone(),
+        );
         fri_prover.build_layers(channel, padded_evals.clone());
         let fri_proof = fri_prover.build_proof(&queried_positions);
         // use only the commitments that we just added

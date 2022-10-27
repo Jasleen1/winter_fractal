@@ -8,9 +8,7 @@ use winter_crypto::{ElementHasher, RandomCoin};
 use winter_math::{FieldElement, StarkField};
 
 use crate::{
-    errors::ProverError,
-    lincheck_prover::LincheckProver,
-    rowcheck_prover::RowcheckProver,
+    errors::ProverError, lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver,
     FractalOptions,
 };
 
@@ -58,43 +56,53 @@ impl<
         let inv_twiddles_h = fft::get_inv_twiddles(self.variable_assignment.len());
 
         // 1. Generate lincheck proofs for the A,B,C matrices.
-        let mut z_coeffs = &mut self.variable_assignment.clone();  // evals
-        fft::interpolate_poly_with_offset(&mut z_coeffs, &inv_twiddles_h, self.prover_key.params.eta);  // coeffs
-        let f_az_coeffs = self.compute_matrix_mul_poly_coeffs(
-            &self.prover_key.matrix_a_index.matrix, 
-            &self.variable_assignment.clone(), 
+        let mut z_coeffs = &mut self.variable_assignment.clone(); // evals
+        fft::interpolate_poly_with_offset(
+            &mut z_coeffs,
             &inv_twiddles_h,
-            self.prover_key.params.eta)?;
+            self.prover_key.params.eta,
+        ); // coeffs
+        let f_az_coeffs = self.compute_matrix_mul_poly_coeffs(
+            &self.prover_key.matrix_a_index.matrix,
+            &self.variable_assignment.clone(),
+            &inv_twiddles_h,
+            self.prover_key.params.eta,
+        )?;
         let lincheck_a = self.create_lincheck_proof(
             alpha,
             &self.prover_key.matrix_a_index,
             &z_coeffs.clone(),
-            &f_az_coeffs)?;
+            &f_az_coeffs,
+        )?;
 
         let f_bz_coeffs = self.compute_matrix_mul_poly_coeffs(
-            &self.prover_key.matrix_b_index.matrix, 
-            &self.variable_assignment.clone(), 
+            &self.prover_key.matrix_b_index.matrix,
+            &self.variable_assignment.clone(),
             &inv_twiddles_h,
-            self.prover_key.params.eta)?;
+            self.prover_key.params.eta,
+        )?;
         let lincheck_b = self.create_lincheck_proof(
             alpha,
             &self.prover_key.matrix_b_index,
             &z_coeffs.clone(),
-            &f_bz_coeffs)?;
+            &f_bz_coeffs,
+        )?;
 
         let f_cz_coeffs = self.compute_matrix_mul_poly_coeffs(
-            &self.prover_key.matrix_c_index.matrix, 
-            &self.variable_assignment.clone(), 
+            &self.prover_key.matrix_c_index.matrix,
+            &self.variable_assignment.clone(),
             &inv_twiddles_h,
-            self.prover_key.params.eta)?;
+            self.prover_key.params.eta,
+        )?;
         let lincheck_c = self.create_lincheck_proof(
             alpha,
             &self.prover_key.matrix_c_index,
             &z_coeffs.clone(),
-            &f_cz_coeffs)?;
-        
+            &f_cz_coeffs,
+        )?;
+
         println!("Done with linchecks");
-        
+
         // 2. Generate the rowcheck proof.
 
         // Evaluate the Az, Bz, Cz polynomials.
@@ -109,7 +117,7 @@ impl<
 
         let f_cz_evals = polynom::eval_many(&f_cz_coeffs.clone(), &self.options.evaluation_domain);
         // fft::evaluate_poly(&mut f_cz_evals, &eval_twiddles);
-        
+
         // Issue a rowcheck proof.
         let rowcheck_prover = RowcheckProver::<B, E, H>::new(
             f_az_coeffs,
@@ -142,9 +150,9 @@ impl<
         inv_twiddles: &[B],
         eta: B,
     ) -> Result<Vec<B>, ProverError> {
-        let mut product = matrix.dot(vec);  // as evals
-        fft::interpolate_poly_with_offset(&mut product, inv_twiddles, eta);  // as coeffs
-        Ok(product)  // as coeffs
+        let mut product = matrix.dot(vec); // as evals
+        fft::interpolate_poly_with_offset(&mut product, inv_twiddles, eta); // as coeffs
+        Ok(product) // as coeffs
     }
 
     // Indexed matrix; variable assignments as polynomial evaluation points.
@@ -153,8 +161,8 @@ impl<
         alpha: B,
         matrix_index: &ProverMatrixIndex<H, B>,
         z_coeffs: &Vec<B>,
-        prod_m_z_coeffs: &Vec<B>) -> Result<LincheckProof<B, E, H>, ProverError> {
-
+        prod_m_z_coeffs: &Vec<B>,
+    ) -> Result<LincheckProof<B, E, H>, ProverError> {
         let lincheck_prover = LincheckProver::<B, E, H>::new(
             alpha,
             &matrix_index,

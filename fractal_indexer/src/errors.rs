@@ -1,9 +1,9 @@
 //! A list of error types which are produced during an execution of the indexing protocol
 
-use winter_crypto::MerkleTreeError;
 use displaydoc::Display;
 use models::errors::R1CSError;
 use thiserror::Error;
+use winter_crypto::MerkleTreeError;
 
 /// Represents a generic error type
 #[derive(Debug, Display, Error)]

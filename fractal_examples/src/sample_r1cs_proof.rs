@@ -73,7 +73,8 @@ pub(crate) fn orchestrate_r1cs_example<
     // 1. Index this R1CS
     let num_input_variables = r1cs.num_cols().next_power_of_two();
     let num_non_zero = r1cs.max_num_nonzero().next_power_of_two();
-    let num_constraints = max(max(r1cs.A.l0_norm(), r1cs.B.l0_norm()), r1cs.C.l0_norm()).next_power_of_two();
+    let num_constraints =
+        max(max(r1cs.A.l0_norm(), r1cs.B.l0_norm()), r1cs.C.l0_norm()).next_power_of_two();
     let max_degree = get_max_degree(num_input_variables, num_non_zero, num_constraints);
     // TODO: make the calculation of eta automated
     let eta = B::GENERATOR.exp(B::PositiveInteger::from(2 * B::TWO_ADICITY));
@@ -112,7 +113,7 @@ pub(crate) fn orchestrate_r1cs_example<
         utils::get_power_series(index_domains.l_field_base, index_domains.l_field_len);
 
     let summing_domain = index_domains.k_field;
-    
+
     let h_domain = index_domains.h_field;
     let lde_blowup = 4;
     let num_queries = 16;
@@ -130,7 +131,7 @@ pub(crate) fn orchestrate_r1cs_example<
         fri_options,
         num_queries,
     };
-    
+
     let pub_inputs_bytes = vec![0u8];
     let mut prover =
         FractalProver::<B, E, H>::new(prover_key, options, vec![], wires, pub_inputs_bytes.clone());
@@ -138,7 +139,11 @@ pub(crate) fn orchestrate_r1cs_example<
 
     println!(
         "Verified: {:?}",
-        fractal_verifier::verifier::verify_fractal_proof::<B, E, H>(verifier_key, proof.unwrap(), pub_inputs_bytes)
+        fractal_verifier::verifier::verify_fractal_proof::<B, E, H>(
+            verifier_key,
+            proof.unwrap(),
+            pub_inputs_bytes
+        )
     );
 }
 

@@ -1,15 +1,16 @@
 use std::{convert::TryInto, marker::PhantomData, ops::Add};
 
-use fractal_utils::polynomial_utils::*;
-use winter_crypto::{ElementHasher, Hasher, MerkleTree, BatchMerkleProof};
-use winter_fri::{DefaultProverChannel, FriOptions};
-use winter_math::{fft, FieldElement, StarkField};
-use winter_utils::{transpose_slice};
 use fractal_indexer::hash_values;
+use fractal_utils::polynomial_utils::*;
+use winter_crypto::{BatchMerkleProof, ElementHasher, Hasher, MerkleTree};
+use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
+use winter_math::{fft, FieldElement, StarkField};
+use winter_utils::transpose_slice;
 
-
-
-use fractal_proofs::{OracleQueries, polynom::{self, eval}, LowDegreeBatchProof};
+use fractal_proofs::{
+    polynom::{self, eval},
+    LowDegreeBatchProof, OracleQueries,
+};
 
 //This should be able to accumulate polynomials over time and prove at the end
 pub struct LowDegreeBatchProver<
@@ -29,26 +30,23 @@ pub struct LowDegreeBatchProver<
     // (Derived automatically by doing the opposite of how eval_domain size is derived in the winterfell fri verifier)
     fri_max_degree: usize,
     fri_options: FriOptions,
-    _h: PhantomData<H>
+    _h: PhantomData<H>,
 }
 
-impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField = B>,>
-LowDegreeBatchProver<B, E, H>
+impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField = B>>
+    LowDegreeBatchProver<B, E, H>
 {
-    pub fn new(
-        evaluation_domain: &Vec<B>,
-        fri_options: FriOptions,
-    ) -> Self{
+    pub fn new(evaluation_domain: &Vec<B>, fri_options: FriOptions) -> Self {
         let evaluation_domain_e = evaluation_domain.iter().map(|y| E::from(*y)).collect();
-        let fri_max_degree = evaluation_domain.len() / fri_options.blowup_factor() -1;
-        LowDegreeBatchProver{
+        let fri_max_degree = evaluation_domain.len() / fri_options.blowup_factor() - 1;
+        LowDegreeBatchProver {
             randomized_sum: Vec::new(),
             constituant_polynomials: Vec::new(),
             evaluation_domain: evaluation_domain_e,
             max_degrees: Vec::new(),
             fri_max_degree,
             fri_options,
-            _h: PhantomData
+            _h: PhantomData,
         }
     }
 
@@ -57,35 +55,39 @@ LowDegreeBatchProver<B, E, H>
         &mut self,
         polynomial_coeffs: &Vec<B>,
         max_degree: usize,
-        channel: &mut DefaultProverChannel<B, E, H>
-    ){
+        channel: &mut DefaultProverChannel<B, E, H>,
+    ) {
         let polynomial_coeffs_e: Vec<E> = polynomial_coeffs.iter().map(|y| E::from(*y)).collect();
-        let alpha = channel.public_coin.draw().unwrap();
-        let beta = channel.public_coin.draw().unwrap();
-        let comp_coeffs = get_randomized_complementary_poly::<E>(max_degree, self.fri_max_degree, alpha, beta);
-        
+        let alpha = channel.draw_fri_alpha();
+        let beta = channel.draw_fri_alpha();
+        let comp_coeffs =
+            get_randomized_complementary_poly::<E>(max_degree, self.fri_max_degree, alpha, beta);
+
         let randomized_padded_coeffs = polynom::mul(&polynomial_coeffs_e, &comp_coeffs);
         self.randomized_sum = polynom::add(&self.randomized_sum, &randomized_padded_coeffs);
         self.max_degrees.push(max_degree);
         self.constituant_polynomials.push(polynomial_coeffs_e);
     }
 
-    pub fn generate_proof(&self, channel: &mut DefaultProverChannel<B, E, H>) -> LowDegreeBatchProof<B, E, H> {
+    pub fn generate_proof(
+        &self,
+        channel: &mut DefaultProverChannel<B, E, H>,
+    ) -> LowDegreeBatchProof<B, E, H> {
         let queried_positions = channel.draw_query_positions();
-        let eval_domain_queried =  queried_positions
+        let eval_domain_queried = queried_positions
             .iter()
             .map(|&pos| self.evaluation_domain[pos])
             .collect::<Vec<_>>();
         let commitment_idx = channel.layer_commitments().len();
         // variable containing the result of evaluating each consitiuant polynomial on the set of queried eval points
         let mut all_unpadded_queried_evaluations: Vec<Vec<E>> = Vec::new();
-        let mut tree_roots: Vec<<H as Hasher>::Digest> =  Vec::new();
-        let mut tree_proofs: Vec<BatchMerkleProof<H>> =  Vec::new();
-        for poly in self.constituant_polynomials.iter(){
+        let mut tree_roots: Vec<<H as Hasher>::Digest> = Vec::new();
+        let mut tree_proofs: Vec<BatchMerkleProof<H>> = Vec::new();
+        for poly in self.constituant_polynomials.iter() {
             /*let unpadded_queried_evaluations = queried_positions
-                .iter()
-                .map(|&p| poly[p])
-                .collect::<Vec<_>>();*/
+            .iter()
+            .map(|&p| poly[p])
+            .collect::<Vec<_>>();*/
             let unpadded_evaluations = polynom::eval_many(&poly, &self.evaluation_domain);
             let unpadded_queried_evaluations = polynom::eval_many(&poly, &eval_domain_queried);
             let transposed_evaluations = transpose_slice(&unpadded_evaluations);
@@ -98,9 +100,11 @@ LowDegreeBatchProver<B, E, H>
             all_unpadded_queried_evaluations.push(unpadded_queried_evaluations);
         }
 
-        let composed_evals: Vec<E> = polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
-        let mut fri_prover =
-            winter_fri::FriProver::<B, E, DefaultProverChannel<B, E, H>, H>::new(self.fri_options.clone());
+        let composed_evals: Vec<E> =
+            polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
+        let mut fri_prover = winter_fri::FriProver::<B, E, DefaultProverChannel<B, E, H>, H>::new(
+            self.fri_options.clone(),
+        );
         fri_prover.build_layers(channel, composed_evals.clone());
         let fri_proof = fri_prover.build_proof(&queried_positions);
         // use only the commitments that we just added

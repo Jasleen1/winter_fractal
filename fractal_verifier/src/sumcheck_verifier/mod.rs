@@ -2,7 +2,7 @@ use crate::errors::SumcheckVerifierError;
 
 use fractal_proofs::{FieldElement, SumcheckProof};
 
-use low_degree::low_degree_verifier::verify_low_degree_proof;
+use crate::low_degree_verifier::verify_low_degree_proof;
 use winter_crypto::{ElementHasher, RandomCoin};
 use winter_fri::{DefaultVerifierChannel, FriVerifier};
 use winter_math::StarkField;
@@ -21,7 +21,6 @@ pub fn verify_sumcheck_proof<
     g_max_degree: usize,
     e_max_degree: usize,
 ) -> Result<(), SumcheckVerifierError> {
-
     let mut public_coin = RandomCoin::new(&[]);
     verify_low_degree_proof(proof.g_proof, g_max_degree, &mut public_coin)?;
     verify_low_degree_proof(proof.e_proof, e_max_degree, &mut public_coin)?;

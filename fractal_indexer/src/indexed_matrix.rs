@@ -6,8 +6,8 @@ use std::convert::TryInto;
 use crate::index::*;
 use fractal_math::polynom;
 use fractal_utils::polynomial_utils;
-use winter_math::{fft, StarkField};
 use models::r1cs::*;
+use winter_math::{fft, StarkField};
 
 #[derive(Clone, Debug)]
 pub struct IndexedMatrix<E: StarkField> {
@@ -70,7 +70,8 @@ pub fn index_matrix<E: StarkField>(
 
             row_elts[count] = c;
             col_elts[count] = r;
-            val_elts[count] = mat.mat[r_int][c_int]* polynomial_utils::compute_derivative_on_single_val(r, h_size)
+            val_elts[count] = mat.mat[r_int][c_int]
+                * polynomial_utils::compute_derivative_on_single_val(r, h_size)
                 / (compute_derivative(c, h_size) * compute_derivative(r, h_size));
             count += 1;
         }

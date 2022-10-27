@@ -1,6 +1,6 @@
 use winter_math::StarkField;
 
-use crate::{errors::*};
+use crate::errors::*;
 use crate::utils::{print_vec, print_vec_bits};
 
 pub type MatrixDimensions = (usize, usize);
@@ -354,25 +354,25 @@ pub fn valid_r1cs<E: StarkField>(
     }
 }
 #[cfg(test)]
-mod localtests{
+mod localtests {
     use winter_math::{
         fields::f128::{self, BaseElement},
         FieldElement,
     };
 
-    use crate::errors::R1CSError;
     use super::Matrix;
+    use crate::errors::R1CSError;
     #[test]
-    fn test_matrix_dot(){
-        let matrix = make_all_ones_matrix_f128("jim", 2,2).unwrap();
+    fn test_matrix_dot() {
+        let matrix = make_all_ones_matrix_f128("jim", 2, 2).unwrap();
         let output = matrix.dot(&vec![BaseElement::new(2u128), BaseElement::new(5u128)]);
         let expected = vec![BaseElement::new(7u128); 2];
-        for i in 0..output.len(){
+        for i in 0..output.len() {
             assert_eq!(output[i], expected[i]);
         }
     }
     #[test]
-    fn test_matrix_dot_2(){
+    fn test_matrix_dot_2() {
         let mut mat = Vec::new();
         let first_row = vec![BaseElement::new(3u128), BaseElement::new(2u128)];
         let second_row = vec![BaseElement::new(4u128), BaseElement::new(5u128)];
@@ -381,7 +381,7 @@ mod localtests{
         let matrix = Matrix::new("steve", mat).unwrap();
         let output = matrix.dot(&vec![BaseElement::new(7u128), BaseElement::new(11u128)]);
         let expected = vec![BaseElement::new(43u128), BaseElement::new(83u128)];
-        for i in 0..output.len(){
+        for i in 0..output.len() {
             assert_eq!(output[i], expected[i]);
         }
     }
