@@ -13,6 +13,7 @@ pub enum ProverError {
     R1CSErr(R1CSError),
     InvalidMatrixName(String),
     MerkleTreeErr(MerkleTreeError),
+    MultiPolyErr(String),
 }
 
 impl From<LincheckError> for ProverError {
@@ -76,6 +77,13 @@ impl fmt::Display for ProverError {
                 write!(
                     f,
                     "Encountered a Merkle Tree error in the fractal prover: {:?}",
+                    err,
+                )
+            }
+            Self::MultiPolyErr(err) => {
+                write!(
+                    f,
+                    "Encountered an error while trying to deal with commitments of multiple polynomials the fractal prover: {:?}",
                     err,
                 )
             }

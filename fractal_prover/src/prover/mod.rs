@@ -4,8 +4,9 @@ use fractal_indexer::snark_keys::*;
 use fractal_proofs::{fft, polynom, FractalProof, LincheckProof, TryInto};
 use models::r1cs::Matrix;
 
-use winter_crypto::{ElementHasher, RandomCoin};
+use winter_crypto::{ElementHasher, MerkleTree, RandomCoin};
 use winter_math::{FieldElement, StarkField};
+use winter_utils::transpose_slice;
 
 use crate::{
     errors::ProverError, lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver,
@@ -68,24 +69,12 @@ impl<
             &inv_twiddles_h,
             self.prover_key.params.eta,
         )?;
-        let lincheck_a = self.create_lincheck_proof(
-            alpha,
-            &self.prover_key.matrix_a_index,
-            &z_coeffs.clone(),
-            &f_az_coeffs,
-        )?;
 
         let f_bz_coeffs = self.compute_matrix_mul_poly_coeffs(
             &self.prover_key.matrix_b_index.matrix,
             &self.variable_assignment.clone(),
             &inv_twiddles_h,
             self.prover_key.params.eta,
-        )?;
-        let lincheck_b = self.create_lincheck_proof(
-            alpha,
-            &self.prover_key.matrix_b_index,
-            &z_coeffs.clone(),
-            &f_bz_coeffs,
         )?;
 
         let f_cz_coeffs = self.compute_matrix_mul_poly_coeffs(
@@ -94,6 +83,59 @@ impl<
             &inv_twiddles_h,
             self.prover_key.params.eta,
         )?;
+
+        // let eval_twiddles = fft::get_twiddles(self.options.evaluation_domain.len());
+        // let mut f_z_eval = z_coeffs.clone();
+        // fractal_utils::polynomial_utils::pad_with_zeroes(
+        //     &mut f_z_eval,
+        //     self.options.evaluation_domain.len(),
+        // );
+
+        // fft::evaluate_poly(&mut f_z_eval, &mut eval_twiddles.clone());
+
+        // let mut f_az_eval = f_az_coeffs.clone();
+        // fractal_utils::polynomial_utils::pad_with_zeroes(
+        //     &mut f_az_eval,
+        //     self.options.evaluation_domain.len(),
+        // );
+
+        // fft::evaluate_poly(&mut f_az_eval, &mut eval_twiddles.clone());
+
+        // let mut f_bz_eval = f_bz_coeffs.clone();
+        // fractal_utils::polynomial_utils::pad_with_zeroes(
+        //     &mut f_bz_eval,
+        //     self.options.evaluation_domain.len(),
+        // );
+
+        // fft::evaluate_poly(&mut f_bz_eval, &mut eval_twiddles.clone());
+
+        // let mut f_cz_eval = f_cz_coeffs.clone();
+        // fractal_utils::polynomial_utils::pad_with_zeroes(
+        //     &mut f_cz_eval,
+        //     self.options.evaluation_domain.len(),
+        // );
+
+        // fft::evaluate_poly(&mut f_cz_eval, &mut eval_twiddles.clone());
+
+        // let transposed_evaluations = transpose_slice(evaluations);
+        // let hashed_evaluations = hash_values::<H, E, N>(&transposed_evaluations);
+        // let evaluation_tree =
+        //     MerkleTree::<H>::new(hashed_evaluations).expect("failed to construct FRI layer tree");
+
+        let lincheck_a = self.create_lincheck_proof(
+            alpha,
+            &self.prover_key.matrix_a_index,
+            &z_coeffs.clone(),
+            &f_az_coeffs,
+        )?;
+
+        let lincheck_b = self.create_lincheck_proof(
+            alpha,
+            &self.prover_key.matrix_b_index,
+            &z_coeffs.clone(),
+            &f_bz_coeffs,
+        )?;
+
         let lincheck_c = self.create_lincheck_proof(
             alpha,
             &self.prover_key.matrix_c_index,

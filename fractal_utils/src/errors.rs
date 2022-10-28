@@ -7,12 +7,14 @@ use thiserror::Error;
 #[derive(Debug, Display, Error)]
 pub enum FractalUtilError {
     /// Error produced by the prover
-    MATRIX(MatrixError),
+    MatrixErr(MatrixError),
+    /// Error produced by multipolynomial
+    MultiPolyErr(String),
 }
 
 impl From<MatrixError> for FractalUtilError {
     fn from(e: MatrixError) -> FractalUtilError {
-        FractalUtilError::MATRIX(e)
+        FractalUtilError::MatrixErr(e)
     }
 }
 
