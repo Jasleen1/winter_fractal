@@ -48,6 +48,8 @@ pub enum RowcheckVerifierError {
     SmallPolyAdjustmentErr(),
     /// Error propagation
     FriVerifierErr(winter_fri::VerifierError),
+    /// Error propagation
+    LowDegreeVerifierErr(LowDegreeVerifierError),
 }
 
 impl From<winter_utils::DeserializationError> for RowcheckVerifierError {
@@ -67,6 +69,12 @@ impl From<winter_fri::VerifierError> for RowcheckVerifierError {
     }
 }
 
+impl From<LowDegreeVerifierError> for RowcheckVerifierError {
+    fn from(error: LowDegreeVerifierError) -> Self {
+        Self::LowDegreeVerifierErr(error)
+    }
+}
+
 impl std::fmt::Display for RowcheckVerifierError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
@@ -81,6 +89,9 @@ impl std::fmt::Display for RowcheckVerifierError {
             }
             RowcheckVerifierError::FriVerifierErr(err) => {
                 writeln!(f, "Rowcheck Fri error: {}", err)
+            }
+            RowcheckVerifierError::LowDegreeVerifierErr(err) => {
+                writeln!(f, "Rowcheck Low Degree Verifier error: {}", err)
             }
         }
     }

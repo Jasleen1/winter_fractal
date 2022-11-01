@@ -33,13 +33,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
 pub struct RowcheckProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
     pub options: FriOptions,
     pub num_evaluations: usize,
-    pub queried_positions: Vec<usize>,
-    pub s_eval_root: H::Digest,
-    pub s_original_evals: Vec<E>,
-    pub s_original_proof: BatchMerkleProof<H>,
-    pub s_proof: FriProof,
-    pub s_queried_evals: Vec<E>,
-    pub s_commitments: Vec<<H>::Digest>,
+    pub s_proof: LowDegreeProof<B, E, H>,
     pub s_max_degree: usize,
 }
 
@@ -49,13 +43,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
     /// Serializes `self` and writes the resulting bytes into the `target` writer.
     fn write_into<W: ByteWriter>(&self, target: &mut W) {
         target.write_u8(self.num_evaluations as u8);
-        target.write_u8(self.queried_positions.len() as u8);
-        for pos in 0..self.queried_positions.len() {
-            target.write_u8(self.queried_positions[pos] as u8);
-        }
         self.s_proof.write_into(target);
-        self.s_queried_evals.write_into(target);
-        self.s_commitments.write_into(target);
         target.write_u8(self.s_max_degree as u8);
     }
 }
@@ -79,17 +67,17 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
     /// Serializes `self` and writes the resulting bytes into the `target` writer.
     fn write_into<W: ByteWriter>(&self, target: &mut W) {
         target.write_u8(self.num_evaluations as u8);
-        /*target.write_u8(self.queried_positions.len() as u8);
+        target.write_u8(self.queried_positions.len() as u8);
         for pos in 0..self.queried_positions.len() {
             target.write_u8(self.queried_positions[pos] as u8);
         }
         self.g_proof.write_into(target);
-        self.g_queried.write_into(target);
+        // self.g_queried.write_into(target);
         target.write_u8(self.g_max_degree as u8);
 
         self.e_proof.write_into(target);
-        self.e_queried.write_into(target);
-        target.write_u8(self.e_max_degree as u8);*/
+        // self.e_queried.write_into(target);
+        target.write_u8(self.e_max_degree as u8);
     }
 }
 

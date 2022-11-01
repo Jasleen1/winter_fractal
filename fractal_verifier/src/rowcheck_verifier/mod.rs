@@ -1,4 +1,7 @@
-use crate::{channel::DefaultFractalVerifierChannel, errors::RowcheckVerifierError};
+use crate::{
+    channel::DefaultFractalVerifierChannel, errors::RowcheckVerifierError,
+    low_degree_verifier::verify_low_degree_proof,
+};
 
 use fractal_indexer::snark_keys::VerifierKey;
 use fractal_proofs::{get_complementary_poly, polynom, FieldElement, RowcheckProof, TryInto};
@@ -18,46 +21,51 @@ pub fn verify_rowcheck_proof<
     public_coin: &mut RandomCoin<B, H>,
 ) -> Result<(), RowcheckVerifierError> {
     // let mut public_coin = RandomCoin::new(&[]);
-
-    let mut channel = DefaultFractalVerifierChannel::new(
+    verify_low_degree_proof(
         proof.s_proof,
-        proof.s_commitments,
-        proof.num_evaluations,
-        proof.options.folding_factor(),
-    )?;
-    let s_queried_evals = proof.s_queried_evals;
-    let s_original_evals = proof.s_original_evals;
-
-    let s_original_proof = proof.s_original_proof;
-    MerkleTree::verify_batch(
-        &proof.s_eval_root,
-        &proof.queried_positions.clone(),
-        &s_original_proof,
-    )
-    .map_err(|err| RowcheckVerifierError::MerkleTreeErr(err))?;
-
-    verify_lower_degree::<B, E, H>(
-        4 * verifier_key.params.max_degree,
-        verifier_key.params.num_input_variables - 1,
         verifier_key.params.max_degree - 1,
-        s_original_evals,
-        s_queried_evals.clone(),
-        proof.queried_positions.clone(),
-    )?;
-
-    let fri_verifier = FriVerifier::<B, E, DefaultFractalVerifierChannel<E, H>, H>::new(
-        &mut channel,
         public_coin,
-        proof.options.clone(),
-        verifier_key.params.max_degree - 1,
     )?;
-    debug!(
-        "rowcheck max_poly_degree {}",
-        verifier_key.params.max_degree - 1
-    );
-    fri_verifier
-        .verify(&mut channel, &s_queried_evals, &proof.queried_positions)
-        .map_err(|err| RowcheckVerifierError::FriVerifierErr(err))
+    Ok(())
+    // let mut channel = DefaultFractalVerifierChannel::new(
+    //     proof.s_proof,
+    //     proof.s_commitments,
+    //     proof.num_evaluations,
+    //     proof.options.folding_factor(),
+    // )?;
+    // let s_queried_evals = proof.s_queried_evals;
+    // let s_original_evals = proof.s_original_evals;
+
+    // let s_original_proof = proof.s_original_proof;
+    // MerkleTree::verify_batch(
+    //     &proof.s_eval_root,
+    //     &proof.queried_positions.clone(),
+    //     &s_original_proof,
+    // )
+    // .map_err(|err| RowcheckVerifierError::MerkleTreeErr(err))?;
+
+    // verify_lower_degree::<B, E, H>(
+    //     4 * verifier_key.params.max_degree,
+    //     verifier_key.params.num_input_variables - 1,
+    //     verifier_key.params.max_degree - 1,
+    //     s_original_evals,
+    //     s_queried_evals.clone(),
+    //     proof.queried_positions.clone(),
+    // )?;
+
+    // let fri_verifier = FriVerifier::<B, E, DefaultFractalVerifierChannel<E, H>, H>::new(
+    //     &mut channel,
+    //     public_coin,
+    //     proof.options.clone(),
+    //     verifier_key.params.max_degree - 1,
+    // )?;
+    // debug!(
+    //     "rowcheck max_poly_degree {}",
+    //     verifier_key.params.max_degree - 1
+    // );
+    // fri_verifier
+    //     .verify(&mut channel, &s_queried_evals, &proof.queried_positions)
+    //     .map_err(|err| RowcheckVerifierError::FriVerifierErr(err))
 }
 
 fn verify_lower_degree<
