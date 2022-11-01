@@ -1,8 +1,8 @@
 use crate::{errors::FractalUtilError, matrix_utils::*};
 use fractal_math::{fft, FieldElement, StarkField};
-use winter_utils::batch_iter_mut;
 use std::{convert::TryInto, marker::PhantomData};
 use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree};
+use winter_utils::batch_iter_mut;
 // TODO: Add error checking and throwing
 /**
  * This is equivalent to computing v_H(X) for a multiplicative coset
@@ -122,21 +122,21 @@ pub trait MultiPoly<
     fn get_values_at(&self, index: usize) -> Result<Vec<B>, FractalUtilError>;
     /// This function retrieves the evals of the polynomials at a set of evaluation points.
     fn batch_get_values_at(&self, indices: Vec<usize>) -> Result<Vec<Vec<B>>, FractalUtilError>;
-    /// This function takes as input an index of a point in the evaluation domain and 
+    /// This function takes as input an index of a point in the evaluation domain and
     /// outputs the evals committed at that point and a proof.
     fn get_values_and_proof_at(
         &self,
         index: usize,
     ) -> Result<(Vec<B>, Vec<H::Digest>), FractalUtilError>;
-    /// This function takes as input the indices of multiple points in the evaluation domain and 
+    /// This function takes as input the indices of multiple points in the evaluation domain and
     /// returns the evaluations of all the polynomials at these points, together with a batch merkle
     /// proof showing that this eval was done correctly.
     fn batch_get_values_and_proofs_at(
         &self,
         indices: Vec<usize>,
     ) -> Result<(Vec<Vec<B>>, BatchMerkleProof<H>), FractalUtilError>;
-    /// This function takes as input the value of the polynomials at a particular index and 
-    /// verifies it wrt to the commitment. 
+    /// This function takes as input the value of the polynomials at a particular index and
+    /// verifies it wrt to the commitment.
     /// Note how this function is stateless, so it can be efficiently used by the verifier.
     fn verify_values_and_proof_at(
         vals: Vec<B>,
@@ -144,8 +144,8 @@ pub trait MultiPoly<
         proof: &[H::Digest],
         index: usize,
     ) -> Result<(), FractalUtilError>;
-    /// This function takes as input the value of the polynomials at multiple indices and 
-    /// verifies them wrt to the commitment. 
+    /// This function takes as input the value of the polynomials at multiple indices and
+    /// verifies them wrt to the commitment.
     fn batch_verify_values_and_proofs_at(
         vals: Vec<Vec<B>>,
         root: &H::Digest,
@@ -173,18 +173,20 @@ impl<
 {
     /// This function takes as input a set of polynomials in coefficient form,
     /// an evaluation domain and evaluates the polynomials at that domain.
-    pub fn new(coefficients: Vec<Vec<B>>, evaluation_domain: Vec<B>) -> Self {
-        let eval_twiddles = fft::get_twiddles(evaluation_domain.len());
-        let eval_domain_len = evaluation_domain.len();
+    /// Note that coefficients is semantically of the form <poly_1, ..., poly_n>
+    /// that is, each element of the vector coefficients is the vector of coefficients
+    /// for one of the polynomials in question.
+    pub fn new(coefficients: Vec<Vec<B>>, evaluation_domain_len: usize, offset: B) -> Self {
+        let eval_twiddles = fft::get_twiddles(evaluation_domain_len);
         let mut accumulated_evals = Vec::<Vec<B>>::new();
         for (_, poly) in coefficients.iter().enumerate() {
             accumulated_evals.push(Self::eval_on_domain(
                 poly.to_vec(),
-                eval_domain_len,
+                evaluation_domain_len,
                 eval_twiddles.clone(),
             ));
         }
-        let evaluations = Self::zip_evals(accumulated_evals, eval_domain_len);
+        let evaluations = Self::zip_evals(accumulated_evals, evaluation_domain_len);
         let committed_tree: Option<MerkleTree<H>> = Option::None;
         Self {
             evaluations,
@@ -194,6 +196,8 @@ impl<
         }
     }
 
+    /// This is mostly a helper function to evaluate the polynomials on a domain of given length
+    /// for which twiddles are already computed.
     pub fn eval_on_domain(
         coefficients: Vec<B>,
         evaluation_domain_len: usize,
@@ -207,6 +211,9 @@ impl<
         eval
     }
 
+    /// Helper function to zip the evaluations so that each element of the output is of the
+    /// form [poly_1(e), ..., poly_n(e)] i.e. evaluations of all the polynomials are included
+    /// in the same array.
     fn zip_evals(separate_evals: Vec<Vec<B>>, evaluation_domain_len: usize) -> Vec<Vec<B>> {
         let mut zipped_evals = vec![Vec::<B>::new(); evaluation_domain_len];
         for (_, eval) in separate_evals.iter().enumerate() {
@@ -224,10 +231,18 @@ impl<
         H: ElementHasher + ElementHasher<BaseField = B>,
     > MultiPoly<B, E, H> for MultiEval<B, E, H>
 {
-    fn commit_polynomial_evaluations(&mut self) -> Result<(), FractalUtilError>  {
+    fn commit_polynomial_evaluations(&mut self) -> Result<(), FractalUtilError> {
         // todo!()
-        let eval_hashes = self.evaluations.iter().map(|evals| H::hash_elements(evals)).collect::<Vec<_>>();
-        let com_tree = MerkleTree::new(eval_hashes).map_err(|e| FractalUtilError::MultiPolyErr(format!("Got an error when committing to the evals: {e}")))?;
+        let eval_hashes = self
+            .evaluations
+            .iter()
+            .map(|evals| H::hash_elements(evals))
+            .collect::<Vec<_>>();
+        let com_tree = MerkleTree::new(eval_hashes).map_err(|e| {
+            FractalUtilError::MultiPolyErr(format!(
+                "Got an error when committing to the evals: {e}"
+            ))
+        })?;
         self.committed_tree = Some(com_tree);
         Ok(())
     }
@@ -235,7 +250,9 @@ impl<
     fn get_commitment(&self) -> Result<&<H as winter_crypto::Hasher>::Digest, FractalUtilError> {
         match &self.committed_tree {
             Some(merkle_tree) => Ok(merkle_tree.root()),
-            None => Err(FractalUtilError::MultiPolyErr("The Merkle Tree in the poly commit is None.".to_string()))
+            None => Err(FractalUtilError::MultiPolyErr(
+                "The Merkle Tree in the poly commit is None.".to_string(),
+            )),
         }
     }
 
@@ -245,8 +262,8 @@ impl<
 
     fn batch_get_values_at(&self, indices: Vec<usize>) -> Result<Vec<Vec<B>>, FractalUtilError> {
         let mut output_vals = Vec::<Vec<B>>::new();
-        for (loc, val) in self.evaluations.iter().enumerate() {
-            output_vals.push(val.clone())
+        for (_, &index) in indices.iter().enumerate() {
+            output_vals.push(self.evaluations[index].clone());
         }
         Ok(output_vals)
     }
@@ -256,10 +273,15 @@ impl<
         index: usize,
     ) -> Result<(Vec<B>, Vec<<H>::Digest>), FractalUtilError> {
         let value = self.evaluations[index].clone();
-        let proof = 
-        match &self.committed_tree {
-            None => Err(FractalUtilError::MultiPolyErr("Nothing committed yet!".to_string())),
-            Some(tree) => tree.prove(index).map_err(|e| FractalUtilError::MultiPolyErr(format!("Got an error when committing to the evals: {e}"))),
+        let proof = match &self.committed_tree {
+            None => Err(FractalUtilError::MultiPolyErr(
+                "Nothing committed yet!".to_string(),
+            )),
+            Some(tree) => tree.prove(index).map_err(|e| {
+                FractalUtilError::MultiPolyErr(format!(
+                    "Got an error when committing to the evals: {e}"
+                ))
+            }),
         }?;
         Ok((value, proof))
     }
@@ -269,10 +291,15 @@ impl<
         indices: Vec<usize>,
     ) -> Result<(Vec<Vec<B>>, BatchMerkleProof<H>), FractalUtilError> {
         let values = self.batch_get_values_at(indices.clone())?;
-        let proof = 
-        match &self.committed_tree {
-            None => Err(FractalUtilError::MultiPolyErr("Nothing committed yet!".to_string())),
-            Some(tree) => tree.prove_batch(&indices).map_err(|e| FractalUtilError::MultiPolyErr(format!("Got an error when committing to the evals: {e}"))),
+        let proof = match &self.committed_tree {
+            None => Err(FractalUtilError::MultiPolyErr(
+                "Nothing committed yet!".to_string(),
+            )),
+            Some(tree) => tree.prove_batch(&indices).map_err(|e| {
+                FractalUtilError::MultiPolyErr(format!(
+                    "Got an error when committing to the evals: {e}"
+                ))
+            }),
         }?;
         Ok((values, proof))
     }
@@ -285,13 +312,19 @@ impl<
     ) -> Result<(), FractalUtilError> {
         let r = index & 1;
         if proof[r] != H::hash_elements(&vals) {
-            return Err(FractalUtilError::MultiPolyErr("The proof's value does not match the sent value".to_string()));
+            return Err(FractalUtilError::MultiPolyErr(
+                "The proof's value does not match the sent value".to_string(),
+            ));
         }
-        MerkleTree::<H>::verify(*root, index, proof).map_err(|e| FractalUtilError::MultiPolyErr(format!("Got an error when committing to the evals: {e}")))
+        MerkleTree::<H>::verify(*root, index, proof).map_err(|e| {
+            FractalUtilError::MultiPolyErr(format!(
+                "Got an error when committing to the evals: {e}"
+            ))
+        })
     }
 
     fn batch_verify_values_and_proofs_at(
-        vals: Vec<Vec<B>>,
+        _vals: Vec<Vec<B>>,
         root: &<H>::Digest,
         proof: &BatchMerkleProof<H>,
         indices: Vec<usize>,
@@ -300,7 +333,11 @@ impl<
         //     if H::hash_elements(&vals[index]) != proof.leaves[index] {
         //         return Err(FractalUtilError::MultiPolyErr("The proof's value does not match the sent value".to_string()));
         //     }
-        // } // TODO: still need to check this but currently leaves is private 
-        MerkleTree::verify_batch(root, &indices, proof).map_err(|e| FractalUtilError::MultiPolyErr(format!("Got an error when committing to the evals: {e}")))
+        // } // TODO: still need to check this but currently leaves is private
+        MerkleTree::verify_batch(root, &indices, proof).map_err(|e| {
+            FractalUtilError::MultiPolyErr(format!(
+                "Got an error when committing to the evals: {e}"
+            ))
+        })
     }
 }

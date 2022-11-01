@@ -3,9 +3,9 @@ use std::{marker::PhantomData, usize};
 use fractal_indexer::{hash_values, snark_keys::*};
 use fractal_utils::polynomial_utils::*;
 
-use crate::sumcheck_prover::*;
+use crate::{channel::DefaultFractalProverChannel, sumcheck_prover::*};
 
-use fractal_proofs::{fft, polynom, LincheckProof, OracleQueries, TryInto};
+use fractal_proofs::{fft, polynom, DefaultProverChannel, LincheckProof, OracleQueries, TryInto};
 
 use winter_crypto::{ElementHasher, MerkleTree};
 use winter_fri::ProverChannel;
@@ -54,6 +54,197 @@ impl<
             _h: PhantomData,
             _e: PhantomData,
         }
+    }
+
+    // This function generates the lincheck proof
+    pub fn generate_lincheck_proof(
+        &self,
+        channel: &mut DefaultFractalProverChannel<B, E, H>,
+    ) -> Result<LincheckProof<B, E, H>, LincheckError> {
+        let t_alpha_evals = self.generate_t_alpha_evals();
+        let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
+        debug!("t_alpha degree: {}", &t_alpha.len() - 1);
+
+        let poly_prod = self.generate_poly_prod_evals(&t_alpha_evals);
+        let poly_prod_coeffs = self.generate_poly_prod(&t_alpha);
+        debug!(
+            "poly_prod_coeffs degree {}",
+            polynom::degree_of(&poly_prod_coeffs)
+        );
+
+        //poly_prod_coeffs should evaluate to 0 when summed over H. Let's double check this
+        let mut pp_sum = B::ZERO;
+        for h in self.options.h_domain.iter() {
+            let temp = polynom::eval(&poly_prod_coeffs, *h);
+            pp_sum += temp;
+        }
+        debug_assert!(
+            pp_sum == B::ZERO,
+            "Sum of product polynomials over h domain is not 0"
+        );
+
+        // Next use poly_beta in a sumcheck proof but
+        // the sumcheck domain is H, which isn't included here
+        // Use that to produce the sumcheck proof.
+        debug!("Poly prod len = {}", poly_prod.len());
+
+        //let denom_eval = vec![B::ONE; self.options.evaluation_domain.len()];
+        let denom_eval = vec![B::ONE; self.options.h_domain.len()];
+
+        // use h_domain rather than eval_domain
+        let poly_prod = polynom::eval_many(&poly_prod_coeffs, &self.options.h_domain);
+
+        let g_degree = self.options.h_domain.len() - 2;
+        let e_degree = self.options.h_domain.len() - 1;
+
+        let mut product_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
+            poly_prod_coeffs.clone(),
+            vec![B::ONE],
+            B::ZERO,
+            self.options.h_domain.clone(),
+            self.options.eta,
+            self.options.evaluation_domain.clone(),
+            g_degree,
+            e_degree,
+            self.options.fri_options.clone(),
+            self.options.num_queries,
+        );
+        let products_sumcheck_proof = product_sumcheck_prover.generate_proof(channel);
+        let beta = FieldElement::as_base_elements(&[channel.draw_fri_alpha()])[0];
+        let gamma = polynom::eval(&t_alpha, beta);
+        let matrix_proof_numerator = polynom::mul_by_scalar(
+            &self.prover_matrix_index.val_poly.polynomial,
+            compute_vanishing_poly(self.alpha, self.options.eta, self.options.size_subgroup_h)
+                * compute_vanishing_poly(beta, self.options.eta, self.options.size_subgroup_h),
+        );
+        let mut alpha_minus_row =
+            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE);
+        alpha_minus_row[0] = alpha_minus_row[0] + self.alpha;
+        let mut beta_minus_col =
+            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE);
+        beta_minus_col[0] = beta_minus_col[0] + beta;
+
+        let mut alpha_minus_col =
+            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE);
+        alpha_minus_col[0] = alpha_minus_col[0] + self.alpha;
+        let mut beta_minus_row =
+            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE);
+        beta_minus_row[0] = beta_minus_row[0] + beta;
+
+        //let matrix_proof_denominator = polynom::mul(&alpha_minus_row, &beta_minus_col);
+        let matrix_proof_denominator = polynom::mul(&alpha_minus_col, &beta_minus_row);
+
+        //matrix_proof_numerator/matrix_proof_denominator should evaluate to gamma when summed over K. Let's double check this
+        let mut mat_sum = B::ZERO;
+        for k in self.options.summing_domain.iter() {
+            let temp = polynom::eval(&matrix_proof_numerator, *k)
+                / polynom::eval(&matrix_proof_denominator, *k);
+            mat_sum += temp;
+        }
+
+        let mut matrix_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
+            matrix_proof_numerator,
+            matrix_proof_denominator,
+            gamma,
+            self.options.summing_domain.clone(),
+            self.options.eta_k,
+            self.options.evaluation_domain.clone(),
+            self.options.summing_domain.len() - 2,
+            2 * self.options.summing_domain.len() - 3,
+            self.options.fri_options.clone(),
+            self.options.num_queries,
+        );
+        let matrix_sumcheck_proof = matrix_sumcheck_prover.generate_proof(channel);
+
+        let queried_positions = matrix_sumcheck_proof.queried_positions.clone();
+
+        let row_queried_evaluations = queried_positions
+            .iter()
+            .map(|&p| E::from(self.prover_matrix_index.row_poly.evaluations[p]))
+            .collect::<Vec<_>>();
+        let row_proofs_results = queried_positions
+            .iter()
+            .map(|&p| self.prover_matrix_index.row_poly.tree.prove(p))
+            .collect::<Vec<_>>();
+        let mut row_proofs = Vec::new();
+        for row_proof in row_proofs_results {
+            if !row_proof.is_ok() {
+                println!("row problem: {:?}", row_proof);
+            }
+            row_proofs.push(row_proof?);
+        }
+        let row_queried = OracleQueries::<B, E, H>::new(row_queried_evaluations, row_proofs);
+
+        let col_queried_evaluations = queried_positions
+            .iter()
+            .map(|&p| E::from(self.prover_matrix_index.col_poly.evaluations[p]))
+            .collect::<Vec<_>>();
+        let col_proofs_results = queried_positions
+            .iter()
+            .map(|&p| self.prover_matrix_index.col_poly.tree.prove(p))
+            .collect::<Vec<_>>();
+        let mut col_proofs = Vec::new();
+        for col_proof in col_proofs_results {
+            if !col_proof.is_ok() {
+                println!("col problem: {:?}", col_proof);
+            }
+            col_proofs.push(col_proof?);
+        }
+        let col_queried = OracleQueries::<B, E, H>::new(col_queried_evaluations, col_proofs);
+
+        let val_queried_evaluations = queried_positions
+            .iter()
+            .map(|&p| E::from(self.prover_matrix_index.val_poly.evaluations[p]))
+            .collect::<Vec<_>>();
+        let val_proofs_results = queried_positions
+            .iter()
+            .map(|&p| self.prover_matrix_index.val_poly.tree.prove(p))
+            .collect::<Vec<_>>();
+        let mut val_proofs = Vec::new();
+        for val_proof in val_proofs_results {
+            if !val_proof.is_ok() {
+                println!("val problem: {:?}", val_proof);
+            }
+            val_proofs.push(val_proof?);
+        }
+        let val_queried = OracleQueries::<B, E, H>::new(val_queried_evaluations, val_proofs);
+
+        let t_alpha_transposed_evaluations = transpose_slice::<_, { n }>(&t_alpha_evals.clone());
+        let hashed_evaluations = hash_values::<H, B, { n }>(&t_alpha_transposed_evaluations);
+        let t_alpha_tree = MerkleTree::<H>::new(hashed_evaluations)?;
+        let t_alpha_commitment = *t_alpha_tree.root();
+        let t_alpha_queried_evaluations = queried_positions
+            .iter()
+            .map(|&p| E::from(t_alpha_evals[p]))
+            .collect::<Vec<_>>();
+        let t_alpha_proofs_results = queried_positions
+            .iter()
+            .map(|&p| t_alpha_tree.prove(p))
+            .collect::<Vec<_>>();
+        let mut t_alpha_proofs = Vec::new();
+        for t_alpha_proof in t_alpha_proofs_results {
+            if !t_alpha_proof.is_ok() {
+                println!("T alpha problem: {:?}", t_alpha_proof);
+            }
+            t_alpha_proofs.push(t_alpha_proof?);
+        }
+        let t_alpha_queried =
+            OracleQueries::<B, E, H>::new(t_alpha_queried_evaluations, t_alpha_proofs);
+        Ok(LincheckProof::<B, E, H> {
+            options: self.options.fri_options.clone(),
+            num_evaluations: self.options.evaluation_domain.len(),
+            alpha: self.alpha,
+            beta,
+            t_alpha_commitment,
+            t_alpha_queried,
+            products_sumcheck_proof,
+            gamma,
+            row_queried,
+            col_queried,
+            val_queried,
+            matrix_sumcheck_proof,
+            _e: PhantomData,
+        })
     }
 
     /// The polynomial t_alpha(X) = u_M(X, alpha).
@@ -208,194 +399,5 @@ impl<
             prod.push(next);
         }
         prod
-    }
-
-    pub fn generate_lincheck_proof(&self) -> Result<LincheckProof<B, E, H>, LincheckError> {
-        let t_alpha_evals = self.generate_t_alpha_evals();
-        let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
-        debug!("t_alpha degree: {}", &t_alpha.len() - 1);
-
-        let poly_prod = self.generate_poly_prod_evals(&t_alpha_evals);
-        let poly_prod_coeffs = self.generate_poly_prod(&t_alpha);
-        debug!(
-            "poly_prod_coeffs degree {}",
-            polynom::degree_of(&poly_prod_coeffs)
-        );
-
-        //poly_prod_coeffs should evaluate to 0 when summed over H. Let's double check this
-        let mut pp_sum = B::ZERO;
-        for h in self.options.h_domain.iter() {
-            let temp = polynom::eval(&poly_prod_coeffs, *h);
-            pp_sum += temp;
-        }
-        debug_assert!(
-            pp_sum == B::ZERO,
-            "Sum of product polynomials over h domain is not 0"
-        );
-
-        // Next use poly_beta in a sumcheck proof but
-        // the sumcheck domain is H, which isn't included here
-        // Use that to produce the sumcheck proof.
-        debug!("Poly prod len = {}", poly_prod.len());
-
-        //let denom_eval = vec![B::ONE; self.options.evaluation_domain.len()];
-        let denom_eval = vec![B::ONE; self.options.h_domain.len()];
-
-        // use h_domain rather than eval_domain
-        let poly_prod = polynom::eval_many(&poly_prod_coeffs, &self.options.h_domain);
-
-        let g_degree = self.options.h_domain.len() - 2;
-        let e_degree = self.options.h_domain.len() - 1;
-
-        let mut product_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
-            poly_prod_coeffs.clone(),
-            vec![B::ONE],
-            B::ZERO,
-            self.options.h_domain.clone(),
-            self.options.eta,
-            self.options.evaluation_domain.clone(),
-            g_degree,
-            e_degree,
-            self.options.fri_options.clone(),
-            self.options.num_queries,
-        );
-        let products_sumcheck_proof = product_sumcheck_prover.generate_proof();
-        let beta =
-            FieldElement::as_base_elements(&[product_sumcheck_prover.channel.draw_fri_alpha()])[0];
-        let gamma = polynom::eval(&t_alpha, beta);
-        let matrix_proof_numerator = polynom::mul_by_scalar(
-            &self.prover_matrix_index.val_poly.polynomial,
-            compute_vanishing_poly(self.alpha, self.options.eta, self.options.size_subgroup_h)
-                * compute_vanishing_poly(beta, self.options.eta, self.options.size_subgroup_h),
-        );
-        let mut alpha_minus_row =
-            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE);
-        alpha_minus_row[0] = alpha_minus_row[0] + self.alpha;
-        let mut beta_minus_col =
-            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE);
-        beta_minus_col[0] = beta_minus_col[0] + beta;
-
-        let mut alpha_minus_col =
-            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE);
-        alpha_minus_col[0] = alpha_minus_col[0] + self.alpha;
-        let mut beta_minus_row =
-            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE);
-        beta_minus_row[0] = beta_minus_row[0] + beta;
-
-        //let matrix_proof_denominator = polynom::mul(&alpha_minus_row, &beta_minus_col);
-        let matrix_proof_denominator = polynom::mul(&alpha_minus_col, &beta_minus_row);
-
-        //matrix_proof_numerator/matrix_proof_denominator should evaluate to gamma when summed over K. Let's double check this
-        let mut mat_sum = B::ZERO;
-        for k in self.options.summing_domain.iter() {
-            let temp = polynom::eval(&matrix_proof_numerator, *k)
-                / polynom::eval(&matrix_proof_denominator, *k);
-            mat_sum += temp;
-        }
-
-        let mut matrix_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
-            matrix_proof_numerator,
-            matrix_proof_denominator,
-            gamma,
-            self.options.summing_domain.clone(),
-            self.options.eta_k,
-            self.options.evaluation_domain.clone(),
-            self.options.summing_domain.len() - 2,
-            2 * self.options.summing_domain.len() - 3,
-            self.options.fri_options.clone(),
-            self.options.num_queries,
-        );
-        let matrix_sumcheck_proof = matrix_sumcheck_prover.generate_proof();
-
-        let queried_positions = matrix_sumcheck_proof.queried_positions.clone();
-
-        let row_queried_evaluations = queried_positions
-            .iter()
-            .map(|&p| E::from(self.prover_matrix_index.row_poly.evaluations[p]))
-            .collect::<Vec<_>>();
-        let row_proofs_results = queried_positions
-            .iter()
-            .map(|&p| self.prover_matrix_index.row_poly.tree.prove(p))
-            .collect::<Vec<_>>();
-        let mut row_proofs = Vec::new();
-        for row_proof in row_proofs_results {
-            if !row_proof.is_ok() {
-                println!("row problem: {:?}", row_proof);
-            }
-            row_proofs.push(row_proof?);
-        }
-        let row_queried = OracleQueries::<B, E, H>::new(row_queried_evaluations, row_proofs);
-
-        let col_queried_evaluations = queried_positions
-            .iter()
-            .map(|&p| E::from(self.prover_matrix_index.col_poly.evaluations[p]))
-            .collect::<Vec<_>>();
-        let col_proofs_results = queried_positions
-            .iter()
-            .map(|&p| self.prover_matrix_index.col_poly.tree.prove(p))
-            .collect::<Vec<_>>();
-        let mut col_proofs = Vec::new();
-        for col_proof in col_proofs_results {
-            if !col_proof.is_ok() {
-                println!("col problem: {:?}", col_proof);
-            }
-            col_proofs.push(col_proof?);
-        }
-        let col_queried = OracleQueries::<B, E, H>::new(col_queried_evaluations, col_proofs);
-
-        let val_queried_evaluations = queried_positions
-            .iter()
-            .map(|&p| E::from(self.prover_matrix_index.val_poly.evaluations[p]))
-            .collect::<Vec<_>>();
-        let val_proofs_results = queried_positions
-            .iter()
-            .map(|&p| self.prover_matrix_index.val_poly.tree.prove(p))
-            .collect::<Vec<_>>();
-        let mut val_proofs = Vec::new();
-        for val_proof in val_proofs_results {
-            if !val_proof.is_ok() {
-                println!("val problem: {:?}", val_proof);
-            }
-            val_proofs.push(val_proof?);
-        }
-        let val_queried = OracleQueries::<B, E, H>::new(val_queried_evaluations, val_proofs);
-
-        let t_alpha_transposed_evaluations = transpose_slice::<_, { n }>(&t_alpha_evals.clone());
-        let hashed_evaluations = hash_values::<H, B, { n }>(&t_alpha_transposed_evaluations);
-        let t_alpha_tree = MerkleTree::<H>::new(hashed_evaluations)?;
-        let t_alpha_commitment = *t_alpha_tree.root();
-        let t_alpha_queried_evaluations = queried_positions
-            .iter()
-            .map(|&p| E::from(t_alpha_evals[p]))
-            .collect::<Vec<_>>();
-        let t_alpha_proofs_results = queried_positions
-            .iter()
-            .map(|&p| t_alpha_tree.prove(p))
-            .collect::<Vec<_>>();
-        let mut t_alpha_proofs = Vec::new();
-        for t_alpha_proof in t_alpha_proofs_results {
-            if !t_alpha_proof.is_ok() {
-                println!("T alpha problem: {:?}", t_alpha_proof);
-            }
-            t_alpha_proofs.push(t_alpha_proof?);
-        }
-        let t_alpha_queried =
-            OracleQueries::<B, E, H>::new(t_alpha_queried_evaluations, t_alpha_proofs);
-        Ok(LincheckProof::<B, E, H> {
-            options: self.options.fri_options.clone(),
-            num_evaluations: self.options.evaluation_domain.len(),
-            alpha: self.alpha,
-            beta,
-            t_alpha_commitment,
-            t_alpha_queried,
-            products_sumcheck_proof,
-            gamma,
-            row_queried,
-            col_queried,
-            val_queried,
-            matrix_sumcheck_proof,
-            _e: PhantomData,
-        })
-        // unimplemented!()
     }
 }

@@ -82,7 +82,6 @@ pub(crate) fn orchestrate_r1cs_example<
     // if num_non_zero <= num_vars {
     //     num_non_zero = num_non_zero * 2;
     // }
-    println!("Eta is = {}", eta);
     let index_params = IndexParams::<B> {
         num_input_variables,
         num_constraints,

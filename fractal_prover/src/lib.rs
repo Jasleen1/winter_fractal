@@ -1,6 +1,7 @@
 use log;
 use winter_fri::FriOptions;
 use winter_math::StarkField;
+pub mod channel;
 mod errors;
 mod lincheck_prover;
 pub mod low_degree_batch_prover;

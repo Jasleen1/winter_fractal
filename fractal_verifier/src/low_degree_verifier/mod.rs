@@ -1,4 +1,4 @@
-use crate::errors::LowDegreeVerifierError;
+use crate::{channel::DefaultFractalVerifierChannel, errors::LowDegreeVerifierError};
 
 use fractal_proofs::{polynom, FieldElement, LowDegreeProof};
 use fractal_utils::polynomial_utils::*;
@@ -16,14 +16,14 @@ pub fn verify_low_degree_proof<
     max_degree: usize,
     public_coin: &mut RandomCoin<B, H>,
 ) -> Result<(), LowDegreeVerifierError> {
-    let mut channel = DefaultVerifierChannel::<E, H>::new(
+    let mut channel = DefaultFractalVerifierChannel::<E, H>::new(
         proof.fri_proof,
         proof.commitments,
         proof.num_evaluations,
         proof.options.folding_factor(),
     )?;
 
-    let fri_verifier = FriVerifier::<B, E, DefaultVerifierChannel<E, H>, H>::new(
+    let fri_verifier = FriVerifier::<B, E, DefaultFractalVerifierChannel<E, H>, H>::new(
         &mut channel,
         public_coin,
         proof.options.clone(),
@@ -88,6 +88,7 @@ fn verify_lower_degree<
 mod test {
     use super::verify_low_degree_proof;
     use fractal_proofs::{FieldElement, SumcheckProof};
+    use fractal_prover::channel::DefaultFractalProverChannel;
     use fractal_prover::low_degree_prover::LowDegreeProver;
     use std::time::{SystemTime, UNIX_EPOCH};
     use winter_crypto::hashers::Rp64_256;
@@ -115,10 +116,14 @@ mod test {
         let l_field_size: usize = 4 * max_degree.next_power_of_two();
         let l_field_base = B::get_root_of_unity(l_field_size.trailing_zeros());
         let evaluation_domain = utils::get_power_series(l_field_base, l_field_size);
-        let mut public_coin = RandomCoin::<B, H>::new(&[]);
+        let pub_input_bytes = vec![0u8];
+        let mut public_coin = RandomCoin::<B, H>::new(&pub_input_bytes.clone());
 
-        let mut channel =
-            DefaultProverChannel::<B, E, H>::new(evaluation_domain.len(), num_queries);
+        let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+            evaluation_domain.len(),
+            num_queries,
+            pub_input_bytes.clone(),
+        );
         let prover = LowDegreeProver::<B, E, H>::from_polynomial(
             &poly,
             &evaluation_domain,

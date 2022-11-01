@@ -1,4 +1,4 @@
-use crate::errors::RowcheckVerifierError;
+use crate::{channel::DefaultFractalVerifierChannel, errors::RowcheckVerifierError};
 
 use fractal_indexer::snark_keys::VerifierKey;
 use fractal_proofs::{get_complementary_poly, polynom, FieldElement, RowcheckProof, TryInto};
@@ -15,11 +15,11 @@ pub fn verify_rowcheck_proof<
 >(
     verifier_key: &VerifierKey<H, B>,
     proof: RowcheckProof<B, E, H>,
-    // Change to include public seed
+    public_coin: &mut RandomCoin<B, H>,
 ) -> Result<(), RowcheckVerifierError> {
-    let mut public_coin = RandomCoin::new(&[]);
+    // let mut public_coin = RandomCoin::new(&[]);
 
-    let mut channel = DefaultVerifierChannel::new(
+    let mut channel = DefaultFractalVerifierChannel::new(
         proof.s_proof,
         proof.s_commitments,
         proof.num_evaluations,
@@ -35,18 +35,19 @@ pub fn verify_rowcheck_proof<
         &s_original_proof,
     )
     .map_err(|err| RowcheckVerifierError::MerkleTreeErr(err))?;
+
     verify_lower_degree::<B, E, H>(
         4 * verifier_key.params.max_degree,
         verifier_key.params.num_input_variables - 1,
-        verifier_key.params.max_degree,
+        verifier_key.params.max_degree - 1,
         s_original_evals,
         s_queried_evals.clone(),
         proof.queried_positions.clone(),
     )?;
 
-    let fri_verifier = FriVerifier::<B, E, DefaultVerifierChannel<E, H>, H>::new(
+    let fri_verifier = FriVerifier::<B, E, DefaultFractalVerifierChannel<E, H>, H>::new(
         &mut channel,
-        &mut public_coin,
+        public_coin,
         proof.options.clone(),
         verifier_key.params.max_degree - 1,
     )?;
@@ -71,7 +72,7 @@ fn verify_lower_degree<
     final_evals: Vec<E>,
     positions: Vec<usize>,
 ) -> Result<(), RowcheckVerifierError> {
-    let comp_poly = get_complementary_poly::<E>(original_degree, max_degree - 1);
+    let comp_poly = get_complementary_poly::<E>(original_degree, max_degree);
     let eval_domain_base = E::from(B::get_root_of_unity(eval_domain_size.trailing_zeros()));
     let eval_domain_pows = positions
         .iter()

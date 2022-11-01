@@ -12,6 +12,8 @@ use fractal_proofs::{
     LowDegreeProof, OracleQueries,
 };
 
+use crate::channel::DefaultFractalProverChannel;
+
 pub struct LowDegreeProver<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -83,7 +85,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
 
     pub fn generate_proof(
         &self,
-        channel: &mut DefaultProverChannel<B, E, H>,
+        channel: &mut DefaultFractalProverChannel<B, E, H>,
     ) -> LowDegreeProof<B, E, H> {
         let queried_positions = channel.draw_query_positions();
         let commitment_idx = channel.layer_commitments().len();
@@ -102,9 +104,10 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let padded_coeffs = polynom::mul(&self.polynomial_coeffs, &comp_coeffs);
         let padded_evals: Vec<E> = polynom::eval_many(&padded_coeffs, &self.evaluation_domain);
 
-        let mut fri_prover = winter_fri::FriProver::<B, E, DefaultProverChannel<B, E, H>, H>::new(
-            self.fri_options.clone(),
-        );
+        let mut fri_prover =
+            winter_fri::FriProver::<B, E, DefaultFractalProverChannel<B, E, H>, H>::new(
+                self.fri_options.clone(),
+            );
         fri_prover.build_layers(channel, padded_evals.clone());
         let fri_proof = fri_prover.build_proof(&queried_positions);
         // use only the commitments that we just added

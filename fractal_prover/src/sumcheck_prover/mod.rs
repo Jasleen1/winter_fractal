@@ -1,7 +1,7 @@
 use std::{convert::TryInto, marker::PhantomData};
 
-use crate::log::debug;
 use crate::low_degree_prover::LowDegreeProver;
+use crate::{channel::DefaultFractalProverChannel, log::debug};
 use fractal_utils::polynomial_utils::*;
 use winter_crypto::ElementHasher;
 use winter_fri::{DefaultProverChannel, FriOptions};
@@ -32,7 +32,6 @@ pub struct RationalSumcheckProver<
     g_degree: usize,
     e_degree: usize,
     fri_options: FriOptions,
-    pub channel: DefaultProverChannel<B, E, H>,
     _h: PhantomData<H>,
 }
 
@@ -52,7 +51,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         num_queries: usize,
     ) -> Self {
         let summing_domain_twiddles = fft::get_twiddles(summing_domain.len());
-        let channel = DefaultProverChannel::new(evaluation_domain.len(), num_queries);
+
         RationalSumcheckProver {
             numerator_coeffs,
             denominator_coeffs,
@@ -64,12 +63,14 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             g_degree,
             e_degree,
             fri_options,
-            channel,
             _h: PhantomData,
         }
     }
 
-    pub fn generate_proof(&mut self) -> SumcheckProof<B, E, H> {
+    pub fn generate_proof(
+        &mut self,
+        channel: &mut DefaultFractalProverChannel<B, E, H>,
+    ) -> SumcheckProof<B, E, H> {
         // compute the polynomial g such that Sigma(g, sigma) = summing_poly
         // compute the polynomial e such that e = (Sigma(g, sigma) - summing_poly)/v_H over the summing domain H.
         debug!("Starting a sumcheck proof");
@@ -127,7 +128,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             polynom::interpolate(&self.evaluation_domain, &e_eval_domain_evals, true);
         debug!("degree of e: {}", polynom::degree_of(&e_hat_coeffs));
 
-        let query_positions = self.channel.draw_query_positions();
+        let query_positions = channel.draw_query_positions();
         let queried_positions = query_positions.clone();
 
         // Build proofs for the polynomial g
@@ -137,7 +138,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             self.g_degree,
             self.fri_options.clone(),
         );
-        let g_proof = g_prover.generate_proof(&mut self.channel);
+        let g_proof = g_prover.generate_proof(channel);
 
         // Build proofs for the polynomial e
         let e_prover = LowDegreeProver::<B, E, H>::from_polynomial(
@@ -146,7 +147,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             self.e_degree,
             self.fri_options.clone(),
         );
-        let e_proof = e_prover.generate_proof(&mut self.channel);
+        let e_proof = e_prover.generate_proof(channel);
 
         SumcheckProof {
             options: self.fri_options.clone(),

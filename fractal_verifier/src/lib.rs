@@ -1,3 +1,4 @@
+pub mod channel;
 pub mod errors;
 mod lincheck_verifier;
 pub mod low_degree_batch_verifier;
