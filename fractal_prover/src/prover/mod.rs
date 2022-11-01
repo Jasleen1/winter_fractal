@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use fractal_indexer::snark_keys::*;
 use fractal_proofs::{
-    fft, polynom, DefaultProverChannel, FractalProof, LincheckProof, MultiEval, TryInto,
+    fft, polynom, DefaultProverChannel, FractalProof, LincheckProof, MultiEval, MultiPoly, TryInto,
 };
 use models::r1cs::Matrix;
 
@@ -101,7 +101,9 @@ impl<
         ];
         let mut initial_vector_polys =
             MultiEval::<B, E, H>::new(coefficients, self.options.evaluation_domain.len(), B::ONE);
-
+        initial_vector_polys.commit_polynomial_evaluations()?;
+        let initial_poly_hash = initial_vector_polys.get_commitment();
+        let first_query_positions = channel.draw_query_positions();
         // let eval_twiddles = fft::get_twiddles(self.options.evaluation_domain.len());
         // let mut f_z_eval = z_coeffs.clone();
         // fractal_utils::polynomial_utils::pad_with_zeroes(
@@ -146,6 +148,7 @@ impl<
             &z_coeffs.clone(),
             &f_az_coeffs,
             channel,
+            first_query_positions.clone(),
         )?;
 
         let lincheck_b = self.create_lincheck_proof(
@@ -154,6 +157,7 @@ impl<
             &z_coeffs.clone(),
             &f_bz_coeffs,
             channel,
+            first_query_positions.clone(),
         )?;
 
         let lincheck_c = self.create_lincheck_proof(
@@ -162,6 +166,7 @@ impl<
             &z_coeffs.clone(),
             &f_cz_coeffs,
             channel,
+            first_query_positions.clone(),
         )?;
 
         println!("Done with linchecks");
@@ -194,7 +199,8 @@ impl<
             self.prover_key.params.max_degree,
             self.prover_key.params.eta,
         );
-        let rowcheck_proof = rowcheck_prover.generate_proof(channel)?;
+        let rowcheck_proof =
+            rowcheck_prover.generate_proof(channel, first_query_positions.clone())?;
         println!("Done with rowcheck");
         // 3. Build and return an overall fractal proof.
         Ok(FractalProof {
@@ -226,6 +232,7 @@ impl<
         z_coeffs: &Vec<B>,
         prod_m_z_coeffs: &Vec<B>,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
+        initial_queried_positions: Vec<usize>,
     ) -> Result<LincheckProof<B, E, H>, ProverError> {
         let lincheck_prover = LincheckProver::<B, E, H>::new(
             alpha,
@@ -234,7 +241,8 @@ impl<
             z_coeffs.to_vec(),
             &self.options,
         );
-        let lincheck_proof = lincheck_prover.generate_lincheck_proof(channel)?;
+        let lincheck_proof =
+            lincheck_prover.generate_lincheck_proof(channel, initial_queried_positions)?;
         Ok(lincheck_proof)
     }
 }

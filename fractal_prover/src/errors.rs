@@ -3,6 +3,7 @@
 use core::fmt;
 
 use displaydoc::Display;
+use fractal_proofs::errors::FractalUtilError;
 use models::errors::R1CSError;
 use thiserror::Error;
 use winter_crypto::MerkleTreeError;
@@ -14,6 +15,7 @@ pub enum ProverError {
     InvalidMatrixName(String),
     MerkleTreeErr(MerkleTreeError),
     MultiPolyErr(String),
+    FractalUtilErr(FractalUtilError),
 }
 
 impl From<LincheckError> for ProverError {
@@ -31,6 +33,12 @@ impl From<R1CSError> for ProverError {
 impl From<MerkleTreeError> for ProverError {
     fn from(e: MerkleTreeError) -> ProverError {
         ProverError::MerkleTreeErr(e)
+    }
+}
+
+impl From<FractalUtilError> for ProverError {
+    fn from(e: FractalUtilError) -> ProverError {
+        ProverError::FractalUtilErr(e)
     }
 }
 
@@ -77,6 +85,13 @@ impl fmt::Display for ProverError {
                 write!(
                     f,
                     "Encountered a Merkle Tree error in the fractal prover: {:?}",
+                    err,
+                )
+            }
+            Self::FractalUtilErr(err) => {
+                write!(
+                    f,
+                    "Encountered an error using utils in the fractal prover: {:?}",
                     err,
                 )
             }

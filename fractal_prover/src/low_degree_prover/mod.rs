@@ -86,8 +86,9 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     pub fn generate_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
+        queried_positions: Vec<usize>,
     ) -> LowDegreeProof<B, E, H> {
-        let queried_positions = channel.draw_query_positions();
+        // let queried_positions = channel.draw_query_positions();
         let commitment_idx = channel.layer_commitments().len();
         let unpadded_queried_evaluations = queried_positions
             .iter()

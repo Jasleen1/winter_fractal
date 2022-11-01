@@ -1,7 +1,7 @@
 mod tests;
 
 pub use std::convert::TryInto;
-use std::{marker::PhantomData, usize};
+use std::{fmt::Display, marker::PhantomData, usize};
 
 pub use fractal_utils::{errors::MatrixError, matrix_utils::*, polynomial_utils::*, *};
 use winter_crypto::{BatchMerkleProof, Hasher};
@@ -11,7 +11,14 @@ pub use winter_utils::{
     ByteReader, ByteWriter, Deserializable, DeserializationError, Serializable,
 };
 
+pub struct InitialPolyProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
+    commitment: H::Digest,
+    evals: Vec<Vec<B>>,
+    proof: BatchMerkleProof<H>,
+    _phantom: PhantomData<E>,
+}
 pub struct FractalProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
+    // pub initial_poly_proof: InitialPolyProof<B, E, H>,
     pub rowcheck_proof: RowcheckProof<B, E, H>,
     pub lincheck_a: LincheckProof<B, E, H>,
     pub lincheck_b: LincheckProof<B, E, H>,
@@ -116,6 +123,10 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct QueriedPositions {
+    pub queried_positions: Vec<usize>,
+}
 pub struct OracleQueries<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
     pub queried_evals: Vec<E>,
     pub queried_proofs: Vec<Vec<H::Digest>>,

@@ -70,6 +70,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     pub fn generate_proof(
         &mut self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
+        initial_queries: Vec<usize>,
     ) -> SumcheckProof<B, E, H> {
         // compute the polynomial g such that Sigma(g, sigma) = summing_poly
         // compute the polynomial e such that e = (Sigma(g, sigma) - summing_poly)/v_H over the summing domain H.
@@ -128,8 +129,8 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             polynom::interpolate(&self.evaluation_domain, &e_eval_domain_evals, true);
         debug!("degree of e: {}", polynom::degree_of(&e_hat_coeffs));
 
-        let query_positions = channel.draw_query_positions();
-        let queried_positions = query_positions.clone();
+        // let query_positions = channel.draw_query_positions();
+        // let queried_positions = query_positions.clone();
 
         // Build proofs for the polynomial g
         let g_prover = LowDegreeProver::<B, E, H>::from_polynomial(
@@ -138,7 +139,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             self.g_degree,
             self.fri_options.clone(),
         );
-        let g_proof = g_prover.generate_proof(channel);
+        let g_proof = g_prover.generate_proof(channel, initial_queries.clone());
 
         // Build proofs for the polynomial e
         let e_prover = LowDegreeProver::<B, E, H>::from_polynomial(
@@ -147,12 +148,12 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             self.e_degree,
             self.fri_options.clone(),
         );
-        let e_proof = e_prover.generate_proof(channel);
+        let e_proof = e_prover.generate_proof(channel, initial_queries.clone());
 
         SumcheckProof {
             options: self.fri_options.clone(),
             num_evaluations: self.evaluation_domain.len(),
-            queried_positions,
+            queried_positions: initial_queries,
             g_proof: g_proof,
             g_max_degree: self.g_degree,
             e_proof: e_proof,

@@ -60,6 +60,7 @@ impl<
     pub fn generate_lincheck_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
+        initial_queries: Vec<usize>,
     ) -> Result<LincheckProof<B, E, H>, LincheckError> {
         let t_alpha_evals = self.generate_t_alpha_evals();
         let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
@@ -109,7 +110,8 @@ impl<
             self.options.fri_options.clone(),
             self.options.num_queries,
         );
-        let products_sumcheck_proof = product_sumcheck_prover.generate_proof(channel);
+        let products_sumcheck_proof =
+            product_sumcheck_prover.generate_proof(channel, initial_queries);
         let beta = FieldElement::as_base_elements(&[channel.draw_fri_alpha()])[0];
         let gamma = polynom::eval(&t_alpha, beta);
         let matrix_proof_numerator = polynom::mul_by_scalar(
@@ -154,15 +156,16 @@ impl<
             self.options.fri_options.clone(),
             self.options.num_queries,
         );
-        let matrix_sumcheck_proof = matrix_sumcheck_prover.generate_proof(channel);
 
-        let queried_positions = matrix_sumcheck_proof.queried_positions.clone();
+        let next_queried_positions = channel.draw_query_positions();
+        let matrix_sumcheck_proof =
+            matrix_sumcheck_prover.generate_proof(channel, next_queried_positions.clone());
 
-        let row_queried_evaluations = queried_positions
+        let row_queried_evaluations = next_queried_positions
             .iter()
             .map(|&p| E::from(self.prover_matrix_index.row_poly.evaluations[p]))
             .collect::<Vec<_>>();
-        let row_proofs_results = queried_positions
+        let row_proofs_results = next_queried_positions
             .iter()
             .map(|&p| self.prover_matrix_index.row_poly.tree.prove(p))
             .collect::<Vec<_>>();
@@ -175,11 +178,11 @@ impl<
         }
         let row_queried = OracleQueries::<B, E, H>::new(row_queried_evaluations, row_proofs);
 
-        let col_queried_evaluations = queried_positions
+        let col_queried_evaluations = next_queried_positions
             .iter()
             .map(|&p| E::from(self.prover_matrix_index.col_poly.evaluations[p]))
             .collect::<Vec<_>>();
-        let col_proofs_results = queried_positions
+        let col_proofs_results = next_queried_positions
             .iter()
             .map(|&p| self.prover_matrix_index.col_poly.tree.prove(p))
             .collect::<Vec<_>>();
@@ -192,11 +195,11 @@ impl<
         }
         let col_queried = OracleQueries::<B, E, H>::new(col_queried_evaluations, col_proofs);
 
-        let val_queried_evaluations = queried_positions
+        let val_queried_evaluations = next_queried_positions
             .iter()
             .map(|&p| E::from(self.prover_matrix_index.val_poly.evaluations[p]))
             .collect::<Vec<_>>();
-        let val_proofs_results = queried_positions
+        let val_proofs_results = next_queried_positions
             .iter()
             .map(|&p| self.prover_matrix_index.val_poly.tree.prove(p))
             .collect::<Vec<_>>();
@@ -213,11 +216,11 @@ impl<
         let hashed_evaluations = hash_values::<H, B, { n }>(&t_alpha_transposed_evaluations);
         let t_alpha_tree = MerkleTree::<H>::new(hashed_evaluations)?;
         let t_alpha_commitment = *t_alpha_tree.root();
-        let t_alpha_queried_evaluations = queried_positions
+        let t_alpha_queried_evaluations = next_queried_positions
             .iter()
             .map(|&p| E::from(t_alpha_evals[p]))
             .collect::<Vec<_>>();
-        let t_alpha_proofs_results = queried_positions
+        let t_alpha_proofs_results = next_queried_positions
             .iter()
             .map(|&p| t_alpha_tree.prove(p))
             .collect::<Vec<_>>();

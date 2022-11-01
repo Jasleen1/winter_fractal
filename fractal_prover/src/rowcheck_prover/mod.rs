@@ -63,6 +63,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     pub fn generate_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
+        initial_query_positions: Vec<usize>,
     ) -> Result<RowcheckProof<B, E, H>, ProverError> {
         // The rowcheck is supposed to prove whether f_az * f_bz - f_cz = 0 on all of H.
         // Which means that the polynomial f_az * f_bz - f_cz must be divisible by the
@@ -93,7 +94,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             self.fri_options.clone(),
         );
 
-        let s_proof = s_prover.generate_proof(channel);
+        let s_proof = s_prover.generate_proof(channel, initial_query_positions);
         // let old_s_evals_b: Vec<B> = polynom::eval_many(
         //     s_coeffs.clone().as_slice(),
         //     self.evaluation_domain.clone().as_slice(),

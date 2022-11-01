@@ -124,13 +124,14 @@ mod test {
             num_queries,
             pub_input_bytes.clone(),
         );
+        let initial_queries = channel.draw_query_positions();
         let prover = LowDegreeProver::<B, E, H>::from_polynomial(
             &poly,
             &evaluation_domain,
             max_degree,
             fri_options.clone(),
         );
-        let proof = prover.generate_proof(&mut channel);
+        let proof = prover.generate_proof(&mut channel, initial_queries.clone());
         assert!(verify_low_degree_proof(proof, 63, &mut public_coin).is_ok());
 
         let max_degree2 = 17;
@@ -141,7 +142,7 @@ mod test {
             max_degree2,
             fri_options.clone(),
         );
-        let proof2 = prover.generate_proof(&mut channel);
+        let proof2 = prover.generate_proof(&mut channel, initial_queries);
         assert!(verify_low_degree_proof(proof2, 17, &mut public_coin).is_ok());
     }
 
