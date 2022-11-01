@@ -12,13 +12,13 @@ pub use winter_utils::{
 };
 
 pub struct InitialPolyProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
-    commitment: H::Digest,
-    evals: Vec<Vec<B>>,
-    proof: BatchMerkleProof<H>,
-    _phantom: PhantomData<E>,
+    pub commitment: H::Digest,
+    pub evals: Vec<Vec<B>>,
+    pub proof: BatchMerkleProof<H>,
+    pub _phantom: PhantomData<E>,
 }
 pub struct FractalProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
-    // pub initial_poly_proof: InitialPolyProof<B, E, H>,
+    pub initial_poly_proof: InitialPolyProof<B, E, H>,
     pub rowcheck_proof: RowcheckProof<B, E, H>,
     pub lincheck_a: LincheckProof<B, E, H>,
     pub lincheck_b: LincheckProof<B, E, H>,

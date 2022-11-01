@@ -4,7 +4,7 @@ use displaydoc::Display;
 use thiserror::Error;
 
 /// Represents a generic error type
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display, Error, PartialEq)]
 pub enum FractalUtilError {
     /// Error produced by the prover
     MatrixErr(MatrixError),
@@ -19,7 +19,7 @@ impl From<MatrixError> for FractalUtilError {
 }
 
 /// Represents errors in instantiating R1CS types
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display, Error, PartialEq)]
 pub enum MatrixError {
     /// Matrix should consist of a vector of equal length vectors. Not the case here.
     InvalidMatrix(String),

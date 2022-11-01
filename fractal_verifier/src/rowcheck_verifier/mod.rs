@@ -20,11 +20,24 @@ pub fn verify_rowcheck_proof<
     proof: RowcheckProof<B, E, H>,
     public_coin: &mut RandomCoin<B, H>,
 ) -> Result<(), RowcheckVerifierError> {
+
+
     verify_low_degree_proof(
         proof.s_proof,
         verifier_key.params.max_degree - 1,
         public_coin,
     )?;
+
+    Ok(())
+}
+
+fn verify_s_computation<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher<BaseField = B>,
+>(
+    
+) -> Result<(), RowcheckVerifierError> {
 
     Ok(())
 }

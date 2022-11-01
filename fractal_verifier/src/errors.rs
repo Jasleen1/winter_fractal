@@ -6,7 +6,7 @@
 // of this source tree.
 
 //! Errors for various data structure operations.
-use fractal_proofs::DeserializationError;
+use fractal_proofs::{DeserializationError, errors::FractalUtilError};
 use winter_fri::VerifierError;
 
 #[cfg_attr(test, derive(PartialEq))]
@@ -104,6 +104,8 @@ pub enum FractalVerifierError {
     LincheckVerifierErr(LincheckVerifierError),
     /// Error propagation
     RowcheckVerifierErr(RowcheckVerifierError),
+    /// Error propagation
+    FractalUtilErr(FractalUtilError),
 }
 
 impl From<LincheckVerifierError> for FractalVerifierError {
@@ -118,6 +120,12 @@ impl From<RowcheckVerifierError> for FractalVerifierError {
     }
 }
 
+impl From<FractalUtilError> for FractalVerifierError {
+    fn from(error: FractalUtilError) -> Self {
+        Self::FractalUtilErr(error)
+    }
+}
+
 impl std::fmt::Display for FractalVerifierError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
@@ -126,6 +134,9 @@ impl std::fmt::Display for FractalVerifierError {
             }
             FractalVerifierError::RowcheckVerifierErr(err) => {
                 writeln!(f, "Rowcheck error: {}", err)
+            }
+            FractalVerifierError::FractalUtilErr(err) => {
+                writeln!(f, "Fractal utils error: {}", err)
             }
         }
     }

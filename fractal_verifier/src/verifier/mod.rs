@@ -1,7 +1,7 @@
 use crate::errors::FractalVerifierError;
 
 use fractal_indexer::snark_keys::*;
-use fractal_proofs::{FieldElement, FractalProof, StarkField};
+use fractal_proofs::{FieldElement, FractalProof, StarkField, MultiPoly, MultiEval};
 
 use fractal_prover::channel::DefaultFractalProverChannel;
 use log::debug;
@@ -26,6 +26,8 @@ pub fn verify_fractal_proof<
         "Lincheck a indexes: {:?}",
         &proof.lincheck_a.products_sumcheck_proof.queried_positions
     );
+    let indices = proof.lincheck_a.products_sumcheck_proof.queried_positions.clone();
+    MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(proof.initial_poly_proof.evals, &proof.initial_poly_proof.commitment, &proof.initial_poly_proof.proof, indices)?;
     verify_lincheck_proof(
         &verifier_key,
         proof.lincheck_a,

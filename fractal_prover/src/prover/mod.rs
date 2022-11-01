@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use fractal_indexer::snark_keys::*;
 use fractal_proofs::{
-    fft, polynom, DefaultProverChannel, FractalProof, LincheckProof, MultiEval, MultiPoly, TryInto,
+    fft, polynom, DefaultProverChannel, FractalProof, LincheckProof, MultiEval, MultiPoly, TryInto, InitialPolyProof,
 };
 use models::r1cs::Matrix;
 
@@ -102,8 +102,16 @@ impl<
         let mut initial_vector_polys =
             MultiEval::<B, E, H>::new(coefficients, self.options.evaluation_domain.len(), B::ONE);
         initial_vector_polys.commit_polynomial_evaluations()?;
-        let initial_poly_hash = initial_vector_polys.get_commitment();
+        let initial_poly_hash = initial_vector_polys.get_commitment()?;
         let first_query_positions = channel.draw_query_positions();
+        
+        let (initial_polys_evals, initial_polys_eval_proofs) = initial_vector_polys.batch_get_values_and_proofs_at(first_query_positions.clone())?;
+        let initial_poly_proof = InitialPolyProof {
+            commitment: *initial_poly_hash,
+            evals: initial_polys_evals,
+            proof: initial_polys_eval_proofs,
+            _phantom: PhantomData::<E>,
+        };
         // let eval_twiddles = fft::get_twiddles(self.options.evaluation_domain.len());
         // let mut f_z_eval = z_coeffs.clone();
         // fractal_utils::polynomial_utils::pad_with_zeroes(
@@ -204,6 +212,7 @@ impl<
         println!("Done with rowcheck");
         // 3. Build and return an overall fractal proof.
         Ok(FractalProof {
+            initial_poly_proof,
             rowcheck_proof,
             lincheck_a,
             lincheck_b,
