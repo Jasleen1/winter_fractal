@@ -94,7 +94,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             .iter()
             .map(|&p| self.polynomial_evals[p])
             .collect::<Vec<_>>();
-
         let transposed_evaluations = transpose_slice(&self.polynomial_evals);
         let hashed_evaluations = hash_values::<H, E, 1>(&transposed_evaluations);
         let tree = MerkleTree::<H>::new(hashed_evaluations).unwrap();

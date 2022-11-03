@@ -53,7 +53,7 @@ impl<
     }
 
     pub fn generate_proof(&mut self) -> Result<FractalProof<B, E, H>, ProverError> {
-        let mut channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
+        let channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
             self.options.evaluation_domain.len(),
             self.options.num_queries,
             self.pub_input_bytes.clone(),
@@ -72,21 +72,21 @@ impl<
             &inv_twiddles_h,
             self.prover_key.params.eta,
         ); // coeffs
-        let mut f_az_coeffs = &mut self.compute_matrix_mul_poly_coeffs(
+        let f_az_coeffs = &mut self.compute_matrix_mul_poly_coeffs(
             &self.prover_key.matrix_a_index.matrix,
             &self.variable_assignment.clone(),
             &inv_twiddles_h,
             self.prover_key.params.eta,
         )?;
 
-        let mut f_bz_coeffs = &mut self.compute_matrix_mul_poly_coeffs(
+        let f_bz_coeffs = &mut self.compute_matrix_mul_poly_coeffs(
             &self.prover_key.matrix_b_index.matrix,
             &self.variable_assignment.clone(),
             &inv_twiddles_h,
             self.prover_key.params.eta,
         )?;
 
-        let mut f_cz_coeffs = &mut self.compute_matrix_mul_poly_coeffs(
+        let f_cz_coeffs = &mut self.compute_matrix_mul_poly_coeffs(
             &self.prover_key.matrix_c_index.matrix,
             &self.variable_assignment.clone(),
             &inv_twiddles_h,
@@ -106,49 +106,14 @@ impl<
         let first_query_positions = channel.draw_query_positions();
         
         let (initial_polys_evals, initial_polys_eval_proofs) = initial_vector_polys.batch_get_values_and_proofs_at(first_query_positions.clone())?;
+        println!("Evals initial = {:?}", initial_polys_evals[0]);
         let initial_poly_proof = InitialPolyProof {
             commitment: *initial_poly_hash,
             evals: initial_polys_evals,
             proof: initial_polys_eval_proofs,
             _phantom: PhantomData::<E>,
         };
-        // let eval_twiddles = fft::get_twiddles(self.options.evaluation_domain.len());
-        // let mut f_z_eval = z_coeffs.clone();
-        // fractal_utils::polynomial_utils::pad_with_zeroes(
-        //     &mut f_z_eval,
-        //     self.options.evaluation_domain.len(),
-        // );
-
-        // fft::evaluate_poly(&mut f_z_eval, &mut eval_twiddles.clone());
-
-        // let mut f_az_eval = f_az_coeffs.clone();
-        // fractal_utils::polynomial_utils::pad_with_zeroes(
-        //     &mut f_az_eval,
-        //     self.options.evaluation_domain.len(),
-        // );
-
-        // fft::evaluate_poly(&mut f_az_eval, &mut eval_twiddles.clone());
-
-        // let mut f_bz_eval = f_bz_coeffs.clone();
-        // fractal_utils::polynomial_utils::pad_with_zeroes(
-        //     &mut f_bz_eval,
-        //     self.options.evaluation_domain.len(),
-        // );
-
-        // fft::evaluate_poly(&mut f_bz_eval, &mut eval_twiddles.clone());
-
-        // let mut f_cz_eval = f_cz_coeffs.clone();
-        // fractal_utils::polynomial_utils::pad_with_zeroes(
-        //     &mut f_cz_eval,
-        //     self.options.evaluation_domain.len(),
-        // );
-
-        // fft::evaluate_poly(&mut f_cz_eval, &mut eval_twiddles.clone());
-
-        // let transposed_evaluations = transpose_slice(evaluations);
-        // let hashed_evaluations = hash_values::<H, E, N>(&transposed_evaluations);
-        // let evaluation_tree =
-        //     MerkleTree::<H>::new(hashed_evaluations).expect("failed to construct FRI layer tree");
+        
 
         let lincheck_a = self.create_lincheck_proof(
             alpha,
@@ -182,17 +147,6 @@ impl<
         // 2. Generate the rowcheck proof.
 
         // Evaluate the Az, Bz, Cz polynomials.
-        // let eval_twiddles = fft::get_twiddles(self.options.evaluation_domain.len());
-
-        // let mut f_az_evals = f_az_coeffs.clone();
-        // let f_az_evals = polynom::eval_many(&f_az_coeffs.clone(), &self.options.evaluation_domain);
-        // fft::evaluate_poly(&mut f_az_evals, &eval_twiddles);
-
-        // let f_bz_evals = polynom::eval_many(&f_bz_coeffs.clone(), &self.options.evaluation_domain);
-        // fft::evaluate_poly(&mut f_bz_evals, &eval_twiddles);
-
-        // let f_cz_evals = polynom::eval_many(&f_cz_coeffs.clone(), &self.options.evaluation_domain);
-        // fft::evaluate_poly(&mut f_cz_evals, &eval_twiddles);
 
         // Issue a rowcheck proof.
         let rowcheck_prover = RowcheckProver::<B, E, H>::new(

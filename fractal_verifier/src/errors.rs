@@ -50,6 +50,9 @@ pub enum RowcheckVerifierError {
     FriVerifierErr(winter_fri::VerifierError),
     /// Error propagation
     LowDegreeVerifierErr(LowDegreeVerifierError),
+    /// This error is thrown if the computed value of the polynomial s in rowcheck
+    /// does not match the value that is sent from the prover
+    ComputedValueMismatchErr(String),
 }
 
 impl From<winter_utils::DeserializationError> for RowcheckVerifierError {
@@ -92,6 +95,9 @@ impl std::fmt::Display for RowcheckVerifierError {
             }
             RowcheckVerifierError::LowDegreeVerifierErr(err) => {
                 writeln!(f, "Rowcheck Low Degree Verifier error: {}", err)
+            }
+            RowcheckVerifierError::ComputedValueMismatchErr(err) => {
+                writeln!(f, "Rowcheck error in checking computed values: {}", err)
             }
         }
     }

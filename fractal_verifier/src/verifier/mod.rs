@@ -26,8 +26,16 @@ pub fn verify_fractal_proof<
         "Lincheck a indexes: {:?}",
         &proof.lincheck_a.products_sumcheck_proof.queried_positions
     );
+
+    let initial_evals = proof.initial_poly_proof.evals.clone();
+
     let indices = proof.lincheck_a.products_sumcheck_proof.queried_positions.clone();
-    MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(proof.initial_poly_proof.evals, &proof.initial_poly_proof.commitment, &proof.initial_poly_proof.proof, indices)?;
+    
+    MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(proof.initial_poly_proof.evals, 
+        &proof.initial_poly_proof.commitment, 
+        &proof.initial_poly_proof.proof, indices)?;
+    
+    
     verify_lincheck_proof(
         &verifier_key,
         proof.lincheck_a,
@@ -49,7 +57,7 @@ pub fn verify_fractal_proof<
         &mut public_coin,
     )?;
     println!("Lincheck c verified");
-    verify_rowcheck_proof(&verifier_key, proof.rowcheck_proof, &mut public_coin)?;
+    verify_rowcheck_proof(&verifier_key, proof.rowcheck_proof, &mut public_coin, initial_evals)?;
     println!("Rowcheck verified");
     Ok(())
 }

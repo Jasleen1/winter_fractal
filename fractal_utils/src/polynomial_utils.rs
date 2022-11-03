@@ -16,6 +16,17 @@ pub fn compute_vanishing_poly<E: FieldElement>(x: E, eta: E, dom_size: usize) ->
     x.exp(power) - eta.exp(power)
 }
 
+/// This function generates the vanshing polynomial coefficients for a multiplicative
+/// subgroup of size dom_size and with multiplicative factor eta.
+pub fn get_vanishing_poly<E: FieldElement>(eta: E, dom_size: usize) -> Vec<E> {
+    let mut vanishing_poly = vec![E::ZERO; dom_size - 1];
+    vanishing_poly.push(E::ONE);
+    let dom_size_32: u32 = dom_size.try_into().unwrap();
+    let eta_pow = E::PositiveInteger::from(dom_size_32);
+    vanishing_poly[0] = eta.exp(eta_pow).neg();
+    vanishing_poly
+}
+
 /**
  * Compute vanishing polynomial for a multiplicative subgroup. Same as above with
  * eta = ONE.

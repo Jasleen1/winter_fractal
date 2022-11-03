@@ -69,14 +69,20 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         // Which means that the polynomial f_az * f_bz - f_cz must be divisible by the
         // vanishing polynomial for H.
         // Since the degree of f_az and f_bz is each |H| - 1, the degree of the polynomial
-        // (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
+        // s = (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
+        let example_point = self.evaluation_domain[initial_query_positions[0]];
+
+        
 
         // Generate coefficients for vanishing_polynomial(H)
-        let mut denom_poly = vec![B::ZERO; self.size_subgroup_h - 1];
-        denom_poly.push(B::ONE);
-        let h_size_32: u32 = self.size_subgroup_h.try_into().unwrap();
-        let eta_pow = B::PositiveInteger::from(h_size_32);
-        denom_poly[0] = self.eta.exp(eta_pow).neg();
+        let denom_poly = get_vanishing_poly(self.eta, self.size_subgroup_h);
+        let numerator = polynom::sub(
+            &polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs),
+            &self.f_cz_coeffs,
+        );
+
+
+
         // Generate the polynomial s = (f_az * f_bz - f_cz) / vanishing_H
         let s_coeffs = polynom::div(
             &polynom::sub(
@@ -85,6 +91,21 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             ),
             &denom_poly,
         );
+        println!("LHS = {:?}", polynom::mul(&s_coeffs, &denom_poly));
+        println!("RHS = {:?}", numerator);
+        println!("Equality = {}", polynom::mul(&s_coeffs, &denom_poly) == numerator);
+        let f_az0 = polynom::eval(&self.f_az_coeffs.clone(), example_point);
+        let f_bz0 = polynom::eval(&self.f_bz_coeffs.clone(), example_point);
+        let f_cz0 = polynom::eval(&self.f_cz_coeffs.clone(), example_point);
+        let denom_poly_0 = polynom::eval(&denom_poly.clone(), example_point);
+
+        println!("Evals inside rowcheck = {:?}, {:?}, {:?}", f_az0, f_bz0, f_cz0);
+        
+        let s_poly_0 = polynom::eval(&s_coeffs.clone(), self.evaluation_domain[initial_query_positions[0]]);
+        
+        println!("Evals inside rowcheck prover s_computed_0 = {:?}", (f_az0 * f_bz0 - f_cz0)/denom_poly_0);
+
+        println!("Evals inside rowcheck prover denom, s_coeffs = {:?}, {:?}", denom_poly_0, s_poly_0);
 
         // Build proofs for the polynomial s
         let s_prover = LowDegreeProver::<B, E, H>::from_polynomial(
