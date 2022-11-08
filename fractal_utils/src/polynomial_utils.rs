@@ -19,7 +19,7 @@ pub fn compute_vanishing_poly<E: FieldElement>(x: E, eta: E, dom_size: usize) ->
 /// This function generates the vanshing polynomial coefficients for a multiplicative
 /// subgroup of size dom_size and with multiplicative factor eta.
 pub fn get_vanishing_poly<E: FieldElement>(eta: E, dom_size: usize) -> Vec<E> {
-    let mut vanishing_poly = vec![E::ZERO; dom_size - 1];
+    let mut vanishing_poly = vec![E::ZERO; dom_size];
     vanishing_poly.push(E::ONE);
     let dom_size_32: u32 = dom_size.try_into().unwrap();
     let eta_pow = E::PositiveInteger::from(dom_size_32);
