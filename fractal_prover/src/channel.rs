@@ -10,7 +10,7 @@ use winter_fri::ProverChannel;
 /// Though this implementation is intended primarily for testing purposes, it can be used in
 /// production use cases as well.
 pub struct DefaultFractalProverChannel<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
-    public_coin: RandomCoin<B, H>,
+    pub public_coin: RandomCoin<B, H>,
     pub(crate) commitments: Vec<H::Digest>,
     domain_size: usize,
     num_queries: usize,
@@ -20,6 +20,9 @@ pub struct DefaultFractalProverChannel<B: StarkField, E: FieldElement<BaseField 
 impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher>
     DefaultFractalProverChannel<B, E, H>
 {
+    pub fn set_coin(&mut self, coin: RandomCoin<B, H>){
+        self.public_coin = coin;
+    }
     /// Returns a new prover channel instantiated from the specified parameters.
     ///
     /// # Panics

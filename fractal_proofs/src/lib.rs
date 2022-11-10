@@ -61,10 +61,11 @@ pub struct SumcheckProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hashe
     // Question: is it ok to use the same queried positions for both
     // g and e of different degrees?
     pub queried_positions: Vec<usize>,
-    pub g_proof: LowDegreeProof<B, E, H>,
+    //pub g_proof: LowDegreeProof<B, E, H>,
     pub g_max_degree: usize,
-    pub e_proof: LowDegreeProof<B, E, H>,
+    //pub e_proof: LowDegreeProof<B, E, H>,
     pub e_max_degree: usize,
+    pub batch_proof: LowDegreeBatchProof<B, E, H>
 }
 
 // TODO: FIX once interface is stable
@@ -78,11 +79,11 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
         for pos in 0..self.queried_positions.len() {
             target.write_u8(self.queried_positions[pos] as u8);
         }
-        self.g_proof.write_into(target);
+        //self.g_proof.write_into(target);
         // self.g_queried.write_into(target);
         target.write_u8(self.g_max_degree as u8);
 
-        self.e_proof.write_into(target);
+        //self.e_proof.write_into(target);
         // self.e_queried.write_into(target);
         target.write_u8(self.e_max_degree as u8);
     }

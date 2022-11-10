@@ -2,6 +2,7 @@ use std::{convert::TryInto, marker::PhantomData, ops::Add};
 
 use fractal_indexer::hash_values;
 use fractal_utils::polynomial_utils::*;
+use log::debug;
 use winter_crypto::{BatchMerkleProof, ElementHasher, Hasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
 use winter_math::{fft, FieldElement, StarkField};
@@ -11,6 +12,8 @@ use fractal_proofs::{
     polynom::{self, eval},
     LowDegreeBatchProof, OracleQueries,
 };
+use crate::channel::DefaultFractalProverChannel;
+
 
 //This should be able to accumulate polynomials over time and prove at the end
 pub struct LowDegreeBatchProver<
@@ -55,11 +58,13 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         &mut self,
         polynomial_coeffs: &Vec<B>,
         max_degree: usize,
-        channel: &mut DefaultProverChannel<B, E, H>,
+        channel: &mut DefaultFractalProverChannel<B, E, H>,
     ) {
         let polynomial_coeffs_e: Vec<E> = polynomial_coeffs.iter().map(|y| E::from(*y)).collect();
         let alpha = channel.draw_fri_alpha();
         let beta = channel.draw_fri_alpha();
+        println!("alpha: {:?}", &alpha);
+        println!("beta: {:?}", &beta);
         let comp_coeffs =
             get_randomized_complementary_poly::<E>(max_degree, self.fri_max_degree, alpha, beta);
 
@@ -71,38 +76,41 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
 
     pub fn generate_proof(
         &self,
-        channel: &mut DefaultProverChannel<B, E, H>,
+        channel: &mut DefaultFractalProverChannel<B, E, H>,
+        //queried_positions: Vec<usize>,
     ) -> LowDegreeBatchProof<B, E, H> {
+        // variable containing the result of evaluating each consitiuant polynomial on the set of queried eval points
+        let mut all_unpadded_queried_evaluations: Vec<Vec<E>> = Vec::new();
+        let mut trees: Vec<MerkleTree<H>> = Vec::new();
+        let mut tree_roots: Vec<<H as Hasher>::Digest> = Vec::new();
+        for poly in self.constituant_polynomials.iter() {
+            let unpadded_evaluations = polynom::eval_many(&poly, &self.evaluation_domain);
+            let transposed_evaluations = transpose_slice(&unpadded_evaluations);
+            let hashed_evaluations = hash_values::<H, E, 1>(&transposed_evaluations);
+            let tree = MerkleTree::<H>::new(hashed_evaluations).unwrap();
+            tree_roots.push(*tree.root());
+            trees.push(tree);
+        }
+
+        // commit to all evaluations before drawing queries
+        for root in tree_roots.iter(){
+            channel.commit_fri_layer(*root);
+        }
         let queried_positions = channel.draw_query_positions();
+        let commitment_idx = channel.layer_commitments().len();
         let eval_domain_queried = queried_positions
             .iter()
             .map(|&pos| self.evaluation_domain[pos])
             .collect::<Vec<_>>();
-        let commitment_idx = channel.layer_commitments().len();
-        // variable containing the result of evaluating each consitiuant polynomial on the set of queried eval points
-        let mut all_unpadded_queried_evaluations: Vec<Vec<E>> = Vec::new();
-        let mut tree_roots: Vec<<H as Hasher>::Digest> = Vec::new();
-        let mut tree_proofs: Vec<BatchMerkleProof<H>> = Vec::new();
+
         for poly in self.constituant_polynomials.iter() {
-            /*let unpadded_queried_evaluations = queried_positions
-            .iter()
-            .map(|&p| poly[p])
-            .collect::<Vec<_>>();*/
-            let unpadded_evaluations = polynom::eval_many(&poly, &self.evaluation_domain);
             let unpadded_queried_evaluations = polynom::eval_many(&poly, &eval_domain_queried);
-            let transposed_evaluations = transpose_slice(&unpadded_evaluations);
-            println!("len(transposed_evals): {}", transposed_evaluations.len());
-            let hashed_evaluations = hash_values::<H, E, 1>(&transposed_evaluations);
-            let tree = MerkleTree::<H>::new(hashed_evaluations).unwrap();
-            tree_roots.push(*tree.root());
-            // should this tree be incorporated into the proving channel before we draw query positions?
-            tree_proofs.push(tree.prove_batch(&queried_positions).unwrap());
             all_unpadded_queried_evaluations.push(unpadded_queried_evaluations);
         }
-
+        let tree_proofs = trees.iter().map(|tree| tree.prove_batch(&queried_positions).unwrap()).collect();
         let composed_evals: Vec<E> =
             polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
-        let mut fri_prover = winter_fri::FriProver::<B, E, DefaultProverChannel<B, E, H>, H>::new(
+        let mut fri_prover = winter_fri::FriProver::<B, E, DefaultFractalProverChannel<B, E, H>, H>::new(
             self.fri_options.clone(),
         );
         fri_prover.build_layers(channel, composed_evals.clone());

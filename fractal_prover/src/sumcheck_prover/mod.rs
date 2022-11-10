@@ -1,6 +1,7 @@
 use std::{convert::TryInto, marker::PhantomData};
 
 use crate::low_degree_prover::LowDegreeProver;
+use crate::low_degree_batch_prover::LowDegreeBatchProver;
 use crate::{channel::DefaultFractalProverChannel, log::debug};
 use fractal_utils::polynomial_utils::*;
 use winter_crypto::ElementHasher;
@@ -70,7 +71,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     pub fn generate_proof(
         &mut self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
-        initial_queries: Vec<usize>,
+        //initial_queries: Vec<usize>,
     ) -> SumcheckProof<B, E, H> {
         // compute the polynomial g such that Sigma(g, sigma) = summing_poly
         // compute the polynomial e such that e = (Sigma(g, sigma) - summing_poly)/v_H over the summing domain H.
@@ -132,8 +133,16 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         // let query_positions = channel.draw_query_positions();
         // let queried_positions = query_positions.clone();
 
+        let mut batch_prover = LowDegreeBatchProver::<B,E,H>::new(&self.evaluation_domain, self.fri_options.clone());
+        batch_prover.add_polynomial(&g_hat_coeffs, self.g_degree, channel);
+        batch_prover.add_polynomial(&e_hat_coeffs, self.e_degree, channel);
+        let batch_proof = batch_prover.generate_proof(channel);
+
+        let queried_positions = batch_proof.queried_positions.clone();
+
+
         // Build proofs for the polynomial g
-        let g_prover = LowDegreeProver::<B, E, H>::from_polynomial(
+        /*let g_prover = LowDegreeProver::<B, E, H>::from_polynomial(
             &g_hat_coeffs,
             &self.evaluation_domain,
             self.g_degree,
@@ -148,16 +157,15 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             self.e_degree,
             self.fri_options.clone(),
         );
-        let e_proof = e_prover.generate_proof(channel, initial_queries.clone());
+        let e_proof = e_prover.generate_proof(channel, initial_queries.clone());*/
 
         SumcheckProof {
             options: self.fri_options.clone(),
             num_evaluations: self.evaluation_domain.len(),
-            queried_positions: initial_queries,
-            g_proof: g_proof,
+            queried_positions,
             g_max_degree: self.g_degree,
-            e_proof: e_proof,
             e_max_degree: self.e_degree,
+            batch_proof: batch_proof,
         }
     }
 

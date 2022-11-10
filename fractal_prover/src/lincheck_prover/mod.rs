@@ -60,7 +60,6 @@ impl<
     pub fn generate_lincheck_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
-        initial_queries: Vec<usize>,
     ) -> Result<LincheckProof<B, E, H>, LincheckError> {
         let t_alpha_evals = self.generate_t_alpha_evals();
         let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
@@ -111,7 +110,7 @@ impl<
             self.options.num_queries,
         );
         let products_sumcheck_proof =
-            product_sumcheck_prover.generate_proof(channel, initial_queries);
+            product_sumcheck_prover.generate_proof(channel);
         let beta = FieldElement::as_base_elements(&[channel.draw_fri_alpha()])[0];
         let gamma = polynom::eval(&t_alpha, beta);
         let matrix_proof_numerator = polynom::mul_by_scalar(
@@ -157,9 +156,11 @@ impl<
             self.options.num_queries,
         );
 
-        let next_queried_positions = channel.draw_query_positions();
+        //let next_queried_positions = channel.draw_query_positions();
+        //let next_queried_positions = vec![144, 79, 190, 228, 234, 31, 172, 50, 78, 253, 194, 44, 21, 134, 22, 140];
         let matrix_sumcheck_proof =
-            matrix_sumcheck_prover.generate_proof(channel, next_queried_positions.clone());
+            matrix_sumcheck_prover.generate_proof(channel);
+        let next_queried_positions = matrix_sumcheck_proof.queried_positions.clone();
 
         let row_queried_evaluations = next_queried_positions
             .iter()

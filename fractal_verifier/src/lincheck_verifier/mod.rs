@@ -17,6 +17,7 @@ pub fn verify_lincheck_proof<
     proof: LincheckProof<B, E, H>,
     _expected_alpha: B,
     public_coin: &mut RandomCoin<B, H>,
+    num_queries: usize,
 ) -> Result<(), LincheckVerifierError> {
     let _alpha = proof.alpha;
     println!(
@@ -39,7 +40,7 @@ pub fn verify_lincheck_proof<
     );
     let g_degree = h_field_size - 2;
     let e_degree = h_field_size - 1;
-    verify_sumcheck_proof(products_sumcheck_proof, g_degree, e_degree, public_coin)
+    verify_sumcheck_proof(products_sumcheck_proof, g_degree, e_degree, public_coin, num_queries)
         .map_err(|err| LincheckVerifierError::UnsoundProduct(err))?;
 
     debug!("Verified sumcheck for product");
@@ -47,11 +48,14 @@ pub fn verify_lincheck_proof<
     let _col_queried = proof.col_queried;
     let _val_queried = proof.val_queried;
 
+    //TODO: USE BETA
+    let beta: B = FieldElement::as_base_elements(&[public_coin.draw::<E>().expect("failed to draw beta")])[0];
+
     let matrix_sumcheck_proof = proof.matrix_sumcheck_proof;
     let k_field_size = verifier_key.params.num_non_zero;
     let g_degree = k_field_size - 2;
     let e_degree = 2 * k_field_size - 3;
-    verify_sumcheck_proof(matrix_sumcheck_proof, g_degree, e_degree, public_coin)
+    verify_sumcheck_proof(matrix_sumcheck_proof, g_degree, e_degree, public_coin, num_queries)
         .map_err(|err| LincheckVerifierError::UnsoundMatrix(err))?;
     // Need to do the checking of beta and channel passing etc.
     // Also need to make sure that the queried evals are dealt with

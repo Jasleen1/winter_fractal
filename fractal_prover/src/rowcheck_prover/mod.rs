@@ -63,25 +63,15 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     pub fn generate_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
-        initial_query_positions: Vec<usize>,
     ) -> Result<RowcheckProof<B, E, H>, ProverError> {
         // The rowcheck is supposed to prove whether f_az * f_bz - f_cz = 0 on all of H.
         // Which means that the polynomial f_az * f_bz - f_cz must be divisible by the
         // vanishing polynomial for H.
         // Since the degree of f_az and f_bz is each |H| - 1, the degree of the polynomial
         // s = (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
-        let example_point = self.evaluation_domain[initial_query_positions[0]];
-
-        
 
         // Generate coefficients for vanishing_polynomial(H)
         let denom_poly = get_vanishing_poly(self.eta, self.size_subgroup_h);
-        let numerator = polynom::sub(
-            &polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs),
-            &self.f_cz_coeffs,
-        );
-
-
 
         // Generate the polynomial s = (f_az * f_bz - f_cz) / vanishing_H
         let s_coeffs = polynom::div(
@@ -91,21 +81,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             ),
             &denom_poly,
         );
-        println!("LHS = {:?}", polynom::mul(&s_coeffs, &denom_poly));
-        println!("RHS = {:?}", numerator);
-        println!("Equality = {}", polynom::mul(&s_coeffs, &denom_poly) == numerator);
-        let f_az0 = polynom::eval(&self.f_az_coeffs.clone(), example_point);
-        let f_bz0 = polynom::eval(&self.f_bz_coeffs.clone(), example_point);
-        let f_cz0 = polynom::eval(&self.f_cz_coeffs.clone(), example_point);
-        let denom_poly_0 = polynom::eval(&denom_poly.clone(), example_point);
-
-        println!("Evals inside rowcheck = {:?}, {:?}, {:?}", f_az0, f_bz0, f_cz0);
-        
-        let s_poly_0 = polynom::eval(&s_coeffs.clone(), self.evaluation_domain[initial_query_positions[0]]);
-        
-        println!("Evals inside rowcheck prover s_computed_0 = {:?}", (f_az0 * f_bz0 - f_cz0)/denom_poly_0);
-
-        println!("Evals inside rowcheck prover denom, s_coeffs = {:?}, {:?}", denom_poly_0, s_poly_0);
 
         // Build proofs for the polynomial s
         let s_prover = LowDegreeProver::<B, E, H>::from_polynomial(
@@ -115,7 +90,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             self.fri_options.clone(),
         );
 
-        let s_proof = s_prover.generate_proof(channel, initial_query_positions);
+        let s_proof = s_prover.generate_proof(channel);
         // let old_s_evals_b: Vec<B> = polynom::eval_many(
         //     s_coeffs.clone().as_slice(),
         //     self.evaluation_domain.clone().as_slice(),

@@ -21,10 +21,11 @@ use fractal_indexer::{
 use models::jsnark_arith_parser::JsnarkArithReaderParser;
 use models::jsnark_wire_parser::JsnarkWireReaderParser;
 
-use winter_crypto::hashers::Rp64_256;
+use winter_crypto::hashers::{Rp64_256, Blake3_256};
 use winter_crypto::ElementHasher;
 
 use winter_math::fields::f64::BaseElement;
+use winter_math::fields::QuadExtension;
 use winter_math::utils;
 use winter_math::FieldElement;
 use winter_math::StarkField;
@@ -40,7 +41,8 @@ fn main() {
     }
 
     // call orchestrate_r1cs_example
-    orchestrate_r1cs_example::<BaseElement, BaseElement, Rp64_256, 1>(
+    //orchestrate_r1cs_example::<BaseElement, QuadExtension<BaseElement>, Rp64_256, 1>(
+    orchestrate_r1cs_example::<BaseElement, BaseElement, Blake3_256<BaseElement>, 1>(
         &options.arith_file,
         &options.wires_file,
         options.verbose,
@@ -133,7 +135,7 @@ pub(crate) fn orchestrate_r1cs_example<
 
     let pub_inputs_bytes = vec![0u8];
     let mut prover =
-        FractalProver::<B, E, H>::new(prover_key, options, vec![], wires, pub_inputs_bytes.clone());
+        FractalProver::<B, E, H>::new(prover_key, options.clone(), vec![], wires, pub_inputs_bytes.clone());
     let proof = prover.generate_proof();
 
     println!(
@@ -141,7 +143,8 @@ pub(crate) fn orchestrate_r1cs_example<
         fractal_verifier::verifier::verify_fractal_proof::<B, E, H>(
             verifier_key,
             proof.unwrap(),
-            pub_inputs_bytes
+            pub_inputs_bytes,
+            options
         )
     );
 }

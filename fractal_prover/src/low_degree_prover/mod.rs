@@ -3,7 +3,7 @@ use std::{convert::TryInto, marker::PhantomData};
 use fractal_indexer::hash_values;
 use fractal_utils::polynomial_utils::*;
 use winter_crypto::{ElementHasher, Hasher, MerkleTree};
-use winter_fri::{DefaultProverChannel, FriOptions};
+use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
 use winter_math::{fft, FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
@@ -86,19 +86,22 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     pub fn generate_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
-        queried_positions: Vec<usize>,
     ) -> LowDegreeProof<B, E, H> {
         // let queried_positions = channel.draw_query_positions();
-        let commitment_idx = channel.layer_commitments().len();
-        let unpadded_queried_evaluations = queried_positions
-            .iter()
-            .map(|&p| self.polynomial_evals[p])
-            .collect::<Vec<_>>();
+        
         let transposed_evaluations = transpose_slice(&self.polynomial_evals);
         let hashed_evaluations = hash_values::<H, E, 1>(&transposed_evaluations);
         let tree = MerkleTree::<H>::new(hashed_evaluations).unwrap();
         let tree_root = *tree.root();
+        channel.commit_fri_layer(tree_root.clone());
+        let queried_positions = channel.draw_query_positions();
+        let commitment_idx = channel.layer_commitments().len();
+        
         let tree_proof = tree.prove_batch(&queried_positions).unwrap();
+        let unpadded_queried_evaluations = queried_positions
+            .iter()
+            .map(|&p| self.polynomial_evals[p])
+            .collect::<Vec<_>>();
 
         let comp_coeffs = get_complementary_poly::<E>(self.max_degree, self.fri_max_degree);
         let padded_coeffs = polynom::mul(&self.polynomial_coeffs, &comp_coeffs);

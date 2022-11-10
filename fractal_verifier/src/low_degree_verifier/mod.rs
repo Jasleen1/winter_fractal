@@ -15,6 +15,7 @@ pub fn verify_low_degree_proof<
     proof: LowDegreeProof<B, E, H>,
     max_degree: usize,
     public_coin: &mut RandomCoin<B, H>,
+    num_queries: usize,
 ) -> Result<(), LowDegreeVerifierError> {
     let mut channel = DefaultFractalVerifierChannel::<E, H>::new(
         proof.fri_proof,
@@ -23,17 +24,23 @@ pub fn verify_low_degree_proof<
         proof.options.folding_factor(),
     )?;
 
+    public_coin.reseed(proof.tree_root.clone());
+    // rederive the evaluation domain size the same way as in the FRI verifier
+    let eval_domain_size = proof.options.blowup_factor() * (proof.fri_max_degree + 1);
+    let queried_positions = public_coin.draw_integers(num_queries, eval_domain_size).unwrap();
+
     let fri_verifier = FriVerifier::<B, E, DefaultFractalVerifierChannel<E, H>, H>::new(
         &mut channel,
         public_coin,
         proof.options.clone(),
         proof.fri_max_degree,
     )?;
+    
     //todo, are the queried position ever checked?
     fri_verifier.verify(
         &mut channel,
         &proof.padded_queried_evaluations,
-        &proof.queried_positions,
+        &queried_positions,
     )?;
     if max_degree < proof.fri_max_degree {
         verify_lower_degree::<B, E, H>(
@@ -42,7 +49,7 @@ pub fn verify_low_degree_proof<
             proof.fri_max_degree,
             proof.unpadded_queried_evaluations,
             proof.padded_queried_evaluations,
-            proof.queried_positions.clone(),
+            queried_positions,
         )?;
     }
     Ok(())
@@ -124,15 +131,16 @@ mod test {
             num_queries,
             pub_input_bytes.clone(),
         );
-        let initial_queries = channel.draw_query_positions();
+        //let initial_queries = channel.draw_query_positions();
         let prover = LowDegreeProver::<B, E, H>::from_polynomial(
             &poly,
             &evaluation_domain,
             max_degree,
             fri_options.clone(),
         );
-        let proof = prover.generate_proof(&mut channel, initial_queries.clone());
-        assert!(verify_low_degree_proof(proof, 63, &mut public_coin).is_ok());
+        let proof = prover.generate_proof(&mut channel);
+        //assert!(verify_low_degree_proof(proof, 63, &mut public_coin, num_queries).is_ok());
+        verify_low_degree_proof(proof, 63, &mut public_coin, num_queries).unwrap();
 
         let max_degree2 = 17;
         let poly2 = nonrand_poly(max_degree2);
@@ -142,8 +150,8 @@ mod test {
             max_degree2,
             fri_options.clone(),
         );
-        let proof2 = prover.generate_proof(&mut channel, initial_queries);
-        assert!(verify_low_degree_proof(proof2, 17, &mut public_coin).is_ok());
+        let proof2 = prover.generate_proof(&mut channel);
+        assert!(verify_low_degree_proof(proof2, 17, &mut public_coin, num_queries).is_ok());
     }
 
     // a random-ish polynomial that isn't actually random at all. Instead, it uses the system clock since that doesn't require a new crate import

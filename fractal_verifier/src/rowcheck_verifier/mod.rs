@@ -20,22 +20,24 @@ pub fn verify_rowcheck_proof<
     proof: RowcheckProof<B, E, H>,
     public_coin: &mut RandomCoin<B, H>,
     initial_evals: Vec<Vec<B>>,
+    num_queries: usize,
 ) -> Result<(), RowcheckVerifierError> {
 
-    let positions = proof.s_proof.queried_positions.clone();
+    let indices = proof.s_proof.queried_positions.clone();
     let s_evals = proof.s_proof.unpadded_queried_evaluations.clone();
 
     let eval_domain_size = proof.options.blowup_factor() * verifier_key.params.max_degree;
     let h_domain_size = std::cmp::max(verifier_key.params.num_input_variables, verifier_key.params.num_constraints);
-    
-    verify_s_computation::<B, E, H>(eval_domain_size, h_domain_size, positions, 
-        E::from(verifier_key.params.eta), initial_evals, s_evals)?;
 
     verify_low_degree_proof(
         proof.s_proof,
         verifier_key.params.max_degree - 1,
         public_coin,
+        num_queries,
     )?;
+    
+    verify_s_computation::<B, E, H>(eval_domain_size, h_domain_size, indices, 
+        E::from(verifier_key.params.eta), initial_evals, s_evals)?;
 
     Ok(())
 }
