@@ -1,5 +1,6 @@
 use crate::{errors::FractalUtilError, matrix_utils::*};
 use fractal_math::{fft, FieldElement, StarkField};
+use winter_fri::{DefaultProverChannel, FriOptions};
 use std::{convert::TryInto, marker::PhantomData};
 use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree};
 use winter_utils::batch_iter_mut;
@@ -205,6 +206,18 @@ impl<
             committed_tree,
             _e: PhantomData,
         }
+    }
+
+    pub fn add_polynomial(&mut self, coefficients: Vec<B>, evaluation_domain_len: usize) -> (){
+        let eval_twiddles = fft::get_twiddles(evaluation_domain_len);
+        let evaluations = Self::eval_on_domain(
+            coefficients.clone(),
+            evaluation_domain_len,
+            eval_twiddles.clone(),
+        );
+        self.coefficients.push(coefficients);
+        self.evaluations.push(evaluations);
+        self.committed_tree =  Option::None;
     }
 
     /// This is mostly a helper function to evaluate the polynomials on a domain of given length

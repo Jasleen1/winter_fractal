@@ -61,6 +61,7 @@ impl<
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
     ) -> Result<LincheckProof<B, E, H>, LincheckError> {
+        //TODO: t_alpha_evals are committed to in the paper
         let t_alpha_evals = self.generate_t_alpha_evals();
         let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
         debug!("t_alpha degree: {}", &t_alpha.len() - 1);
@@ -111,6 +112,8 @@ impl<
         );
         let products_sumcheck_proof =
             product_sumcheck_prover.generate_proof(channel);
+        // END OF LAYER 1
+        // things that we might need to save: t_alpha, poly_prod?
         let beta = FieldElement::as_base_elements(&[channel.draw_fri_alpha()])[0];
         let gamma = polynom::eval(&t_alpha, beta);
         let matrix_proof_numerator = polynom::mul_by_scalar(
