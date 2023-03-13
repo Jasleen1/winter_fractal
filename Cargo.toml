@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "fractal_examples",
+  "fractal_examples2",
   "fractal_indexer",
   "fractal_math",
   "fractal_proofs",

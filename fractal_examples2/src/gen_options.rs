@@ -8,9 +8,7 @@ use std::cmp::max;
 
 use fractal_indexer::index::get_max_degree;
 use fractal_proofs::FriOptions;
-use fractal_prover::{prover::FractalProver, LayeredProver};
 use fractal_prover::FractalOptions;
-use structopt::StructOpt;
 
 use fractal_indexer::{
     index::{build_index_domains, Index, IndexParams},
@@ -30,7 +28,11 @@ use winter_math::utils;
 use winter_math::FieldElement;
 use winter_math::StarkField;
 
-fn main() {
+pub fn get_example_fractal_options<
+B: StarkField,
+E: FieldElement<BaseField = B>,
+H: ElementHasher + ElementHasher<BaseField = B>,
+>() -> FractalOptions<B> {
     let mut options = ExampleOptions::from_args();
     options.verbose = true;
     if options.verbose {
@@ -41,15 +43,15 @@ fn main() {
     }
 
     // call orchestrate_r1cs_example
-    orchestrate_r1cs_example::<BaseElement, QuadExtension<BaseElement>, Rp64_256, 1>(
+    files_to_fractal_options::<B, E, H, 1>(
     //orchestrate_r1cs_example::<BaseElement, BaseElement, Blake3_256<BaseElement>, 1>(
         &options.arith_file,
         &options.wires_file,
         options.verbose,
-    );
+    )
 }
 
-pub(crate) fn orchestrate_r1cs_example<
+fn files_to_fractal_options<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
@@ -58,7 +60,7 @@ pub(crate) fn orchestrate_r1cs_example<
     arith_file: &str,
     wire_file: &str,
     verbose: bool,
-) {
+) -> FractalOptions<B>{
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
     arith_parser.parse_arith_file(&arith_file, verbose);
     let r1cs = arith_parser.clone_r1cs();
@@ -132,43 +134,17 @@ pub(crate) fn orchestrate_r1cs_example<
         fri_options,
         num_queries,
     };
-
-    let pub_inputs_bytes = vec![0u8];
-    let mut prover =
-        FractalProver::<B, E, H>::new(prover_key, options.clone(), vec![], wires, pub_inputs_bytes.clone());
-    let proof = prover.generate_proof(pub_inputs_bytes);
-
-    println!(
-        "Verified: {:?}",
-        fractal_verifier::verifier::verify_fractal_proof::<B, E, H>(
-            verifier_key,
-            proof,
-            pub_inputs_bytes,
-            options
-        )
-    );
+    options
 }
 
-#[derive(StructOpt, Debug)]
-#[structopt(name = "jsnark-parser", about = "Jsnark file parsing")]
+#[derive(Debug)]
 struct ExampleOptions {
-    /// Jsnark .arith file to parse.
-    #[structopt(
-        short = "a",
-        long = "arith_file",
-        default_value = "fractal_examples/jsnark_outputs/sample.arith"
-    )]
     arith_file: String,
-
-    /// Jsnark .in or .wires file to parse.
-    #[structopt(
-        short = "w",
-        long = "wire_file",
-        default_value = "fractal_examples/jsnark_outputs/sample.wires"
-    )]
     wires_file: String,
-
-    /// Verbose logging and reporting.
-    #[structopt(short = "v", long = "verbose")]
     verbose: bool,
+}
+impl ExampleOptions{
+    fn from_args() -> Self{
+        ExampleOptions { arith_file: "fractal_examples2/jsnark_outputs/sample.arith".to_string(), wires_file: "fractal_examples2/jsnark_outputs/sample.wires".to_string(), verbose: true }
+    } 
 }

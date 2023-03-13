@@ -10,7 +10,7 @@ use winter_fri::utils::hash_values;
 use winter_math::{polynom, FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
-#[derive(Debug)] // Clone
+#[derive(Debug, Clone)] // Clone
 pub struct ProverIndexPolynomial<H: ElementHasher + ElementHasher<BaseField = E>, E: FieldElement> {
     pub polynomial: Vec<E>,
     pub evaluations: Vec<E>,
@@ -30,7 +30,7 @@ impl<H: ElementHasher + ElementHasher<BaseField = B>, B: StarkField> ProverIndex
     }
 }
 
-#[derive(Debug)] // Clone
+#[derive(Debug, Clone)] // Clone
 pub struct ProverMatrixIndex<H: ElementHasher + ElementHasher<BaseField = B>, B: StarkField> {
     pub matrix: Matrix<B>,
     pub row_poly: ProverIndexPolynomial<H, B>,

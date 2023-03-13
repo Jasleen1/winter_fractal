@@ -1,5 +1,10 @@
+use accumulator::Accumulator;
+use channel::DefaultFractalProverChannel;
+use errors::ProverError;
+use fractal_proofs::{FieldElement, LowDegreeBatchProof};
 use log;
-use winter_fri::FriOptions;
+use winter_crypto::ElementHasher;
+use winter_fri::{FriOptions, ProverChannel};
 use winter_math::StarkField;
 pub mod channel;
 mod errors;
@@ -7,7 +12,7 @@ mod lincheck_prover;
 pub mod low_degree_batch_prover;
 pub mod low_degree_prover;
 pub mod prover;
-mod rowcheck_prover;
+pub mod rowcheck_prover;
 pub mod sumcheck_prover;
 pub mod accumulator;
 #[cfg(test)]
@@ -58,22 +63,36 @@ pub struct FractalOptions<B: StarkField> {
 //-you probably need to pass it around to get all the polynomials and degrees you need for the end part
 //maybe pass a cloned channel into each then smoosh them together
 
-/*
-pub trait LayeredProof{
-    fn add_proof_layer(&mut self, channel) -> 
-}
-
 pub trait LayeredProver<
 B: StarkField,
-E: FieldElement<BaseField = B>
+E: FieldElement<BaseField = B>,
+H: ElementHasher + ElementHasher<BaseField = B>
 >{
-    pub type LayeredProof;
-    pub type LayeredProverState;
-    pub type DeferredAccumulator; //multipoly
-    pub fn run_next_layer(self, query: E, accumulator: DeferredAccumulator, proof: &mut LayeredProof, state: &mut LayeredProverState) -> Result<(), E>;
+    //pub type LayeredProof;
+    //pub type LayeredProverState;
+    //pub type DeferredAccumulator; //multipoly
+    //pub fn run_next_layer(self, query: E, accumulator: DeferredAccumulator, proof: &mut LayeredProof, state: &mut LayeredProverState) -> Result<(), E>;
+    // just one proof at the end, no need for multiple
+    // You already need to keep track of each prover state, might as well have provers be stateful
+    fn run_next_layer(&mut self, query: E, accumulator: &mut Accumulator<B,E,H>) -> Result<(), ProverError>;
+    fn get_current_layer(&self) -> usize;
+    fn get_num_layers(&self) -> usize;
+    fn get_fractal_options(&self) -> FractalOptions<B>;
+    fn generate_proof(&mut self, public_input_bytes: Vec<u8>) -> LowDegreeBatchProof<B,E,H>{
+        let options = self.get_fractal_options();
+        let mut channel = DefaultFractalProverChannel::<B,E,H>::new(options.evaluation_domain.len(),options.num_queries,public_input_bytes);
+        let mut acc = Accumulator::<B,E,H>::new(options.evaluation_domain.len(), B::ONE, options.evaluation_domain.clone(), options.num_queries, options.fri_options.clone());
+        for i in 0..self.get_num_layers(){
+            let query = channel.draw_fri_alpha();
+            self.run_next_layer(query, &mut acc);
+            acc.commit_layer(); //todo: do something with this
+        }
+        acc.create_fri_proof()
+    }
 
 }
 
+/*
 let lincheck_prover_a = LincheckProver::<B, E, H>::new(
     //alpha,
     &matrix_index,

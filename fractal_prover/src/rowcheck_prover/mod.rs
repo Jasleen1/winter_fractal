@@ -10,22 +10,18 @@ use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
 use crate::{
-    channel::DefaultFractalProverChannel, errors::ProverError, low_degree_prover::LowDegreeProver,
+    channel::DefaultFractalProverChannel, errors::ProverError, low_degree_prover::LowDegreeProver, LayeredProver, accumulator::Accumulator, FractalOptions,
 };
 
 pub struct RowcheckProver<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
     f_az_coeffs: Vec<B>,
     f_bz_coeffs: Vec<B>,
     f_cz_coeffs: Vec<B>,
-    degree_fs: usize,
     size_subgroup_h: usize,
-    evaluation_domain: Vec<B>,
-    fri_options: FriOptions,
-    num_queries: usize,
-    max_degree: usize,
-    eta: B,
+    fractal_options: FractalOptions<B>,
     _h: PhantomData<H>,
     _e: PhantomData<E>,
+    current_layer: usize,
 }
 
 impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField = B>>
@@ -35,27 +31,17 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         f_az_coeffs: Vec<B>,
         f_bz_coeffs: Vec<B>,
         f_cz_coeffs: Vec<B>,
-        degree_fs: usize,
-        size_subgroup_h: usize,
-        evaluation_domain: Vec<B>,
-        fri_options: FriOptions,
-        num_queries: usize,
-        max_degree: usize,
-        eta: B,
+        fractal_options: FractalOptions<B>,
     ) -> Self {
         RowcheckProver {
             f_az_coeffs,
             f_bz_coeffs,
             f_cz_coeffs,
-            degree_fs,
-            size_subgroup_h,
-            evaluation_domain,
-            fri_options,
-            num_queries,
-            max_degree,
-            eta,
+            size_subgroup_h: fractal_options.h_domain.len(),
+            fractal_options,
             _h: PhantomData,
             _e: PhantomData,
+            current_layer: 0,
         }
     }
 
@@ -71,7 +57,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         // s = (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
 
         // Generate coefficients for vanishing_polynomial(H)
-        let denom_poly = get_vanishing_poly(self.eta, self.size_subgroup_h);
+        let denom_poly = get_vanishing_poly(self.fractal_options.eta, self.size_subgroup_h);
 
         // Generate the polynomial s = (f_az * f_bz - f_cz) / vanishing_H
         let s_coeffs = polynom::div(
@@ -85,9 +71,9 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         // Build proofs for the polynomial s
         let s_prover = LowDegreeProver::<B, E, H>::from_polynomial(
             &s_coeffs,
-            &self.evaluation_domain,
+            &self.fractal_options.evaluation_domain,
             self.size_subgroup_h - 1,
-            self.fri_options.clone(),
+            self.fractal_options.fri_options.clone(),
         );
 
         let s_proof = s_prover.generate_proof(channel);
@@ -135,10 +121,60 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         //     .collect::<Vec<_>>();
         // let s_commitments = channel.layer_commitments()[commitment_idx..].to_vec(); //channel.layer_commitments().to_vec();
         Ok(RowcheckProof {
-            options: self.fri_options.clone(),
-            num_evaluations: self.evaluation_domain.len(),
+            options: self.fractal_options.fri_options.clone(),
+            num_evaluations: self.fractal_options.evaluation_domain.len(),
             s_proof,
             s_max_degree: self.size_subgroup_h - 1,
         })
+    }
+    fn rowcheck_layer_one(&self, accumulator: &mut Accumulator<B,E,H>){
+        // The rowcheck is supposed to prove whether f_az * f_bz - f_cz = 0 on all of H.
+        // Which means that the polynomial f_az * f_bz - f_cz must be divisible by the
+        // vanishing polynomial for H.
+        // Since the degree of f_az and f_bz is each |H| - 1, the degree of the polynomial
+        // s = (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
+
+        // Generate coefficients for vanishing_polynomial(H)
+        let denom_poly = get_vanishing_poly(self.fractal_options.eta, self.size_subgroup_h);
+
+        // Generate the polynomial s = (f_az * f_bz - f_cz) / vanishing_H
+        let s_coeffs = polynom::div(
+            &polynom::sub(
+                &polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs),
+                &self.f_cz_coeffs,
+            ),
+            &denom_poly,
+        );
+
+        accumulator.add_polynomial(s_coeffs, self.size_subgroup_h - 1);
+    }
+}
+
+
+
+impl<
+        B: StarkField,
+        E: FieldElement<BaseField = B>,
+        H: ElementHasher + ElementHasher<BaseField = B>,
+    > LayeredProver<B, E, H> for RowcheckProver<B, E, H>{
+
+    fn run_next_layer(&mut self, _query: E, accumulator: &mut Accumulator<B,E,H>) -> Result<(), ProverError>{
+        if self.current_layer == 0{
+            self.rowcheck_layer_one(accumulator);
+            self.current_layer += 1;
+        }
+        Ok(())
+    }
+
+    fn get_num_layers(&self) -> usize {
+        1
+    }
+
+    fn get_current_layer(&self) -> usize {
+        self.current_layer
+    }
+
+    fn get_fractal_options(&self) -> crate::FractalOptions<B> {
+        self.fractal_options.clone()
     }
 }

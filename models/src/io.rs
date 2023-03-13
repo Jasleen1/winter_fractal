@@ -8,12 +8,13 @@ pub trait LineProcessor {
 
 pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where
-    P: AsRef<Path>,
+    P: AsRef<Path>+Clone,
 {
-    let file = match File::open(filename) {
+    let file = match File::open(filename.clone()) {
         Err(why) => {
             println!(
-                "Looking in {:?}",
+                "Looking for {:?} in {:?}",
+                filename.as_ref().to_str(),
                 std::env::current_dir().unwrap().display()
             );
             panic!("Cannot open file: {}", why)

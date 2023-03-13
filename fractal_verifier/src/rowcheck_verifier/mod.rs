@@ -90,3 +90,77 @@ fn verify_s_computation<
     Ok(())
 }
 
+#[cfg(test)]
+mod test {
+    use super::verify_rowcheck_proof;
+    use fractal_indexer::index::build_index_domains;
+    use fractal_proofs::fields::QuadExtension;
+    use fractal_proofs::{FieldElement, SumcheckProof};
+    use fractal_prover::{LayeredProver, FractalOptions};
+    use fractal_prover::accumulator::Accumulator;
+    use fractal_prover::channel::DefaultFractalProverChannel;
+    use fractal_prover::rowcheck_prover::RowcheckProver;
+    use fractal_examples2::gen_options::get_example_fractal_options;
+    use std::time::{SystemTime, UNIX_EPOCH};
+    use winter_crypto::hashers::{Rp64_256, Blake3_256};
+    use winter_crypto::{ElementHasher, RandomCoin};
+    use winter_fri::{FriOptions, FriVerifier, ProverChannel};
+    use winter_math::fields::f64::BaseElement;
+    use winter_math::utils;
+    use winter_math::StarkField;
+
+    #[test]
+    fn run_test_rowcheck_proof() {
+        test_rowcheck_proof::<BaseElement, QuadExtension<BaseElement>, Blake3_256<BaseElement>>();
+        test_rowcheck_proof::<BaseElement, BaseElement, Rp64_256>();
+    }
+
+    fn test_rowcheck_proof<
+        B: StarkField,
+        E: FieldElement<BaseField = B>,
+        H: ElementHasher<BaseField = B>,
+    >() {
+
+        /*let lde_blowup = 4;
+        let num_queries = 16;
+        let fri_options = FriOptions::new(lde_blowup, 4, 32);
+        let max_degree: usize = 63;
+        let l_field_size: usize = 4 * max_degree.next_power_of_two();
+        let l_field_base = B::get_root_of_unity(l_field_size.trailing_zeros());
+        let evaluation_domain = utils::get_power_series(l_field_base, l_field_size);
+        let offset = B::ONE;
+        let mut accumulator = Accumulator::<B,E,H>::new(evaluation_domain.len(), offset, evaluation_domain, num_queries, fri_options);
+
+        let a = vec![0,1,2,3,4,5,6,7];
+        let b = vec![2,2,2,2,2,2,2,2];
+        let c = vec![0,2,4,6,8,10,12,14];
+
+        let f_az_coeffs:Vec<B> = a.iter().map(|x| B::from(*x as u128)).collect();
+        let f_bz_coeffs:Vec<B> = b.iter().map(|x| B::from(*x as u128)).collect();
+        let f_cz_coeffs:Vec<B> = c.iter().map(|x| B::from(*x as u128)).collect();
+        */
+        let fractal_options = get_example_fractal_options::<B,E,H>();
+
+        let evaluation_domain = fractal_options.evaluation_domain.clone();
+        let mut accumulator = Accumulator::<B,E,H>::new(evaluation_domain.len(), fractal_options.eta, evaluation_domain, fractal_options.num_queries, fractal_options.fri_options.clone());
+
+
+        let a_evals: Vec<B> = (0..31).into_iter().map(|_| B::from(2u128)).collect();
+        let b_evals: Vec<B> = (0..31).into_iter().map(|_| B::from(7u128)).collect();
+        let c_evals: Vec<B> = (0..31).into_iter().map(|i| *a_evals.get(i).unwrap() * *b_evals.get(i).unwrap()).collect();
+
+        let f_az_coeffs:Vec<B> = interpolate a_evals...
+        
+        let mut rowcheck_prover = RowcheckProver::<B,E,H>::new(
+            f_az_coeffs,
+            f_bz_coeffs,
+            f_cz_coeffs,
+            fractal_options
+        );
+        let query = E::from(0u128);
+        rowcheck_prover.run_next_layer(query, &mut accumulator).unwrap();
+        let commit = accumulator.commit_layer();
+        let fri_proof = accumulator.create_fri_proof();
+
+    }
+}

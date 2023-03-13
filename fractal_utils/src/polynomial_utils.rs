@@ -79,8 +79,10 @@ pub fn pad_with_zeroes<E: FieldElement>(poly: &mut Vec<E>, total_len: usize) {
     }
     let diff = total_len - poly.len();
     for _ in 0..diff {
-        poly.push(E::ZERO);
+        //poly.push(E::ZERO);
     }
+    let mut zeroes = vec![E::ZERO; diff];
+    poly.append(&mut zeroes);
 }
 
 pub fn get_to_degree_size<E: FieldElement>(poly: &mut Vec<E>) {
@@ -131,22 +133,22 @@ pub trait MultiPoly<
     fn get_commitment(&self) -> Result<&H::Digest, FractalUtilError>;
     /// This function retrieves the evaluations of the polynomials in question at the given
     /// index in the evaluation domain.
-    fn get_values_at(&self, index: usize) -> Result<Vec<B>, FractalUtilError>;
+    fn get_values_at(&self, index: usize) -> Result<Vec<E>, FractalUtilError>;
     /// This function retrieves the evals of the polynomials at a set of evaluation points.
-    fn batch_get_values_at(&self, indices: Vec<usize>) -> Result<Vec<Vec<B>>, FractalUtilError>;
+    fn batch_get_values_at(&self, indices: Vec<usize>) -> Result<Vec<Vec<E>>, FractalUtilError>;
     /// This function takes as input an index of a point in the evaluation domain and
     /// outputs the evals committed at that point and a proof.
     fn get_values_and_proof_at(
         &self,
         index: usize,
-    ) -> Result<(Vec<B>, Vec<H::Digest>), FractalUtilError>;
+    ) -> Result<(Vec<E>, Vec<H::Digest>), FractalUtilError>;
     /// This function takes as input the indices of multiple points in the evaluation domain and
     /// returns the evaluations of all the polynomials at these points, together with a batch merkle
     /// proof showing that this eval was done correctly.
     fn batch_get_values_and_proofs_at(
         &self,
         indices: Vec<usize>,
-    ) -> Result<(Vec<Vec<B>>, BatchMerkleProof<H>), FractalUtilError>;
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), FractalUtilError>;
     /// This function takes as input the value of the polynomials at a particular index and
     /// verifies it wrt to the commitment.
     /// Note how this function is stateless, so it can be efficiently used by the verifier.
@@ -171,8 +173,8 @@ pub struct MultiEval<
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
-    pub evaluations: Vec<Vec<B>>,
-    pub coefficients: Vec<Vec<B>>,
+    pub evaluations: Vec<Vec<E>>,
+    pub coefficients: Vec<Vec<E>>,
     pub committed_tree: Option<MerkleTree<H>>,
     _e: PhantomData<E>,
 }
@@ -188,16 +190,31 @@ impl<
     /// Note that coefficients is semantically of the form <poly_1, ..., poly_n>
     /// that is, each element of the vector coefficients is the vector of coefficients
     /// for one of the polynomials in question.
-    pub fn new(coefficients: Vec<Vec<B>>, evaluation_domain_len: usize, offset: B) -> Self {
+    pub fn new(coefficients_b: Vec<Vec<B>>, coefficients_e: Vec<Vec<E>>, evaluation_domain_len: usize, offset: B) -> Self {
         let eval_twiddles = fft::get_twiddles(evaluation_domain_len);
-        let mut accumulated_evals = Vec::<Vec<B>>::new();
-        for (_, poly) in coefficients.iter().enumerate() {
-            accumulated_evals.push(Self::eval_on_domain(
-                poly.to_vec(),
+
+        let mut accumulated_evals = Vec::<Vec<E>>::new();
+        for (_, poly) in coefficients_b.iter().enumerate() {
+            accumulated_evals.push(eval_on_domain(
+                poly,
                 evaluation_domain_len,
-                eval_twiddles.clone(),
+                &eval_twiddles,
+            ).into_iter().map(|i| E::from(i)).collect());
+        }
+
+        for (_, poly) in coefficients_e.iter().enumerate() {
+            accumulated_evals.push(eval_on_domain(
+                poly,
+                evaluation_domain_len,
+                &eval_twiddles,
             ));
         }
+
+        let mut coefficients = coefficients_e;
+        for (_, poly) in coefficients_b.into_iter().enumerate() {
+            coefficients.push(poly.into_iter().map(|i| E::from(i)).collect());
+        }
+
         let evaluations = Self::zip_evals(accumulated_evals, evaluation_domain_len);
         let committed_tree: Option<MerkleTree<H>> = Option::None;
         Self {
@@ -210,36 +227,36 @@ impl<
 
     pub fn add_polynomial(&mut self, coefficients: Vec<B>, evaluation_domain_len: usize) -> (){
         let eval_twiddles = fft::get_twiddles(evaluation_domain_len);
-        let evaluations = Self::eval_on_domain(
-            coefficients.clone(),
+        let evaluations = eval_on_domain(
+            &coefficients,
             evaluation_domain_len,
-            eval_twiddles.clone(),
+            &eval_twiddles,
         );
-        self.coefficients.push(coefficients);
-        self.evaluations.push(evaluations);
+        self.coefficients.push(coefficients.into_iter().map(|i| E::from(i)).collect::<Vec<E>>());
+        self.evaluations.push(evaluations.into_iter().map(|i| E::from(i)).collect::<Vec<E>>());
         self.committed_tree =  Option::None;
     }
 
     /// This is mostly a helper function to evaluate the polynomials on a domain of given length
     /// for which twiddles are already computed.
-    pub fn eval_on_domain(
-        coefficients: Vec<B>,
+    /*pub fn eval_on_domain(
+        coefficients: &[E],
         evaluation_domain_len: usize,
-        eval_twiddles: Vec<B>,
-    ) -> Vec<B> {
+        eval_twiddles: &[B],
+    ) -> Vec<E> {
         let mut eval = coefficients.clone();
         pad_with_zeroes(&mut eval, evaluation_domain_len);
 
-        fft::evaluate_poly(&mut eval, &mut eval_twiddles.clone());
+        fft::evaluate_poly(&mut eval, eval_twiddles);
 
-        eval
-    }
+        eval.to_vec()
+    }*/
 
     /// Helper function to zip the evaluations so that each element of the output is of the
     /// form [poly_1(e), ..., poly_n(e)] i.e. evaluations of all the polynomials are included
     /// in the same array.
-    fn zip_evals(separate_evals: Vec<Vec<B>>, evaluation_domain_len: usize) -> Vec<Vec<B>> {
-        let mut zipped_evals = vec![Vec::<B>::new(); evaluation_domain_len];
+    fn zip_evals(separate_evals: Vec<Vec<E>>, evaluation_domain_len: usize) -> Vec<Vec<E>> {
+        let mut zipped_evals = vec![Vec::<E>::new(); evaluation_domain_len];
         for (_, eval) in separate_evals.iter().enumerate() {
             for (loc, &val) in eval.iter().enumerate() {
                 zipped_evals[loc].push(val);
@@ -280,12 +297,12 @@ impl<
         }
     }
 
-    fn get_values_at(&self, index: usize) -> Result<Vec<B>, FractalUtilError> {
+    fn get_values_at(&self, index: usize) -> Result<Vec<E>, FractalUtilError> {
         Ok(self.evaluations[index].clone())
     }
 
-    fn batch_get_values_at(&self, indices: Vec<usize>) -> Result<Vec<Vec<B>>, FractalUtilError> {
-        let mut output_vals = Vec::<Vec<B>>::new();
+    fn batch_get_values_at(&self, indices: Vec<usize>) -> Result<Vec<Vec<E>>, FractalUtilError> {
+        let mut output_vals = Vec::<Vec<E>>::new();
         for (_, &index) in indices.iter().enumerate() {
             output_vals.push(self.evaluations[index].clone());
         }
@@ -295,7 +312,7 @@ impl<
     fn get_values_and_proof_at(
         &self,
         index: usize,
-    ) -> Result<(Vec<B>, Vec<<H>::Digest>), FractalUtilError> {
+    ) -> Result<(Vec<E>, Vec<<H>::Digest>), FractalUtilError> {
         let value = self.evaluations[index].clone();
         let proof = match &self.committed_tree {
             None => Err(FractalUtilError::MultiPolyErr(
@@ -313,7 +330,7 @@ impl<
     fn batch_get_values_and_proofs_at(
         &self,
         indices: Vec<usize>,
-    ) -> Result<(Vec<Vec<B>>, BatchMerkleProof<H>), FractalUtilError> {
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), FractalUtilError> {
         let values = self.batch_get_values_at(indices.clone())?;
         let proof = match &self.committed_tree {
             None => Err(FractalUtilError::MultiPolyErr(
@@ -364,4 +381,18 @@ impl<
             ))
         })
     }
+}
+
+pub fn eval_on_domain<B,E>(
+    coefficients: &[E],
+    evaluation_domain_len: usize,
+    eval_twiddles: &[B],
+) -> Vec<E> where
+B: StarkField,
+E: FieldElement<BaseField = B>,{
+    let mut eval = Vec::from(coefficients);
+    pad_with_zeroes(&mut eval, evaluation_domain_len);
+    fft::evaluate_poly(&mut eval, eval_twiddles);
+
+    eval
 }

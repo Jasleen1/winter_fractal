@@ -1,4 +1,4 @@
-use fractal_proofs::MultiPoly;
+use fractal_proofs::{MultiPoly, LowDegreeBatchProof};
 use winter_math::{fft, FieldElement, StarkField};
 use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
 use std::{convert::TryInto, marker::PhantomData};
@@ -18,8 +18,9 @@ pub evaluation_domain: Vec<B>,
 pub num_queries: usize,
 pub fri_options: FriOptions,
 pub coefficients: Vec<Vec<B>>,
+pub coefficients_e: Vec<Vec<E>>,
 pub max_degrees: Vec<usize>,
-_e: PhantomData<E>,
+pub max_degrees_e: Vec<usize>,
 _h: PhantomData<H>,
 }
 
@@ -36,8 +37,9 @@ impl<
             num_queries,
             fri_options,
             coefficients: Vec::new(),
+            coefficients_e: Vec::new(),
             max_degrees: Vec::new(),
-            _e: PhantomData,
+            max_degrees_e: Vec::new(),
             _h: PhantomData,
         }
     }
@@ -45,9 +47,13 @@ impl<
         self.coefficients.push(coefficients);
         self.max_degrees.push(max_degree);
     }
+    pub fn add_polynomial_e(&mut self, coefficients: Vec<E>, max_degree: usize) -> (){
+        self.coefficients_e.push(coefficients);
+        self.max_degrees_e.push(max_degree);
+    }
     pub fn commit_layer(&self) -> <H>::Digest{
-        let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.evaluation_domain_len, self.offset);
-        multi_eval.commit_polynomial_evaluations();
+        let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_e.clone(), self.evaluation_domain_len, self.offset);
+        multi_eval.commit_polynomial_evaluations().unwrap();
         multi_eval.get_commitment().unwrap().clone()
     }
     pub fn draw_queries(&self, count: usize) -> Vec<E> {
@@ -61,7 +67,7 @@ impl<
         let queries = (0..count).map(|_| channel.draw_fri_alpha()).collect();
         queries
     }
-    pub fn create_fri_proof(&self){
+    pub fn create_fri_proof(&self) -> LowDegreeBatchProof<B,E,H>{
         let channel_state = self.commit_layer();
         let mut channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
@@ -73,7 +79,11 @@ impl<
         for i in 0..self.max_degrees.len() {
             low_degree_prover.add_polynomial(self.coefficients.get(i).unwrap(), *self.max_degrees.get(i).unwrap(), &mut channel);
         }
+        for i in 0..self.max_degrees_e.len() {
+            low_degree_prover.add_polynomial_e(self.coefficients_e.get(i).unwrap(), *self.max_degrees_e.get(i).unwrap(), &mut channel);
+        }
 
+        low_degree_prover.generate_proof(&mut channel)
     }
 }
 
