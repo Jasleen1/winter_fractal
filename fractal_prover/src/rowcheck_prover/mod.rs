@@ -146,6 +146,8 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             &denom_poly,
         );
 
+        println!("s[94]: {:?}", polynom::eval(&s_coeffs, accumulator.evaluation_domain[94]));
+
         accumulator.add_polynomial(s_coeffs, self.size_subgroup_h - 1);
     }
 }

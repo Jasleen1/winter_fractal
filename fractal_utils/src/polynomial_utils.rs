@@ -161,7 +161,7 @@ pub trait MultiPoly<
     /// This function takes as input the value of the polynomials at multiple indices and
     /// verifies them wrt to the commitment.
     fn batch_verify_values_and_proofs_at(
-        vals: Vec<Vec<B>>,
+        vals: Vec<Vec<E>>,
         root: &H::Digest,
         proof: &BatchMerkleProof<H>,
         indices: Vec<usize>,
@@ -363,18 +363,18 @@ impl<
             ))
         })
     }
-
+    //todo: check vals
     fn batch_verify_values_and_proofs_at(
-        _vals: Vec<Vec<B>>,
+        vals: Vec<Vec<E>>,
         root: &<H>::Digest,
         proof: &BatchMerkleProof<H>,
         indices: Vec<usize>,
     ) -> Result<(), FractalUtilError> {
-        // for index in indices {
-        //     if H::hash_elements(&vals[index]) != proof.leaves[index] {
-        //         return Err(FractalUtilError::MultiPolyErr("The proof's value does not match the sent value".to_string()));
-        //     }
-        // } // TODO: still need to check this but currently leaves is private
+        /*for index in indices.iter() {
+            if H::hash_elements(&vals[*index]) != proof.leaves[*index] {
+                return Err(FractalUtilError::MultiPolyErr("The proof's value does not match the sent value".to_string()));
+            }
+        }*/ // TODO: still need to check this but currently leaves is private
         MerkleTree::verify_batch(root, &indices, proof).map_err(|e| {
             FractalUtilError::MultiPolyErr(format!(
                 "Got an error when committing to the evals: {e}"

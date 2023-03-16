@@ -1,3 +1,4 @@
+pub mod accumulator_verifier;
 pub mod channel;
 pub mod errors;
 mod lincheck_verifier;

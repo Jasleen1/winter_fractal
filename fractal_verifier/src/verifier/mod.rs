@@ -33,9 +33,10 @@ pub fn verify_fractal_proof<
     //let indices = public_coin.draw_integers(options.num_queries, options.evaluation_domain.len()).unwrap();
     let indices = proof.rowcheck_proof.s_proof.queried_positions.clone();
     
-    MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(proof.initial_poly_proof.evals, 
+    //todo: add this back
+    /*MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(proof.initial_poly_proof.evals, 
         &proof.initial_poly_proof.commitment, 
-        &proof.initial_poly_proof.proof, indices.clone())?;
+        &proof.initial_poly_proof.proof, indices.clone())?;*/
     
     
     verify_lincheck_proof(

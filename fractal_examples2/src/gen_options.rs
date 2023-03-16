@@ -28,11 +28,11 @@ use winter_math::utils;
 use winter_math::FieldElement;
 use winter_math::StarkField;
 
-pub fn get_example_fractal_options<
+pub fn get_example_setup<
 B: StarkField,
 E: FieldElement<BaseField = B>,
 H: ElementHasher + ElementHasher<BaseField = B>,
->() -> FractalOptions<B> {
+>() -> (FractalOptions<B>, ProverKey<H,B>, VerifierKey<H,B>) {
     let mut options = ExampleOptions::from_args();
     options.verbose = true;
     if options.verbose {
@@ -43,7 +43,7 @@ H: ElementHasher + ElementHasher<BaseField = B>,
     }
 
     // call orchestrate_r1cs_example
-    files_to_fractal_options::<B, E, H, 1>(
+    files_to_setup_outputs::<B, E, H, 1>(
     //orchestrate_r1cs_example::<BaseElement, BaseElement, Blake3_256<BaseElement>, 1>(
         &options.arith_file,
         &options.wires_file,
@@ -51,7 +51,7 @@ H: ElementHasher + ElementHasher<BaseField = B>,
     )
 }
 
-fn files_to_fractal_options<
+fn files_to_setup_outputs<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
@@ -60,7 +60,7 @@ fn files_to_fractal_options<
     arith_file: &str,
     wire_file: &str,
     verbose: bool,
-) -> FractalOptions<B>{
+) -> (FractalOptions<B>, ProverKey<H,B>, VerifierKey<H,B>){
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
     arith_parser.parse_arith_file(&arith_file, verbose);
     let r1cs = arith_parser.clone_r1cs();
@@ -134,7 +134,7 @@ fn files_to_fractal_options<
         fri_options,
         num_queries,
     };
-    options
+    (options, prover_key, verifier_key)
 }
 
 #[derive(Debug)]

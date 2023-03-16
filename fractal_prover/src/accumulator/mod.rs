@@ -18,9 +18,11 @@ pub evaluation_domain: Vec<B>,
 pub num_queries: usize,
 pub fri_options: FriOptions,
 pub coefficients: Vec<Vec<B>>,
-pub coefficients_e: Vec<Vec<E>>,
+pub coefficients_ext: Vec<Vec<E>>,
 pub max_degrees: Vec<usize>,
-pub max_degrees_e: Vec<usize>,
+pub max_degrees_ext: Vec<usize>,
+pub unchecked_coefficients: Vec<Vec<B>>,
+pub unchecked_coefficients_ext: Vec<Vec<E>>,
 _h: PhantomData<H>,
 }
 
@@ -37,36 +39,74 @@ impl<
             num_queries,
             fri_options,
             coefficients: Vec::new(),
-            coefficients_e: Vec::new(),
+            coefficients_ext: Vec::new(),
             max_degrees: Vec::new(),
-            max_degrees_e: Vec::new(),
+            max_degrees_ext: Vec::new(),
+            unchecked_coefficients: Vec::new(),
+            unchecked_coefficients_ext: Vec::new(),
             _h: PhantomData,
         }
     }
-    pub fn add_polynomial(&mut self, coefficients: Vec<B>, max_degree: usize) -> (){
+
+    pub fn add_polynomial(&mut self, coefficients: Vec<B>, max_degree: usize){
         self.coefficients.push(coefficients);
         self.max_degrees.push(max_degree);
     }
-    pub fn add_polynomial_e(&mut self, coefficients: Vec<E>, max_degree: usize) -> (){
-        self.coefficients_e.push(coefficients);
-        self.max_degrees_e.push(max_degree);
+
+    pub fn add_polynomial_e(&mut self, coefficients: Vec<E>, max_degree: usize){
+        self.coefficients_ext.push(coefficients);
+        self.max_degrees_ext.push(max_degree);
     }
+
+    // commit to a polynomial which does not need to be part of a degree proof
+    pub fn add_unchecked_polynomial(&mut self, coefficients: Vec<B>){
+        self.unchecked_coefficients.push(coefficients);
+    }
+
     pub fn commit_layer(&self) -> <H>::Digest{
-        let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_e.clone(), self.evaluation_domain_len, self.offset);
+        let mut coeffs_b = self.unchecked_coefficients.clone();
+        let mut coeffs_b2 = self.coefficients.clone();
+        coeffs_b.append(&mut coeffs_b2);
+        let mut multi_eval = MultiEval::<B,E,H>::new(coeffs_b, self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
+        //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
         multi_eval.commit_polynomial_evaluations().unwrap();
         multi_eval.get_commitment().unwrap().clone()
     }
+
     pub fn draw_queries(&self, count: usize) -> Vec<E> {
         let channel_state = self.commit_layer();
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
-            Vec::new()
+            Vec::new() // make sure there's actually chainging between layers
         );
         channel.commit_fractal_iop_layer(channel_state);
         let queries = (0..count).map(|_| channel.draw_fri_alpha()).collect();
         queries
     }
+
+    pub fn decommit_layer(&self) -> (Vec<Vec<E>>, BatchMerkleProof<H>){
+        //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
+        let mut coeffs_b = self.unchecked_coefficients.clone();
+        let mut coeffs_b2 = self.coefficients.clone();
+        coeffs_b.append(&mut coeffs_b2);
+        let mut multi_eval = MultiEval::<B,E,H>::new(coeffs_b, self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
+        multi_eval.commit_polynomial_evaluations().unwrap();
+        
+        let channel_state = multi_eval.get_commitment().unwrap().clone();
+        let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+            self.evaluation_domain_len,
+            self.num_queries,
+            Vec::new() // make sure there's actually chaining between layers
+        );
+        channel.commit_fractal_iop_layer(channel_state);
+        let queries = channel.draw_query_positions();
+        println!("queries: {:?}", &queries);
+        let out = multi_eval.batch_get_values_and_proofs_at(queries).unwrap();
+        out
+    }
+
+    // could be named something like "finish"
     pub fn create_fri_proof(&self) -> LowDegreeBatchProof<B,E,H>{
         let channel_state = self.commit_layer();
         let mut channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
@@ -79,8 +119,8 @@ impl<
         for i in 0..self.max_degrees.len() {
             low_degree_prover.add_polynomial(self.coefficients.get(i).unwrap(), *self.max_degrees.get(i).unwrap(), &mut channel);
         }
-        for i in 0..self.max_degrees_e.len() {
-            low_degree_prover.add_polynomial_e(self.coefficients_e.get(i).unwrap(), *self.max_degrees_e.get(i).unwrap(), &mut channel);
+        for i in 0..self.max_degrees_ext.len() {
+            low_degree_prover.add_polynomial_e(self.coefficients_ext.get(i).unwrap(), *self.max_degrees_ext.get(i).unwrap(), &mut channel);
         }
 
         low_degree_prover.generate_proof(&mut channel)
