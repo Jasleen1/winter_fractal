@@ -71,7 +71,7 @@ pub fn add_rowcheck_verification<
     // Since the degree of f_az and f_bz is each |H| - 1, the degree of the polynomial
     // s = (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
 
-    accumulator_verifier.add_constraint(h_domain_size - 1);
+    accumulator_verifier.add_constraint(h_domain_size - 2);
 
     
     let f_az_evals: Vec<E> = (0..queried_positions.len()).into_iter().map(|i| decommit[i][f_az_idx]).collect();
@@ -80,8 +80,8 @@ pub fn add_rowcheck_verification<
     let s_evals: Vec<E> = (0..queried_positions.len()).into_iter().map(|i| decommit[i][s_idx]).collect();
 
 
-    //verify_s_computation::<B, E, H>(accumulator_verifier.evaluation_domain_len, h_domain_size, queried_positions, 
-    //    E::from(verifier_key.params.eta), f_az_evals, f_bz_evals, f_cz_evals, s_evals)?;
+    verify_s_computation::<B, E, H>(accumulator_verifier.evaluation_domain_len, h_domain_size, queried_positions, 
+        E::from(verifier_key.params.eta), f_az_evals, f_bz_evals, f_cz_evals, s_evals)?;
 
     Ok(())
 }
@@ -267,6 +267,8 @@ mod test {
 
         let mut accumulator_verifier = AccumulatorVerifier::<B,E,H>::new(eval_len, fractal_options.eta, evaluation_domain.clone(), fractal_options.num_queries, fractal_options.fri_options.clone());
         
+        assert!(accumulator_verifier.verify_layer(commit, decommit.0.clone(), decommit.1));
+
         //todo: do this in the verifier accumulator only
         let mut coin = RandomCoin::<B, H>::new(&vec![]);
         coin.reseed(commit);
@@ -277,8 +279,13 @@ mod test {
         println!("queried_positions: {:?}", &queried_positions);
 
         add_rowcheck_verification(&mut accumulator_verifier, &verifier_key, decommit.0, queried_positions, 0, 1, 2, 3).unwrap();
-        //accumulator_verifier.add_constraint(31);
-        println!("result: {}", accumulator_verifier.verify_fri_proof(commit, fri_proof));
+        
+        assert!(accumulator_verifier.verify_fri_proof(commit, fri_proof));
+
+        //IOP struct: vecs of commits, decommits, and a fri proof at the end
+        // how does verifier know which proofs in which layers?
+        // needs set of instructions: verify x constraint, move to next layer
+        // as a first step, can you give it the full proof, then call functions in order?
 
 
     }

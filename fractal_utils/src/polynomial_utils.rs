@@ -370,11 +370,12 @@ impl<
         proof: &BatchMerkleProof<H>,
         indices: Vec<usize>,
     ) -> Result<(), FractalUtilError> {
-        /*for index in indices.iter() {
-            if H::hash_elements(&vals[*index]) != proof.leaves[*index] {
+        //for (index, i) in indices.iter().enumerate() {
+        for i in (0..indices.len()).into_iter(){
+            if H::hash_elements(&vals[i]) != proof.leaves[i] {
                 return Err(FractalUtilError::MultiPolyErr("The proof's value does not match the sent value".to_string()));
             }
-        }*/ // TODO: still need to check this but currently leaves is private
+        } // TODO: still need to check this but currently leaves is private
         MerkleTree::verify_batch(root, &indices, proof).map_err(|e| {
             FractalUtilError::MultiPolyErr(format!(
                 "Got an error when committing to the evals: {e}"
