@@ -65,7 +65,7 @@ pub struct SumcheckProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hashe
     pub g_max_degree: usize,
     //pub e_proof: LowDegreeProof<B, E, H>,
     pub e_max_degree: usize,
-    pub batch_proof: LowDegreeBatchProof<B, E, H>
+    pub batch_proof: LowDegreeBatchProof<B, E, H>,
 }
 
 // TODO: FIX once interface is stable

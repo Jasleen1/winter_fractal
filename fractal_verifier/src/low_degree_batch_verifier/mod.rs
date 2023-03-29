@@ -1,9 +1,9 @@
-use crate::{errors::LowDegreeVerifierError, channel::DefaultFractalVerifierChannel};
+use crate::{channel::DefaultFractalVerifierChannel, errors::LowDegreeVerifierError};
 
 use fractal_proofs::{polynom, FieldElement, LowDegreeBatchProof};
 use fractal_utils::polynomial_utils::*;
 use winter_crypto::{ElementHasher, RandomCoin};
-use winter_fri::{FriVerifier};
+use winter_fri::FriVerifier;
 use winter_math::StarkField;
 
 pub fn verify_low_degree_batch_proof<
@@ -24,8 +24,8 @@ pub fn verify_low_degree_batch_proof<
     )?;
 
     //todo: need to be able to sample these throughout the protocol like for the batch verifier
-    let mut alphas:Vec<E> = Vec::new();
-    let mut betas:Vec<E> = Vec::new();
+    let mut alphas: Vec<E> = Vec::new();
+    let mut betas: Vec<E> = Vec::new();
     for _ in 0..max_degrees.len() {
         alphas.push(public_coin.draw::<E>().unwrap());
         betas.push(public_coin.draw::<E>().unwrap());
@@ -35,11 +35,13 @@ pub fn verify_low_degree_batch_proof<
     // rederive the evaluation domain size the same way as in the FRI verifier
     let eval_domain_size = proof.options.blowup_factor() * (proof.fri_max_degree + 1);
 
-    for root in proof.tree_roots.iter(){
+    for root in proof.tree_roots.iter() {
         public_coin.reseed(*root);
     }
-    let queried_positions = public_coin.draw_integers(num_queries, eval_domain_size).unwrap();
-    
+    let queried_positions = public_coin
+        .draw_integers(num_queries, eval_domain_size)
+        .unwrap();
+
     let fri_verifier = FriVerifier::<B, E, DefaultFractalVerifierChannel<E, H>, H>::new(
         &mut channel,
         public_coin,
@@ -119,7 +121,7 @@ mod test {
     use fractal_prover::channel::DefaultFractalProverChannel;
     use fractal_prover::low_degree_batch_prover::LowDegreeBatchProver;
     use std::time::{SystemTime, UNIX_EPOCH};
-    use winter_crypto::hashers::{Rp64_256, Blake3_256};
+    use winter_crypto::hashers::{Blake3_256, Rp64_256};
     use winter_crypto::{ElementHasher, RandomCoin};
     use winter_fri::{FriOptions, FriVerifier, ProverChannel};
     use winter_math::fields::f64::BaseElement;
@@ -148,14 +150,17 @@ mod test {
         //TODO: RandomCoin needs to be able to sample from the extension field, but currently can't
         //let mut public_coin = RandomCoin::<B, H>::new(&[]);
         let mut public_coin = RandomCoin::<_, H>::new(&vec![]);
-        let mut channel =
-            DefaultFractalProverChannel::<B, E, H>::new(evaluation_domain.len(), num_queries, vec![]);
+        let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+            evaluation_domain.len(),
+            num_queries,
+            vec![],
+        );
 
         // this block can be removed if it's causing problems. Currently it's here to document weird behaviour
         let queried_positions = channel.draw_query_positions();
         assert!(public_coin.draw::<E>().unwrap() != channel.draw_fri_alpha());
-        channel.public_coin.reseed(H::hash(&[1,2,3,4]));
-        public_coin.reseed(H::hash(&[1,2,3,4]));
+        channel.public_coin.reseed(H::hash(&[1, 2, 3, 4]));
+        public_coin.reseed(H::hash(&[1, 2, 3, 4]));
         assert!(public_coin.draw::<E>().unwrap() == channel.draw_fri_alpha());
 
         let mut prover =
@@ -169,11 +174,15 @@ mod test {
             polys.push(poly);
         }
 
-
         //println!("queried positions: {:?}", &queried_positions);
-        let queried_positions = vec![144, 79, 190, 228, 234, 31, 172, 50, 78, 253, 194, 44, 21, 134, 22, 140];
+        let queried_positions = vec![
+            144, 79, 190, 228, 234, 31, 172, 50, 78, 253, 194, 44, 21, 134, 22, 140,
+        ];
         let proof = prover.generate_proof(&mut channel);
-        assert!(verify_low_degree_batch_proof(proof, max_degrees, &mut public_coin, num_queries).is_ok());
+        assert!(
+            verify_low_degree_batch_proof(proof, max_degrees, &mut public_coin, num_queries)
+                .is_ok()
+        );
 
         assert!(public_coin.draw::<E>().unwrap() == channel.draw_fri_alpha());
 
@@ -188,11 +197,12 @@ mod test {
         }
 
         let proof2 = prover.generate_proof(&mut channel);
-        assert!(verify_low_degree_batch_proof(proof2, max_degrees2, &mut public_coin, num_queries).is_ok());
+        assert!(
+            verify_low_degree_batch_proof(proof2, max_degrees2, &mut public_coin, num_queries)
+                .is_ok()
+        );
 
         assert!(public_coin.draw::<E>().unwrap() == channel.draw_fri_alpha());
-
-
     }
 
     // a random-ish polynomial that isn't actually random at all. Instead, it uses the system clock since that doesn't require a new crate import

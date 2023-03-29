@@ -6,7 +6,7 @@
 // of this source tree.
 
 //! Errors for various data structure operations.
-use fractal_proofs::{DeserializationError, errors::FractalUtilError};
+use fractal_proofs::{errors::FractalUtilError, DeserializationError};
 use winter_fri::VerifierError;
 
 #[cfg_attr(test, derive(PartialEq))]

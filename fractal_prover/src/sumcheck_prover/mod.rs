@@ -1,11 +1,11 @@
 use std::{convert::TryInto, marker::PhantomData};
 
-use crate::{LayeredProver, FractalOptions};
 use crate::accumulator::Accumulator;
 use crate::errors::ProverError;
-use crate::low_degree_prover::LowDegreeProver;
 use crate::low_degree_batch_prover::LowDegreeBatchProver;
+use crate::low_degree_prover::LowDegreeProver;
 use crate::{channel::DefaultFractalProverChannel, log::debug};
+use crate::{FractalOptions, LayeredProver};
 use fractal_utils::polynomial_utils::*;
 use winter_crypto::ElementHasher;
 use winter_fri::{DefaultProverChannel, FriOptions};
@@ -72,10 +72,10 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     pub fn sumcheck_layer_one(
         &self,
         //query: E,
-        accumulator: &mut Accumulator<B,E,H>,
+        accumulator: &mut Accumulator<B, E, H>,
         //channel: &mut DefaultFractalProverChannel<B, E, H>,
         //initial_queries: Vec<usize>,
-    ){
+    ) {
         // compute the polynomial g such that Sigma(g, sigma) = summing_poly
         // compute the polynomial e such that e = (Sigma(g, sigma) - summing_poly)/v_H over the summing domain H.
         debug!("Starting a sumcheck proof");
@@ -92,14 +92,27 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             .collect();
 
         let summing_domain_e: Vec<E> = self.summing_domain.iter().map(|f| E::from(*f)).collect();
-        let f_hat_coeffs = polynom::interpolate(&self.summing_domain.iter().map(|i| E::from(*i)).collect::<Vec<E>>(), &f_hat_evals, true);
+        let f_hat_coeffs = polynom::interpolate(
+            &self
+                .summing_domain
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>(),
+            &f_hat_evals,
+            true,
+        );
         let x_coeffs = vec![E::ZERO, E::ONE];
         let sub_factor = self.sigma / E::from(self.summing_domain.len() as u64);
         let f_hat_minus_sub_factor = polynom::sub(&f_hat_coeffs, &vec![E::from(sub_factor)]);
         assert_eq!(f_hat_minus_sub_factor[0], E::ZERO);
         let g_hat_coeffs = polynom::div(&f_hat_minus_sub_factor, &x_coeffs);
 
-        let eval_domain_e: Vec<E> = self.fractal_options.evaluation_domain.iter().map(|f| E::from(*f)).collect();
+        let eval_domain_e: Vec<E> = self
+            .fractal_options
+            .evaluation_domain
+            .iter()
+            .map(|f| E::from(*f))
+            .collect();
 
         debug!(
             "self.evaluation_domain.len(): {:?}",
@@ -110,12 +123,34 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let dividing_factor_for_sigma: u64 = self.summing_domain.len().try_into().unwrap();
         let subtracting_factor = self.sigma * E::from(dividing_factor_for_sigma).inv();
 
-        let g_eval_domain_evals = polynom::eval_many(&g_hat_coeffs, &self.fractal_options.evaluation_domain.iter().map(|i| E::from(*i)).collect::<Vec<E>>());
+        let g_eval_domain_evals = polynom::eval_many(
+            &g_hat_coeffs,
+            &self
+                .fractal_options
+                .evaluation_domain
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>(),
+        );
 
-        let p_eval_domain_evals =
-            polynom::eval_many(&self.numerator_coeffs, &self.fractal_options.evaluation_domain.iter().map(|i| E::from(*i)).collect::<Vec<E>>());
-        let q_eval_domain_evals =
-            polynom::eval_many(&self.denominator_coeffs, &self.fractal_options.evaluation_domain.iter().map(|i| E::from(*i)).collect::<Vec<E>>());
+        let p_eval_domain_evals = polynom::eval_many(
+            &self.numerator_coeffs,
+            &self
+                .fractal_options
+                .evaluation_domain
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>(),
+        );
+        let q_eval_domain_evals = polynom::eval_many(
+            &self.denominator_coeffs,
+            &self
+                .fractal_options
+                .evaluation_domain
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>(),
+        );
 
         let mut e_eval_domain_evals: Vec<E> = Vec::new();
         for i in 0..self.fractal_options.evaluation_domain.len() {
@@ -129,13 +164,20 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             e_eval_domain_evals.push(e_val);
         }
 
-        let e_hat_coeffs =
-            polynom::interpolate(&self.fractal_options.evaluation_domain.iter().map(|i| E::from(*i)).collect::<Vec<E>>(), &e_eval_domain_evals, true);
+        let e_hat_coeffs = polynom::interpolate(
+            &self
+                .fractal_options
+                .evaluation_domain
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>(),
+            &e_eval_domain_evals,
+            true,
+        );
         debug!("degree of e: {}", polynom::degree_of(&e_hat_coeffs));
 
         accumulator.add_polynomial_e(g_hat_coeffs, self.g_degree);
         accumulator.add_polynomial_e(e_hat_coeffs, self.e_degree);
-
     }
 
     // SIGMA(g, sigma)(x) = f(x) = p(x)/q(x)
@@ -174,9 +216,14 @@ impl<
         B: StarkField,
         E: FieldElement<BaseField = B>,
         H: ElementHasher + ElementHasher<BaseField = B>,
-    > LayeredProver<B, E, H> for RationalSumcheckProver<B, E, H>{
-    fn run_next_layer(&mut self, _query: E, accumulator: &mut Accumulator<B,E,H>) -> Result<(), ProverError>{
-        if self.get_current_layer() == 0{
+    > LayeredProver<B, E, H> for RationalSumcheckProver<B, E, H>
+{
+    fn run_next_layer(
+        &mut self,
+        _query: E,
+        accumulator: &mut Accumulator<B, E, H>,
+    ) -> Result<(), ProverError> {
+        if self.get_current_layer() == 0 {
             self.sumcheck_layer_one(accumulator);
             self.current_layer += 1;
         }

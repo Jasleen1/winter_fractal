@@ -1,8 +1,8 @@
 use crate::{errors::FractalUtilError, matrix_utils::*};
 use fractal_math::{fft, FieldElement, StarkField};
-use winter_fri::{DefaultProverChannel, FriOptions};
 use std::{convert::TryInto, marker::PhantomData};
 use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree};
+use winter_fri::{DefaultProverChannel, FriOptions};
 use winter_utils::batch_iter_mut;
 // TODO: Add error checking and throwing
 /**
@@ -190,24 +190,26 @@ impl<
     /// Note that coefficients is semantically of the form <poly_1, ..., poly_n>
     /// that is, each element of the vector coefficients is the vector of coefficients
     /// for one of the polynomials in question.
-    pub fn new(coefficients_b: Vec<Vec<B>>, coefficients_e: Vec<Vec<E>>, evaluation_domain_len: usize, offset: B) -> Self {
+    pub fn new(
+        coefficients_b: Vec<Vec<B>>,
+        coefficients_e: Vec<Vec<E>>,
+        evaluation_domain_len: usize,
+        offset: B,
+    ) -> Self {
         let eval_twiddles = fft::get_twiddles(evaluation_domain_len);
 
         let mut accumulated_evals = Vec::<Vec<E>>::new();
         for (_, poly) in coefficients_b.iter().enumerate() {
-            accumulated_evals.push(eval_on_domain(
-                poly,
-                evaluation_domain_len,
-                &eval_twiddles,
-            ).into_iter().map(|i| E::from(i)).collect());
+            accumulated_evals.push(
+                eval_on_domain(poly, evaluation_domain_len, &eval_twiddles)
+                    .into_iter()
+                    .map(|i| E::from(i))
+                    .collect(),
+            );
         }
 
         for (_, poly) in coefficients_e.iter().enumerate() {
-            accumulated_evals.push(eval_on_domain(
-                poly,
-                evaluation_domain_len,
-                &eval_twiddles,
-            ));
+            accumulated_evals.push(eval_on_domain(poly, evaluation_domain_len, &eval_twiddles));
         }
 
         let mut coefficients = coefficients_e;
@@ -225,16 +227,22 @@ impl<
         }
     }
 
-    pub fn add_polynomial(&mut self, coefficients: Vec<B>, evaluation_domain_len: usize) -> (){
+    pub fn add_polynomial(&mut self, coefficients: Vec<B>, evaluation_domain_len: usize) -> () {
         let eval_twiddles = fft::get_twiddles(evaluation_domain_len);
-        let evaluations = eval_on_domain(
-            &coefficients,
-            evaluation_domain_len,
-            &eval_twiddles,
+        let evaluations = eval_on_domain(&coefficients, evaluation_domain_len, &eval_twiddles);
+        self.coefficients.push(
+            coefficients
+                .into_iter()
+                .map(|i| E::from(i))
+                .collect::<Vec<E>>(),
         );
-        self.coefficients.push(coefficients.into_iter().map(|i| E::from(i)).collect::<Vec<E>>());
-        self.evaluations.push(evaluations.into_iter().map(|i| E::from(i)).collect::<Vec<E>>());
-        self.committed_tree =  Option::None;
+        self.evaluations.push(
+            evaluations
+                .into_iter()
+                .map(|i| E::from(i))
+                .collect::<Vec<E>>(),
+        );
+        self.committed_tree = Option::None;
     }
 
     /// This is mostly a helper function to evaluate the polynomials on a domain of given length
@@ -371,9 +379,11 @@ impl<
         indices: Vec<usize>,
     ) -> Result<(), FractalUtilError> {
         //for (index, i) in indices.iter().enumerate() {
-        for i in (0..indices.len()).into_iter(){
+        for i in (0..indices.len()).into_iter() {
             if H::hash_elements(&vals[i]) != proof.leaves[i] {
-                return Err(FractalUtilError::MultiPolyErr("The proof's value does not match the sent value".to_string()));
+                return Err(FractalUtilError::MultiPolyErr(
+                    "The proof's value does not match the sent value".to_string(),
+                ));
             }
         } // TODO: still need to check this but currently leaves is private
         MerkleTree::verify_batch(root, &indices, proof).map_err(|e| {
@@ -384,13 +394,15 @@ impl<
     }
 }
 
-pub fn eval_on_domain<B,E>(
+pub fn eval_on_domain<B, E>(
     coefficients: &[E],
     evaluation_domain_len: usize,
     eval_twiddles: &[B],
-) -> Vec<E> where
-B: StarkField,
-E: FieldElement<BaseField = B>,{
+) -> Vec<E>
+where
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+{
     let mut eval = Vec::from(coefficients);
     pad_with_zeroes(&mut eval, evaluation_domain_len);
     fft::evaluate_poly(&mut eval, eval_twiddles);

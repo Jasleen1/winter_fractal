@@ -8,12 +8,11 @@ use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
 use winter_math::{fft, FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
+use crate::channel::DefaultFractalProverChannel;
 use fractal_proofs::{
     polynom::{self, eval},
     LowDegreeBatchProof, OracleQueries,
 };
-use crate::channel::DefaultFractalProverChannel;
-
 
 //This should be able to accumulate polynomials over time and prove at the end
 pub struct LowDegreeBatchProver<
@@ -112,7 +111,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         }
 
         // commit to all evaluations before drawing queries
-        for root in tree_roots.iter(){
+        for root in tree_roots.iter() {
             channel.commit_fri_layer(*root);
         }
         let queried_positions = channel.draw_query_positions();
@@ -126,12 +125,16 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             let unpadded_queried_evaluations = polynom::eval_many(&poly, &eval_domain_queried);
             all_unpadded_queried_evaluations.push(unpadded_queried_evaluations);
         }
-        let tree_proofs = trees.iter().map(|tree| tree.prove_batch(&queried_positions).unwrap()).collect();
+        let tree_proofs = trees
+            .iter()
+            .map(|tree| tree.prove_batch(&queried_positions).unwrap())
+            .collect();
         let composed_evals: Vec<E> =
             polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
-        let mut fri_prover = winter_fri::FriProver::<B, E, DefaultFractalProverChannel<B, E, H>, H>::new(
-            self.fri_options.clone(),
-        );
+        let mut fri_prover =
+            winter_fri::FriProver::<B, E, DefaultFractalProverChannel<B, E, H>, H>::new(
+                self.fri_options.clone(),
+            );
         fri_prover.build_layers(channel, composed_evals.clone());
         let fri_proof = fri_prover.build_proof(&queried_positions);
         // use only the commitments that we just added

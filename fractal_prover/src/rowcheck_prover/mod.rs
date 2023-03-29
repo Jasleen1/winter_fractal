@@ -10,7 +10,8 @@ use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
 use crate::{
-    channel::DefaultFractalProverChannel, errors::ProverError, low_degree_prover::LowDegreeProver, LayeredProver, accumulator::Accumulator, FractalOptions,
+    accumulator::Accumulator, channel::DefaultFractalProverChannel, errors::ProverError,
+    low_degree_prover::LowDegreeProver, FractalOptions, LayeredProver,
 };
 
 pub struct RowcheckProver<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
@@ -127,7 +128,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             s_max_degree: self.size_subgroup_h - 1,
         })
     }
-    fn rowcheck_layer_one(&self, accumulator: &mut Accumulator<B,E,H>){
+    fn rowcheck_layer_one(&self, accumulator: &mut Accumulator<B, E, H>) {
         // The rowcheck is supposed to prove whether f_az * f_bz - f_cz = 0 on all of H.
         // Which means that the polynomial f_az * f_bz - f_cz must be divisible by the
         // vanishing polynomial for H.
@@ -146,23 +147,28 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             &denom_poly,
         );
 
-        println!("s[94]: {:?}", polynom::eval(&s_coeffs, accumulator.evaluation_domain[94]));
+        println!(
+            "s[94]: {:?}",
+            polynom::eval(&s_coeffs, accumulator.evaluation_domain[94])
+        );
         println!("len(s_coeffs): {}", s_coeffs.len());
 
         accumulator.add_polynomial(s_coeffs, self.size_subgroup_h - 2);
     }
 }
 
-
-
 impl<
         B: StarkField,
         E: FieldElement<BaseField = B>,
         H: ElementHasher + ElementHasher<BaseField = B>,
-    > LayeredProver<B, E, H> for RowcheckProver<B, E, H>{
-
-    fn run_next_layer(&mut self, _query: E, accumulator: &mut Accumulator<B,E,H>) -> Result<(), ProverError>{
-        if self.current_layer == 0{
+    > LayeredProver<B, E, H> for RowcheckProver<B, E, H>
+{
+    fn run_next_layer(
+        &mut self,
+        _query: E,
+        accumulator: &mut Accumulator<B, E, H>,
+    ) -> Result<(), ProverError> {
+        if self.current_layer == 0 {
             self.rowcheck_layer_one(accumulator);
             self.current_layer += 1;
         }

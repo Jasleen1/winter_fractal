@@ -3,7 +3,10 @@ use std::{marker::PhantomData, usize};
 use fractal_indexer::{hash_values, snark_keys::*};
 use fractal_utils::polynomial_utils::*;
 
-use crate::{channel::DefaultFractalProverChannel, sumcheck_prover::*, accumulator::Accumulator, LayeredProver, errors::ProverError};
+use crate::{
+    accumulator::Accumulator, channel::DefaultFractalProverChannel, errors::ProverError,
+    sumcheck_prover::*, LayeredProver,
+};
 
 use fractal_proofs::{fft, polynom, DefaultProverChannel, LincheckProof, OracleQueries, TryInto};
 
@@ -16,7 +19,7 @@ use crate::{errors::LincheckError, log::debug, FractalOptions};
 
 const n: usize = 1;
 // TODO: Will need to ask Irakliy whether a channel should be passed in here
-pub struct LincheckProver< 
+pub struct LincheckProver<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
@@ -46,7 +49,11 @@ impl<
         f_2_poly_coeffs: Vec<B>,
         options: &FractalOptions<B>,
     ) -> Self {
-        let evaluation_domain_e = options.evaluation_domain.iter().map(|i| E::from(*i)).collect();
+        let evaluation_domain_e = options
+            .evaluation_domain
+            .iter()
+            .map(|i| E::from(*i))
+            .collect();
         LincheckProver {
             prover_matrix_index: prover_matrix_index,
             f_1_poly_coeffs,
@@ -77,12 +84,16 @@ impl<
             let inv_denom_term = denom_term.inv();
             // This computes the term val(k) / (alpha - col(k))
             // Why does this type as B instead of E?
-            let k_term = E::from(self.prover_matrix_index.get_val_eval(summing_elt)) * inv_denom_term;
+            let k_term =
+                E::from(self.prover_matrix_index.get_val_eval(summing_elt)) * inv_denom_term;
             coefficient_values.push(k_term)
         }
         // This is the v_h(alpha) term, which only needs to be computed once.
-        let v_h_alpha =
-            compute_vanishing_poly(alpha.clone(), E::from(self.options.eta), self.options.size_subgroup_h);
+        let v_h_alpha = compute_vanishing_poly(
+            alpha.clone(),
+            E::from(self.options.eta),
+            self.options.size_subgroup_h,
+        );
         //let v_h_alpha = vanishing_poly_for_mult_subgroup(self.alpha, self.options.size_subgroup_h);
         // Now we compute the terms sum_k (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
         // over the eval domain.
@@ -95,7 +106,8 @@ impl<
             for id in 0..self.options.summing_domain.len() {
                 //summing \n summing
                 let summing_elt = self.options.summing_domain[id];
-                let denom_term = E::from(x_val - self.prover_matrix_index.get_row_eval(summing_elt));
+                let denom_term =
+                    E::from(x_val - self.prover_matrix_index.get_row_eval(summing_elt));
                 let prod_term = coefficient_values[id] * denom_term.inv();
                 sum_without_vs = sum_without_vs + prod_term;
             }
@@ -126,13 +138,18 @@ impl<
             t_evals.clone()[0..self.options.h_domain.len()].to_vec();
         let twiddles_evaluation_domain: Vec<B> = fft::get_inv_twiddles(self.options.h_domain.len());
         polynom::interpolate(
-            &self.options.evaluation_domain.iter().map(|i| E::from(*i)).collect::<Vec<E>>(),
+            &self
+                .options
+                .evaluation_domain
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>(),
             &t_evals.to_vec(),
             true,
         )
     }
 
-    pub fn generate_poly_prod(&self, alpha:E, t_alpha_coeffs: &Vec<E>) -> Vec<E> {
+    pub fn generate_poly_prod(&self, alpha: E, t_alpha_coeffs: &Vec<E>) -> Vec<E> {
         // This function needs to compute the polynomial
         // u_H(X, alpha)*f_1 - t_alpha*f_2
         // here are the steps to this:
@@ -149,19 +166,33 @@ impl<
         u_numerator.push(E::ONE);
         let u_denominator = vec![alpha.neg(), E::ONE];
         /*let u_alpha_evals: Vec<E> = self
-            .options
-            .evaluation_domain
-            .iter()
-            .map(|e| polynom::eval(&u_numerator, E::from(*e)) / polynom::eval(&u_denominator, E::from(*e)))
-            .collect();*/
+        .options
+        .evaluation_domain
+        .iter()
+        .map(|e| polynom::eval(&u_numerator, E::from(*e)) / polynom::eval(&u_denominator, E::from(*e)))
+        .collect();*/
         //let u_alpha_coeffs2 =
-            //polynom::interpolate(&self.options.evaluation_domain, &u_alpha_evals, true);
+        //polynom::interpolate(&self.options.evaluation_domain, &u_alpha_evals, true);
         let mut u_alpha_coeffs = polynom::div(&u_numerator, &u_denominator);
         //let reconstituted = polynom::mul(&u_alpha_coeffs, &u_denominator);
 
         let mut poly = polynom::sub(
-            &polynom::mul(&u_alpha_coeffs, &self.f_1_poly_coeffs.iter().map(|i| E::from(*i)).collect::<Vec<E>>()),
-            &polynom::mul(t_alpha_coeffs, &self.f_2_poly_coeffs.iter().map(|i| E::from(*i)).collect::<Vec<E>>()),
+            &polynom::mul(
+                &u_alpha_coeffs,
+                &self
+                    .f_1_poly_coeffs
+                    .iter()
+                    .map(|i| E::from(*i))
+                    .collect::<Vec<E>>(),
+            ),
+            &polynom::mul(
+                t_alpha_coeffs,
+                &self
+                    .f_2_poly_coeffs
+                    .iter()
+                    .map(|i| E::from(*i))
+                    .collect::<Vec<E>>(),
+            ),
         );
 
         fractal_utils::polynomial_utils::get_to_degree_size(&mut poly);
@@ -187,14 +218,22 @@ impl<
 
         let mut prod = Vec::<E>::new();
         let eval_twiddles = fft::get_twiddles(self.options.evaluation_domain.len());
-        let mut f_1_eval = self.f_1_poly_coeffs.iter().map(|i| E::from(*i)).collect::<Vec<E>>();
+        let mut f_1_eval = self
+            .f_1_poly_coeffs
+            .iter()
+            .map(|i| E::from(*i))
+            .collect::<Vec<E>>();
         fractal_utils::polynomial_utils::pad_with_zeroes(
             &mut f_1_eval,
             self.options.evaluation_domain.len(),
         );
 
         fft::evaluate_poly(&mut f_1_eval, &mut eval_twiddles.clone());
-        let mut f_2_eval = self.f_2_poly_coeffs.iter().map(|i| E::from(*i)).collect::<Vec<E>>();
+        let mut f_2_eval = self
+            .f_2_poly_coeffs
+            .iter()
+            .map(|i| E::from(*i))
+            .collect::<Vec<E>>();
         fractal_utils::polynomial_utils::pad_with_zeroes(
             &mut f_2_eval,
             self.options.evaluation_domain.len(),
@@ -216,7 +255,7 @@ impl<
         prod
     }
 
-    fn lincheck_layer_one(&mut self, query: E, accumulator: &mut Accumulator<B,E,H>){
+    fn lincheck_layer_one(&mut self, query: E, accumulator: &mut Accumulator<B, E, H>) {
         self.alpha = Some(query);
         let t_alpha_evals = self.generate_t_alpha_evals(query);
         let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
@@ -250,7 +289,15 @@ impl<
         let denom_eval = vec![B::ONE; self.options.h_domain.len()];
 
         // use h_domain rather than eval_domain
-        let poly_prod = polynom::eval_many(&poly_prod_coeffs, &self.options.h_domain.iter().map(|i| E::from(*i)).collect::<Vec<E>>());
+        let poly_prod = polynom::eval_many(
+            &poly_prod_coeffs,
+            &self
+                .options
+                .h_domain
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>(),
+        );
 
         let g_degree = self.options.h_domain.len() - 2;
         let e_degree = self.options.h_domain.len() - 1;
@@ -269,29 +316,54 @@ impl<
         product_sumcheck_prover.run_next_layer(query, accumulator);
     }
 
-    fn lincheck_layer_two(&self, query: E, accumulator: &mut Accumulator<B,E,H>){
+    fn lincheck_layer_two(&self, query: E, accumulator: &mut Accumulator<B, E, H>) {
         let beta = query;
         let alpha = self.alpha.unwrap();
         // t_alpha is the only state we need to retain from layer 1
         // if we wanted to be really fancy, we could extract this from the accumulator...
         let gamma = polynom::eval(&self.t_alpha.as_ref().unwrap(), beta);
         let matrix_proof_numerator = polynom::mul_by_scalar(
-            &self.prover_matrix_index.val_poly.polynomial.iter().map(|i| E::from(*i)).collect::<Vec<E>>(),
-            compute_vanishing_poly(alpha, E::from(self.options.eta), self.options.size_subgroup_h)
-                * compute_vanishing_poly(beta, E::from(self.options.eta), self.options.size_subgroup_h),
+            &self
+                .prover_matrix_index
+                .val_poly
+                .polynomial
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>(),
+            compute_vanishing_poly(
+                alpha,
+                E::from(self.options.eta),
+                self.options.size_subgroup_h,
+            ) * compute_vanishing_poly(
+                beta,
+                E::from(self.options.eta),
+                self.options.size_subgroup_h,
+            ),
         );
         let mut alpha_minus_row =
-            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
+            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE)
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>();
         alpha_minus_row[0] += alpha;
         let mut beta_minus_col =
-            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
+            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE)
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>();
         beta_minus_col[0] += beta;
 
         let mut alpha_minus_col =
-            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
+            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE)
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>();
         alpha_minus_col[0] += alpha;
         let mut beta_minus_row =
-            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
+            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE)
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>();
         beta_minus_row[0] += beta;
 
         //let matrix_proof_denominator = polynom::mul(&alpha_minus_row, &beta_minus_col);
@@ -324,21 +396,26 @@ impl<
         B: StarkField,
         E: FieldElement<BaseField = B>,
         H: ElementHasher + ElementHasher<BaseField = B>,
-    > LayeredProver<B, E, H> for LincheckProver<B, E, H>{
-    fn run_next_layer(&mut self, query: E, accumulator: &mut Accumulator<B,E,H>) -> Result<(), ProverError>{
+    > LayeredProver<B, E, H> for LincheckProver<B, E, H>
+{
+    fn run_next_layer(
+        &mut self,
+        query: E,
+        accumulator: &mut Accumulator<B, E, H>,
+    ) -> Result<(), ProverError> {
         match self.get_current_layer() {
             0 => {
                 self.lincheck_layer_one(query, accumulator);
-            },
+            }
             1 => {
                 self.lincheck_layer_two(query, accumulator);
-            },
-            _ => ()
+            }
+            _ => (),
         };
         self.current_layer += 1;
         Ok(())
     }
-    fn get_current_layer(&self) -> usize{
+    fn get_current_layer(&self) -> usize {
         self.current_layer.clone()
     }
 

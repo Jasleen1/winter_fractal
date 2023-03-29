@@ -38,8 +38,12 @@ struct ExampleOptions {
     wires_file: String,
     verbose: bool,
 }
-impl ExampleOptions{
-    fn from_args() -> Self{
-        ExampleOptions { arith_file: "fractal_examples2/jsnark_outputs/sample.arith".to_string(), wires_file: "fractal_examples2/jsnark_outputs/sample.wires".to_string(), verbose: true }
-    } 
+impl ExampleOptions {
+    fn from_args() -> Self {
+        ExampleOptions {
+            arith_file: "fractal_examples2/jsnark_outputs/sample.arith".to_string(),
+            wires_file: "fractal_examples2/jsnark_outputs/sample.wires".to_string(),
+            verbose: true,
+        }
+    }
 }

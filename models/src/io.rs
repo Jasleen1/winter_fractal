@@ -8,7 +8,7 @@ pub trait LineProcessor {
 
 pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where
-    P: AsRef<Path>+Clone,
+    P: AsRef<Path> + Clone,
 {
     let file = match File::open(filename.clone()) {
         Err(why) => {

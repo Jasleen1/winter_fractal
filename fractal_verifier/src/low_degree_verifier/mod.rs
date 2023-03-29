@@ -27,7 +27,9 @@ pub fn verify_low_degree_proof<
     public_coin.reseed(proof.tree_root.clone());
     // rederive the evaluation domain size the same way as in the FRI verifier
     let eval_domain_size = proof.options.blowup_factor() * (proof.fri_max_degree + 1);
-    let queried_positions = public_coin.draw_integers(num_queries, eval_domain_size).unwrap();
+    let queried_positions = public_coin
+        .draw_integers(num_queries, eval_domain_size)
+        .unwrap();
 
     let fri_verifier = FriVerifier::<B, E, DefaultFractalVerifierChannel<E, H>, H>::new(
         &mut channel,
@@ -35,7 +37,7 @@ pub fn verify_low_degree_proof<
         proof.options.clone(),
         proof.fri_max_degree,
     )?;
-    
+
     //todo, are the queried position ever checked?
     fri_verifier.verify(
         &mut channel,

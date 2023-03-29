@@ -20,7 +20,7 @@ pub struct DefaultFractalProverChannel<B: StarkField, E: FieldElement<BaseField 
 impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher>
     DefaultFractalProverChannel<B, E, H>
 {
-    pub fn set_coin(&mut self, coin: RandomCoin<B, H>){
+    pub fn set_coin(&mut self, coin: RandomCoin<B, H>) {
         self.public_coin = coin;
     }
     /// Returns a new prover channel instantiated from the specified parameters.

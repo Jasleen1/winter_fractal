@@ -340,17 +340,17 @@ pub fn valid_r1cs<E: StarkField>(
     let b_dims = b.dims;
     let c_dims = c.dims;
     if b_dims != a_dims {
-        return Err(R1CSError::MatrixSizeMismatch(
+        Err(R1CSError::MatrixSizeMismatch(
             a.name.clone(),
             b.name.clone(),
-        ));
+        ))
     } else if c_dims != a_dims {
-        return Err(R1CSError::MatrixSizeMismatch(
+        Err(R1CSError::MatrixSizeMismatch(
             a.name.clone(),
             c.name.clone(),
-        ));
+        ))
     } else {
-        return Ok(true);
+        Ok(true)
     }
 }
 #[cfg(test)]

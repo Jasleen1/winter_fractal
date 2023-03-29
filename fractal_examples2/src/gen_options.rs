@@ -19,7 +19,7 @@ use fractal_indexer::{
 use models::jsnark_arith_parser::JsnarkArithReaderParser;
 use models::jsnark_wire_parser::JsnarkWireReaderParser;
 
-use winter_crypto::hashers::{Rp64_256, Blake3_256};
+use winter_crypto::hashers::{Blake3_256, Rp64_256};
 use winter_crypto::ElementHasher;
 
 use winter_math::fields::f64::BaseElement;
@@ -29,10 +29,10 @@ use winter_math::FieldElement;
 use winter_math::StarkField;
 
 pub fn get_example_setup<
-B: StarkField,
-E: FieldElement<BaseField = B>,
-H: ElementHasher + ElementHasher<BaseField = B>,
->() -> (FractalOptions<B>, ProverKey<H,B>, VerifierKey<H,B>) {
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher + ElementHasher<BaseField = B>,
+>() -> (FractalOptions<B>, ProverKey<H, B>, VerifierKey<H, B>) {
     let mut options = ExampleOptions::from_args();
     options.verbose = true;
     if options.verbose {
@@ -44,7 +44,7 @@ H: ElementHasher + ElementHasher<BaseField = B>,
 
     // call orchestrate_r1cs_example
     files_to_setup_outputs::<B, E, H, 1>(
-    //orchestrate_r1cs_example::<BaseElement, BaseElement, Blake3_256<BaseElement>, 1>(
+        //orchestrate_r1cs_example::<BaseElement, BaseElement, Blake3_256<BaseElement>, 1>(
         &options.arith_file,
         &options.wires_file,
         options.verbose,
@@ -60,7 +60,7 @@ fn files_to_setup_outputs<
     arith_file: &str,
     wire_file: &str,
     verbose: bool,
-) -> (FractalOptions<B>, ProverKey<H,B>, VerifierKey<H,B>){
+) -> (FractalOptions<B>, ProverKey<H, B>, VerifierKey<H, B>) {
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
     arith_parser.parse_arith_file(&arith_file, verbose);
     let r1cs = arith_parser.clone_r1cs();
@@ -143,8 +143,12 @@ struct ExampleOptions {
     wires_file: String,
     verbose: bool,
 }
-impl ExampleOptions{
-    fn from_args() -> Self{
-        ExampleOptions { arith_file: "fractal_examples2/jsnark_outputs/sample.arith".to_string(), wires_file: "fractal_examples2/jsnark_outputs/sample.wires".to_string(), verbose: true }
-    } 
+impl ExampleOptions {
+    fn from_args() -> Self {
+        ExampleOptions {
+            arith_file: "fractal_examples2/jsnark_outputs/sample.arith".to_string(),
+            wires_file: "fractal_examples2/jsnark_outputs/sample.wires".to_string(),
+            verbose: true,
+        }
+    }
 }

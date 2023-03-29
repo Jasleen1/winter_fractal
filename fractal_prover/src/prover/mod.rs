@@ -1,8 +1,9 @@
 use std::marker::PhantomData;
 
-use fractal_indexer::{snark_keys::*, index::IndexParams};
+use fractal_indexer::{index::IndexParams, snark_keys::*};
 use fractal_proofs::{
-    fft, polynom, DefaultProverChannel, FractalProof, LincheckProof, MultiEval, MultiPoly, TryInto, InitialPolyProof, FriOptions, LowDegreeBatchProof,
+    fft, polynom, DefaultProverChannel, FractalProof, FriOptions, InitialPolyProof, LincheckProof,
+    LowDegreeBatchProof, MultiEval, MultiPoly, TryInto,
 };
 use models::r1cs::Matrix;
 
@@ -12,8 +13,9 @@ use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
 use crate::{
-    channel::DefaultFractalProverChannel, errors::ProverError, lincheck_prover::LincheckProver,
-    rowcheck_prover::RowcheckProver, FractalOptions, accumulator::Accumulator, LayeredProver,
+    accumulator::Accumulator, channel::DefaultFractalProverChannel, errors::ProverError,
+    lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver, FractalOptions,
+    LayeredProver,
 };
 
 pub struct FractalProver<
@@ -78,8 +80,10 @@ impl<
         Ok(product) // as coeffs
     }
 
-    fn fractal_layer_one(&mut self, accumulator: &mut Accumulator<B,E,H>) -> Result<(), ProverError>{
-
+    fn fractal_layer_one(
+        &mut self,
+        accumulator: &mut Accumulator<B, E, H>,
+    ) -> Result<(), ProverError> {
         let inv_twiddles_h = fft::get_inv_twiddles(self.variable_assignment.len());
         // 1. Generate lincheck proofs for the A,B,C matrices.
         let mut z_coeffs = &mut self.variable_assignment.clone(); // evals
@@ -96,7 +100,13 @@ impl<
         )?;
 
         let f_bz_coeffs = &mut self.compute_matrix_mul_poly_coeffs(
-            &self.prover_key.as_ref().as_ref().unwrap().matrix_b_index.matrix,
+            &self
+                .prover_key
+                .as_ref()
+                .as_ref()
+                .unwrap()
+                .matrix_b_index
+                .matrix,
             &self.variable_assignment.clone(),
             &inv_twiddles_h,
             self.prover_key.as_ref().as_ref().unwrap().params.eta,
@@ -120,9 +130,12 @@ impl<
         accumulator.add_polynomial(f_bz_coeffs.to_vec(), 32);
         accumulator.add_polynomial(f_cz_coeffs.to_vec(), 32);
         Ok(())
-
     }
-    fn fractal_layer_two(&mut self, query: E, accumulator: &mut Accumulator<B,E,H>) -> Result<(), ProverError>{
+    fn fractal_layer_two(
+        &mut self,
+        query: E,
+        accumulator: &mut Accumulator<B, E, H>,
+    ) -> Result<(), ProverError> {
         // 1. Generate the rowcheck proof.
         // Evaluate the Az, Bz, Cz polynomials.
         let mut rowcheck_prover = RowcheckProver::<B, E, H>::new(
@@ -131,7 +144,7 @@ impl<
             self.f_cz_coeffs.clone(),
             self.options.clone(),
         );
-        
+
         //hacky way to avoid lifetimes: move prover_key contents to LincheckProvers in this step
         let prover_key = std::mem::replace(&mut self.prover_key, None).unwrap();
         self.prover_key = None;
@@ -157,8 +170,7 @@ impl<
             self.z_coeffs.to_vec(),
             &self.options,
         );
-        
-        
+
         lincheck_prover_a.run_next_layer(query, accumulator)?;
         lincheck_prover_b.run_next_layer(query, accumulator)?;
         lincheck_prover_c.run_next_layer(query, accumulator)?;
@@ -167,11 +179,15 @@ impl<
         Ok(())
     }
 
-    fn fractal_layer_three(&mut self, query: E, accumulator: &mut Accumulator<B,E,H>) -> Result<(), ProverError>{
-      for lincheck_prover in self.lincheck_provers.iter_mut(){
-          lincheck_prover.run_next_layer(query, accumulator)?;
-      }
-      Ok(())
+    fn fractal_layer_three(
+        &mut self,
+        query: E,
+        accumulator: &mut Accumulator<B, E, H>,
+    ) -> Result<(), ProverError> {
+        for lincheck_prover in self.lincheck_provers.iter_mut() {
+            lincheck_prover.run_next_layer(query, accumulator)?;
+        }
+        Ok(())
     }
 }
 
@@ -179,28 +195,31 @@ impl<
         B: StarkField,
         E: FieldElement<BaseField = B>,
         H: ElementHasher + ElementHasher<BaseField = B>,
-    > LayeredProver<B, E, H> for FractalProver<B, E, H>{
-    fn run_next_layer(&mut self, query: E, accumulator: &mut Accumulator<B,E,H>) -> Result<(), ProverError>{
+    > LayeredProver<B, E, H> for FractalProver<B, E, H>
+{
+    fn run_next_layer(
+        &mut self,
+        query: E,
+        accumulator: &mut Accumulator<B, E, H>,
+    ) -> Result<(), ProverError> {
         match self.current_layer {
             0 => {
                 self.fractal_layer_one(accumulator)?;
                 self.current_layer += 1;
-            },
+            }
             1 => {
                 self.current_layer += 1;
                 self.fractal_layer_two(query, accumulator)?;
-
-            },
+            }
             2 => {
                 self.fractal_layer_three(query, accumulator)?;
                 self.current_layer += 1;
-
-            },
-            _ => ()
+            }
+            _ => (),
         };
         Ok(())
     }
-    fn get_current_layer(&self) -> usize{
+    fn get_current_layer(&self) -> usize {
         self.current_layer
     }
     fn get_num_layers(&self) -> usize {

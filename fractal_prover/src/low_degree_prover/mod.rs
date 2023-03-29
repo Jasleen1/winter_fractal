@@ -88,7 +88,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         channel: &mut DefaultFractalProverChannel<B, E, H>,
     ) -> LowDegreeProof<B, E, H> {
         // let queried_positions = channel.draw_query_positions();
-        
+
         let transposed_evaluations = transpose_slice(&self.polynomial_evals);
         let hashed_evaluations = hash_values::<H, E, 1>(&transposed_evaluations);
         let tree = MerkleTree::<H>::new(hashed_evaluations).unwrap();
@@ -96,7 +96,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         channel.commit_fri_layer(tree_root.clone());
         let queried_positions = channel.draw_query_positions();
         let commitment_idx = channel.layer_commitments().len();
-        
+
         let tree_proof = tree.prove_batch(&queried_positions).unwrap();
         let unpadded_queried_evaluations = queried_positions
             .iter()
