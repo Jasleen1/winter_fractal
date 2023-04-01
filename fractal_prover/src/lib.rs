@@ -8,7 +8,7 @@ use winter_fri::{FriOptions, ProverChannel};
 use winter_math::StarkField;
 pub mod accumulator;
 pub mod channel;
-mod errors;
+pub mod errors;
 mod lincheck_prover;
 pub mod low_degree_batch_prover;
 pub mod low_degree_prover;

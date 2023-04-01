@@ -8,6 +8,7 @@
 //! Errors for various data structure operations.
 use fractal_proofs::{errors::FractalUtilError, DeserializationError};
 use winter_fri::VerifierError;
+use fractal_prover::errors::{ProverError, AccumulatorError};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
@@ -213,6 +214,56 @@ impl std::fmt::Display for SumcheckVerifierError {
             }
             SumcheckVerifierError::DeserializationErr(err) => {
                 writeln!(f, "Winterfell Utils Deserialization Error: {}", err)
+            }
+        }
+    }
+}
+
+pub enum TestingError {
+    ProverErr(ProverError),
+    VerifierErr(FractalVerifierError),
+    RowcheckVerifierErr(RowcheckVerifierError),
+    AccumulatorErr(AccumulatorError),
+}
+
+impl From<FractalVerifierError> for TestingError {
+    fn from(err: FractalVerifierError) -> Self {
+        TestingError::VerifierErr(err)
+    }
+}
+
+impl From<ProverError> for TestingError {
+    fn from(err: ProverError) -> Self {
+        TestingError::ProverErr(err)
+    }
+}
+
+impl From<RowcheckVerifierError> for TestingError {
+    fn from(err: RowcheckVerifierError) -> Self {
+        TestingError::RowcheckVerifierErr(err)
+    }
+}
+
+impl From<AccumulatorError> for TestingError {
+    fn from(err: AccumulatorError) -> Self {
+        TestingError::AccumulatorErr(err)
+    }
+}
+
+impl std::fmt::Display for TestingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            TestingError::ProverErr(err) => {
+                writeln!(f, "Fractal prover error: {}", err)
+            }
+            TestingError::VerifierErr(err) => {
+                writeln!(f, "Fractal verifier error: {}", err)
+            }
+            TestingError::RowcheckVerifierErr(err) => {
+                writeln!(f, "Fractal rowcheck verifier error: {}", err)
+            }
+            TestingError::AccumulatorErr(err) => {
+                writeln!(f, "Fractal accumulator error: {}", err)
             }
         }
     }

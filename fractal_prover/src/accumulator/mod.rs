@@ -5,7 +5,7 @@ use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
 use winter_math::{fft, FieldElement, StarkField};
 
-use crate::{channel::DefaultFractalProverChannel, low_degree_batch_prover::LowDegreeBatchProver};
+use crate::{channel::DefaultFractalProverChannel, low_degree_batch_prover::LowDegreeBatchProver, errors::{ProverError, AccumulatorError}};
 
 pub struct Accumulator<
     B: StarkField,
@@ -89,10 +89,10 @@ impl<
             self.offset,
         );
         //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
-        self.fri_coefficients.append(&mut self.coefficients);
-        self.fri_max_degrees.append(&mut self.max_degrees);
-        self.coefficients = Vec::new();
-        self.max_degrees = Vec::new();
+        self.fri_coefficients.append(&mut self.coefficients.clone());
+        self.fri_max_degrees.append(&mut self.max_degrees.clone());
+        // // self.coefficients = Vec::new();
+        // self.max_degrees = Vec::new();
         multi_eval.commit_polynomial_evaluations().unwrap();
         multi_eval.get_commitment().unwrap().clone()
     }
@@ -109,7 +109,7 @@ impl<
         queries
     }
 
-    pub fn decommit_layer(&self) -> (Vec<Vec<E>>, BatchMerkleProof<H>) {
+    pub fn decommit_layer(&mut self) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
         //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
         let mut coeffs_b = self.unchecked_coefficients.clone();
         let mut coeffs_b2 = self.coefficients.clone();
@@ -120,9 +120,9 @@ impl<
             self.evaluation_domain_len,
             self.offset,
         );
-        multi_eval.commit_polynomial_evaluations().unwrap();
+        multi_eval.commit_polynomial_evaluations()?;
 
-        let channel_state = multi_eval.get_commitment().unwrap().clone();
+        let channel_state = multi_eval.get_commitment()?.clone();
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
@@ -131,8 +131,7 @@ impl<
         channel.commit_fractal_iop_layer(channel_state);
         let queries = channel.draw_query_positions();
         println!("queries: {:?}", &queries);
-        let out = multi_eval.batch_get_values_and_proofs_at(queries).unwrap();
-        out
+        Ok(multi_eval.batch_get_values_and_proofs_at(queries)?)
     }
 
     // could be named something like "finish"
@@ -147,18 +146,21 @@ impl<
         let mut low_degree_prover =
             LowDegreeBatchProver::<B, E, H>::new(&self.evaluation_domain, self.fri_options.clone());
         for i in 0..self.max_degrees.len() {
-            low_degree_prover.add_polynomial(
-                self.fri_coefficients.get(i).unwrap(),
-                *self.fri_max_degrees.get(i).unwrap(),
-                &mut channel,
-            );
+            // low_degree_prover.add_polynomial(
+            //     self.fri_coefficients.get(i).unwrap(),
+            //     *self.fri_max_degrees.get(i).unwrap(),
+            //     &mut channel,
+            // );
+            low_degree_prover.add_polynomial(self.coefficients.get(i).unwrap(), *self.max_degrees.get(i).unwrap(), &mut channel);
+
         }
         for i in 0..self.max_degrees_ext.len() {
-            low_degree_prover.add_polynomial_e(
-                self.coefficients_ext.get(i).unwrap(),
-                *self.max_degrees_ext.get(i).unwrap(),
-                &mut channel,
-            );
+            // low_degree_prover.add_polynomial_e(
+            //     self.coefficients_ext.get(i).unwrap(),
+            //     *self.max_degrees_ext.get(i).unwrap(),
+            //     &mut channel,
+            // );
+            low_degree_prover.add_polynomial_e(self.coefficients_ext.get(i).unwrap(), *self.max_degrees_ext.get(i).unwrap(), &mut channel);
         }
 
         low_degree_prover.generate_proof(&mut channel)

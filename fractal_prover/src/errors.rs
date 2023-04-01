@@ -16,6 +16,7 @@ pub enum ProverError {
     MerkleTreeErr(MerkleTreeError),
     MultiPolyErr(String),
     FractalUtilErr(FractalUtilError),
+    AccumulatorErr(AccumulatorError),
 }
 
 impl From<LincheckError> for ProverError {
@@ -49,11 +50,35 @@ pub enum LincheckError {
     MerkleTreeErr(MerkleTreeError),
 }
 
+/// Represents a generic error type
+#[derive(Debug, Display, Error)]
+pub enum AccumulatorError {
+    /// If the accumulator's decommit leads to an error
+    DecommitErr(usize, String),
+    /// Merkle tree error within the accumulator
+    MerkleTreeErr(MerkleTreeError),
+    /// Util Error
+    FractalUtilErr(FractalUtilError),
+}
+
 impl From<MerkleTreeError> for LincheckError {
     fn from(e: MerkleTreeError) -> LincheckError {
         LincheckError::MerkleTreeErr(e)
     }
 }
+
+impl From<MerkleTreeError> for AccumulatorError {
+    fn from(e: MerkleTreeError) -> AccumulatorError {
+        AccumulatorError::MerkleTreeErr(e)
+    }
+}
+
+impl From<FractalUtilError> for AccumulatorError {
+    fn from(e: FractalUtilError) -> AccumulatorError {
+        AccumulatorError::FractalUtilErr(e)
+    }
+}
+
 
 // impl fmt::Display for LincheckError {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -99,6 +124,13 @@ impl fmt::Display for ProverError {
                 write!(
                     f,
                     "Encountered an error while trying to deal with commitments of multiple polynomials the fractal prover: {:?}",
+                    err,
+                )
+            }
+            Self::AccumulatorErr(err) => {
+                write!(
+                    f,
+                    "Encountered an error in the accumulator somewhere in the fractal prover: {:?}",
                     err,
                 )
             }

@@ -190,6 +190,7 @@ fn verify_s_computation<
 #[cfg(test)]
 mod test {
     use crate::accumulator_verifier::AccumulatorVerifier;
+    use crate::errors::TestingError;
     use crate::rowcheck_verifier::add_rowcheck_verification;
 
     use super::verify_rowcheck_proof;
@@ -209,6 +210,10 @@ mod test {
     use winter_math::fields::f64::BaseElement;
     use winter_math::utils;
     use winter_math::StarkField;
+    use fractal_prover::errors::ProverError;
+
+
+
 
     #[test]
     fn run_test_rowcheck_proof() {
@@ -220,7 +225,7 @@ mod test {
         B: StarkField,
         E: FieldElement<BaseField = B>,
         H: ElementHasher<BaseField = B>,
-    >() {
+    >() -> Result<(), TestingError> {
         /*let lde_blowup = 4;
         let num_queries = 16;
         let fri_options = FriOptions::new(lde_blowup, 4, 32);
@@ -305,7 +310,7 @@ mod test {
             .run_next_layer(query, &mut accumulator)
             .unwrap();
         let commit = accumulator.commit_layer();
-        let decommit = accumulator.decommit_layer();
+        let decommit = accumulator.decommit_layer()?;
         // add some public input bytes VVV
         let fri_proof = accumulator.create_fri_proof();
 
@@ -340,10 +345,10 @@ mod test {
             1,
             2,
             3,
-        )
-        .unwrap();
+        )?;
 
         assert!(accumulator_verifier.verify_fri_proof(commit, fri_proof));
+        Ok(())
 
         //IOP struct: vecs of commits, decommits, and a fri proof at the end
         // how does verifier know which proofs in which layers?
