@@ -4,7 +4,7 @@ use displaydoc::Display;
 use thiserror::Error;
 
 /// Represents errors in instantiating R1CS types
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display, Error, PartialEq)]
 pub enum R1CSError {
     /// Matrix should consist of a vector of equal length vectors. Not the case here.
     InvalidMatrix(String),
@@ -13,7 +13,7 @@ pub enum R1CSError {
 }
 
 /// Represents errors in instantiating input wire value vectors
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display, Error, PartialEq)]
 pub enum InputWireError {
     /// Generic error.
     GenericError(String),

@@ -216,9 +216,10 @@ mod test {
 
 
     #[test]
-    fn run_test_rowcheck_proof() {
-        test_rowcheck_proof::<BaseElement, BaseElement, Rp64_256>();
-        test_rowcheck_proof::<BaseElement, QuadExtension<BaseElement>, Blake3_256<BaseElement>>();
+    fn run_test_rowcheck_proof() -> Result<(), TestingError> {
+        test_rowcheck_proof::<BaseElement, BaseElement, Rp64_256>()?;
+        test_rowcheck_proof::<BaseElement, QuadExtension<BaseElement>, Blake3_256<BaseElement>>()?;
+        Ok(())
     }
 
     fn test_rowcheck_proof<

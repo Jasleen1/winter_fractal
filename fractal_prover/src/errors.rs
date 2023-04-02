@@ -8,7 +8,8 @@ use models::errors::R1CSError;
 use thiserror::Error;
 use winter_crypto::MerkleTreeError;
 
-#[derive(Debug, Error)]
+
+#[derive(Debug, Error, PartialEq)]
 pub enum ProverError {
     LincheckErr(LincheckError),
     R1CSErr(R1CSError),
@@ -44,14 +45,14 @@ impl From<FractalUtilError> for ProverError {
 }
 
 /// Represents a generic error type
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display, PartialEq, Error)]
 pub enum LincheckError {
     /// If the Merkle Tree leads to an error
     MerkleTreeErr(MerkleTreeError),
 }
 
 /// Represents a generic error type
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display, Error, PartialEq)]
 pub enum AccumulatorError {
     /// If the accumulator's decommit leads to an error
     DecommitErr(usize, String),

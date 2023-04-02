@@ -219,6 +219,8 @@ impl std::fmt::Display for SumcheckVerifierError {
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub enum TestingError {
     ProverErr(ProverError),
     VerifierErr(FractalVerifierError),
