@@ -78,7 +78,7 @@ impl<
         self.unchecked_coefficients.push(coefficients);
     }
 
-    pub fn commit_layer(&mut self) -> <H>::Digest {
+    pub fn commit_layer(&mut self) -> Result<<H>::Digest, AccumulatorError> {
         let mut coeffs_b = self.unchecked_coefficients.clone();
         let mut coeffs_b2 = self.coefficients.clone();
         coeffs_b.append(&mut coeffs_b2);
@@ -93,12 +93,12 @@ impl<
         self.fri_max_degrees.append(&mut self.max_degrees.clone());
         // // self.coefficients = Vec::new();
         // self.max_degrees = Vec::new();
-        multi_eval.commit_polynomial_evaluations().unwrap();
-        multi_eval.get_commitment().unwrap().clone()
+        multi_eval.commit_polynomial_evaluations()?;
+        Ok(multi_eval.get_commitment()?.clone())
     }
 
-    pub fn draw_queries(&mut self, count: usize) -> Vec<E> {
-        let channel_state = self.commit_layer();
+    pub fn draw_queries(&mut self, count: usize) -> Result<Vec<E>, AccumulatorError> {
+        let channel_state = self.commit_layer()?;
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
@@ -106,7 +106,7 @@ impl<
         );
         channel.commit_fractal_iop_layer(channel_state);
         let queries = (0..count).map(|_| channel.draw_fri_alpha()).collect();
-        queries
+        Ok(queries)
     }
 
     pub fn decommit_layer(&mut self) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
@@ -135,8 +135,8 @@ impl<
     }
 
     // could be named something like "finish"
-    pub fn create_fri_proof(&mut self) -> LowDegreeBatchProof<B, E, H> {
-        let channel_state = self.commit_layer();
+    pub fn create_fri_proof(&mut self) -> Result<LowDegreeBatchProof<B, E, H>, AccumulatorError> {
+        let channel_state = self.commit_layer()?;
         let mut channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
@@ -163,7 +163,7 @@ impl<
             low_degree_prover.add_polynomial_e(self.coefficients_ext.get(i).unwrap(), *self.max_degrees_ext.get(i).unwrap(), &mut channel);
         }
 
-        low_degree_prover.generate_proof(&mut channel)
+        Ok(low_degree_prover.generate_proof(&mut channel))
     }
 }
 
@@ -171,14 +171,16 @@ impl<
 mod test {
     use fractal_proofs::{fields::QuadExtension, utils, BaseElement, MultiPoly};
     use fractal_utils::polynomial_utils::MultiEval;
-    use std::{convert::TryInto, marker::PhantomData};
+    use std::{convert::TryInto, marker::PhantomData, thread::AccessError};
     use winter_crypto::{hashers::Blake3_256, BatchMerkleProof, ElementHasher, MerkleTree};
     use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
     use winter_math::{fft, FieldElement, StarkField};
 
+    use crate::errors::AccumulatorError;
+
     use super::Accumulator;
     #[test]
-    fn test_accumulator() {
+    fn test_accumulator() -> Result<(), AccumulatorError> {
         let lde_blowup = 4;
         let num_queries = 16;
         let fri_options = FriOptions::new(lde_blowup, 4, 32);
@@ -195,7 +197,8 @@ mod test {
                 num_queries,
                 fri_options,
             );
-        let alphas = &mut acc.draw_queries(20);
-        assert!(alphas.len() == 20)
+        let alphas = acc.draw_queries(20)?;
+        assert!(alphas.len() == 20);
+        Ok(())
     }
 }

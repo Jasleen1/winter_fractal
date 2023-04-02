@@ -44,6 +44,12 @@ impl From<FractalUtilError> for ProverError {
     }
 }
 
+impl From<AccumulatorError> for ProverError {
+    fn from(e: AccumulatorError) -> ProverError {
+        ProverError::AccumulatorErr(e)
+    }
+}
+
 /// Represents a generic error type
 #[derive(Debug, Display, PartialEq, Error)]
 pub enum LincheckError {

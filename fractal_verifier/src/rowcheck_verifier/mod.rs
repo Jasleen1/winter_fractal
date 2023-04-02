@@ -310,10 +310,10 @@ mod test {
         rowcheck_prover
             .run_next_layer(query, &mut accumulator)
             .unwrap();
-        let commit = accumulator.commit_layer();
+        let commit = accumulator.commit_layer()?;
         let decommit = accumulator.decommit_layer()?;
         // add some public input bytes VVV
-        let fri_proof = accumulator.create_fri_proof();
+        let fri_proof = accumulator.create_fri_proof()?;
 
         let mut accumulator_verifier = AccumulatorVerifier::<B, E, H>::new(
             eval_len,
