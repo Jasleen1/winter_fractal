@@ -200,6 +200,7 @@ mod test {
     use fractal_proofs::{polynom, FieldElement, SumcheckProof};
     use fractal_prover::accumulator::Accumulator;
     use fractal_prover::channel::DefaultFractalProverChannel;
+    use fractal_prover::errors::ProverError;
     use fractal_prover::rowcheck_prover::RowcheckProver;
     use fractal_prover::{FractalOptions, LayeredProver};
     use std::ops::Add;
@@ -210,10 +211,6 @@ mod test {
     use winter_math::fields::f64::BaseElement;
     use winter_math::utils;
     use winter_math::StarkField;
-    use fractal_prover::errors::ProverError;
-
-
-
 
     #[test]
     fn run_test_rowcheck_proof() -> Result<(), TestingError> {
@@ -311,7 +308,7 @@ mod test {
             .run_next_layer(query, &mut accumulator)
             .unwrap();
         let commit = accumulator.commit_layer()?;
-        let decommit = accumulator.decommit_layer()?;
+        let decommit = accumulator.decommit_layer(1)?;
         // add some public input bytes VVV
         let fri_proof = accumulator.create_fri_proof()?;
 

@@ -5,7 +5,11 @@ use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
 use winter_math::{fft, FieldElement, StarkField};
 
-use crate::{channel::DefaultFractalProverChannel, low_degree_batch_prover::LowDegreeBatchProver, errors::{ProverError, AccumulatorError}};
+use crate::{
+    channel::DefaultFractalProverChannel,
+    errors::{AccumulatorError, ProverError},
+    low_degree_batch_prover::LowDegreeBatchProver,
+};
 
 pub struct Accumulator<
     B: StarkField,
@@ -27,6 +31,7 @@ pub struct Accumulator<
     pub fri_coefficients_ext: Vec<Vec<E>>,
     pub fri_max_degrees: Vec<usize>,
     pub fri_max_degrees_ext: Vec<usize>,
+    pub layer_evals: Vec<MultiEval<B, E, H>>,
     _h: PhantomData<H>,
 }
 
@@ -59,6 +64,7 @@ impl<
             fri_coefficients_ext: Vec::new(),
             fri_max_degrees: Vec::new(),
             fri_max_degrees_ext: Vec::new(),
+            layer_evals: Vec::new(),
             _h: PhantomData,
         }
     }
@@ -94,7 +100,9 @@ impl<
         // // self.coefficients = Vec::new();
         // self.max_degrees = Vec::new();
         multi_eval.commit_polynomial_evaluations()?;
-        Ok(multi_eval.get_commitment()?.clone())
+        let com = multi_eval.get_commitment()?.clone();
+        self.layer_evals.push(multi_eval);
+        Ok(com)
     }
 
     pub fn draw_queries(&mut self, count: usize) -> Result<Vec<E>, AccumulatorError> {
@@ -104,24 +112,40 @@ impl<
             self.num_queries,
             Vec::new(), // make sure there's actually chainging between layers
         );
-        channel.commit_fractal_iop_layer(channel_state);
+        let latest_eval = self.layer_evals.last().ok_or(AccumulatorError::QueryErr(
+            "You tried to query the accumulator before anything was committed".to_string(),
+        ))?;
+        let coin_val = latest_eval.get_commitment()?;
+        channel.commit_fractal_iop_layer(*coin_val);
         let queries = (0..count).map(|_| channel.draw_fri_alpha()).collect();
         Ok(queries)
     }
 
-    pub fn decommit_layer(&mut self) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
-        //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
-        let mut coeffs_b = self.unchecked_coefficients.clone();
-        let mut coeffs_b2 = self.coefficients.clone();
-        coeffs_b.append(&mut coeffs_b2);
-        let mut multi_eval = MultiEval::<B, E, H>::new(
-            coeffs_b,
-            self.coefficients_ext.clone(),
-            self.evaluation_domain_len,
-            self.offset,
-        );
-        multi_eval.commit_polynomial_evaluations()?;
+    /// This function, implemented for the accumulator, expects as input the layer index, indexed starting at 1, since we
+    /// numbered the layers that way. We'll subtract 1 from layer_idx to retrieve the actual index of the polynomial
+    /// evals we are looking for.
+    pub fn decommit_layer(
+        &mut self,
+        layer_idx: usize,
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
+        // let mut coeffs_b = self.unchecked_coefficients.clone();
+        // let mut coeffs_b2 = self.coefficients.clone();
+        // coeffs_b.append(&mut coeffs_b2);
+        // let mut multi_eval = MultiEval::<B, E, H>::new(
+        //     coeffs_b,
+        //     self.coefficients_ext.clone(),
+        //     self.evaluation_domain_len,
+        //     self.offset,
+        // );
+        // multi_eval.commit_polynomial_evaluations()?;
 
+        let multi_eval =
+            self.layer_evals
+                .get(layer_idx - 1)
+                .ok_or(AccumulatorError::DecommitErr(
+                    layer_idx,
+                    "Tried to access some strange position in the multi_evals".to_string(),
+                ))?;
         let channel_state = multi_eval.get_commitment()?.clone();
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
@@ -151,8 +175,11 @@ impl<
             //     *self.fri_max_degrees.get(i).unwrap(),
             //     &mut channel,
             // );
-            low_degree_prover.add_polynomial(self.coefficients.get(i).unwrap(), *self.max_degrees.get(i).unwrap(), &mut channel);
-
+            low_degree_prover.add_polynomial(
+                self.fri_coefficients.get(i).unwrap(),
+                *self.fri_max_degrees.get(i).unwrap(),
+                &mut channel,
+            );
         }
         for i in 0..self.max_degrees_ext.len() {
             // low_degree_prover.add_polynomial_e(
@@ -160,12 +187,151 @@ impl<
             //     *self.max_degrees_ext.get(i).unwrap(),
             //     &mut channel,
             // );
-            low_degree_prover.add_polynomial_e(self.coefficients_ext.get(i).unwrap(), *self.max_degrees_ext.get(i).unwrap(), &mut channel);
+            low_degree_prover.add_polynomial_e(
+                self.fri_coefficients_ext.get(i).unwrap(),
+                *self.fri_max_degrees_ext.get(i).unwrap(),
+                &mut channel,
+            );
         }
 
         Ok(low_degree_prover.generate_proof(&mut channel))
     }
 }
+
+/*
+pub struct FriAccumulator<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher + ElementHasher<BaseField = B>,
+> {
+    pub evaluation_domain_len: usize,
+    pub offset: B,
+    pub evaluation_domain: Vec<B>,
+    pub num_queries: usize,
+    pub fri_options: FriOptions,
+    pub fri_coefficients: Vec<Vec<B>>,
+    pub fri_coefficients_ext: Vec<Vec<E>>,
+    pub fri_max_degrees: Vec<usize>,
+    pub fri_max_degrees_ext: Vec<usize>,
+    _h: PhantomData<H>,
+}
+
+impl<
+        B: StarkField,
+        E: FieldElement<BaseField = B>,
+        H: ElementHasher + ElementHasher<BaseField = B>,
+    > FriAccumulator<B, E, H>
+{
+    pub fn new(
+        evaluation_domain_len: usize,
+        offset: B,
+        evaluation_domain: Vec<B>,
+        num_queries: usize,
+        fri_options: FriOptions,
+    ) -> Self {
+        Self {
+            evaluation_domain_len,
+            offset,
+            evaluation_domain,
+            num_queries,
+            fri_options,
+            fri_coefficients: Vec::new(),
+            fri_coefficients_ext: Vec::new(),
+            fri_max_degrees: Vec::new(),
+            fri_max_degrees_ext: Vec::new(),
+            _h: PhantomData,
+        }
+    }
+
+    pub fn add_polynomial(&mut self, coefficients: Vec<B>, max_degree: usize) {
+        self.fri_coefficients.push(coefficients);
+        self.fri_max_degrees.push(max_degree);
+    }
+
+    pub fn add_polynomial_e(&mut self, coefficients: Vec<E>, max_degree: usize) {
+        self.fri_coefficients_ext.push(coefficients);
+        self.fri_max_degrees_ext.push(max_degree);
+    }
+
+
+    // pub fn commit_layer(&mut self) -> Result<<H>::Digest, AccumulatorError> {
+    //     let mut coeffs_b = self.unchecked_coefficients.clone();
+    //     let mut coeffs_b2 = self.coefficients.clone();
+    //     coeffs_b.append(&mut coeffs_b2);
+    //     let mut multi_eval = MultiEval::<B, E, H>::new(
+    //         coeffs_b,
+    //         self.coefficients_ext.clone(),
+    //         self.evaluation_domain_len,
+    //         self.offset,
+    //     );
+    //     //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
+    //     self.fri_coefficients.append(&mut self.coefficients.clone());
+    //     self.fri_max_degrees.append(&mut self.max_degrees.clone());
+    //     // // self.coefficients = Vec::new();
+    //     // self.max_degrees = Vec::new();
+    //     multi_eval.commit_polynomial_evaluations()?;
+    //     Ok(multi_eval.get_commitment()?.clone())
+    // }
+
+    // pub fn draw_queries(&mut self, count: usize) -> Result<Vec<E>, AccumulatorError> {
+    //     let channel_state = self.commit_layer()?;
+    //     let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+    //         self.evaluation_domain_len,
+    //         self.num_queries,
+    //         Vec::new(), // make sure there's actually chainging between layers
+    //     );
+    //     channel.commit_fractal_iop_layer(channel_state);
+    //     let queries = (0..count).map(|_| channel.draw_fri_alpha()).collect();
+    //     Ok(queries)
+    // }
+
+    // pub fn decommit_layer(&mut self) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
+    //     //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
+    //     let mut coeffs_b = self.unchecked_coefficients.clone();
+    //     let mut coeffs_b2 = self.coefficients.clone();
+    //     coeffs_b.append(&mut coeffs_b2);
+    //     let mut multi_eval = MultiEval::<B, E, H>::new(
+    //         coeffs_b,
+    //         self.coefficients_ext.clone(),
+    //         self.evaluation_domain_len,
+    //         self.offset,
+    //     );
+    //     multi_eval.commit_polynomial_evaluations()?;
+
+    //     let channel_state = multi_eval.get_commitment()?.clone();
+    //     let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+    //         self.evaluation_domain_len,
+    //         self.num_queries,
+    //         Vec::new(), // make sure there's actually chaining between layers
+    //     );
+    //     channel.commit_fractal_iop_layer(channel_state);
+    //     let queries = channel.draw_query_positions();
+    //     println!("queries: {:?}", &queries);
+    //     Ok(multi_eval.batch_get_values_and_proofs_at(queries)?)
+    // }
+
+    // could be named something like "finish"
+    pub fn create_fri_proof(&mut self, pub_input_bytes: Vec<u8>) -> Result<LowDegreeBatchProof<B, E, H>, AccumulatorError> {
+
+        let mut channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
+            self.evaluation_domain_len,
+            self.num_queries,
+            pub_input_bytes,
+        );
+        let mut low_degree_prover =
+            LowDegreeBatchProver::<B, E, H>::new(&self.evaluation_domain, self.fri_options.clone());
+        for i in 0..self.fri_max_degrees.len() {
+            low_degree_prover.add_polynomial(self.fri_coefficients.get(i).unwrap(), *self.fri_max_degrees.get(i).unwrap(), &mut channel);
+
+        }
+        for i in 0..self.fri_max_degrees_ext.len() {
+            low_degree_prover.add_polynomial_e(self.fri_coefficients_ext.get(i).unwrap(), *self.fri_max_degrees_ext.get(i).unwrap(), &mut channel);
+        }
+
+        Ok(low_degree_prover.generate_proof(&mut channel))
+    }
+}
+*/
 
 #[cfg(test)]
 mod test {

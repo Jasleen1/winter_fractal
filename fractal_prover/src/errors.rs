@@ -8,7 +8,6 @@ use models::errors::R1CSError;
 use thiserror::Error;
 use winter_crypto::MerkleTreeError;
 
-
 #[derive(Debug, Error, PartialEq)]
 pub enum ProverError {
     LincheckErr(LincheckError),
@@ -66,6 +65,8 @@ pub enum AccumulatorError {
     MerkleTreeErr(MerkleTreeError),
     /// Util Error
     FractalUtilErr(FractalUtilError),
+    /// If the caller tries to operate on an accumulator which doesn't yet have commitments.
+    QueryErr(String),
 }
 
 impl From<MerkleTreeError> for LincheckError {
@@ -85,7 +86,6 @@ impl From<FractalUtilError> for AccumulatorError {
         AccumulatorError::FractalUtilErr(e)
     }
 }
-
 
 // impl fmt::Display for LincheckError {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

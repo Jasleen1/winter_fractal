@@ -2,10 +2,12 @@ use fractal_proofs::{LowDegreeBatchProof, MultiPoly};
 use fractal_utils::polynomial_utils::MultiEval;
 use std::{convert::TryInto, marker::PhantomData};
 use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree, RandomCoin};
-use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
+use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel, VerifierError};
 use winter_math::{fft, FieldElement, StarkField};
 
-use crate::low_degree_batch_verifier::verify_low_degree_batch_proof;
+use crate::{
+    errors::FractalVerifierError, low_degree_batch_verifier::verify_low_degree_batch_proof,
+};
 
 pub struct AccumulatorVerifier<
     B: StarkField,
@@ -85,6 +87,62 @@ impl<
             .is_ok()
     }
 }
+
+/*
+pub struct FriAccumulatorVerifier<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher + ElementHasher<BaseField = B>,
+> {
+    pub evaluation_domain_len: usize,
+    pub offset: B,
+    pub evaluation_domain: Vec<B>,
+    pub num_queries: usize,
+    pub fri_options: FriOptions,
+    pub fri_max_degrees: Vec<usize>,
+    pub public_coin: RandomCoin<B, H>,
+    _e: PhantomData<E>,
+}
+
+impl<
+        B: StarkField,
+        E: FieldElement<BaseField = B>,
+        H: ElementHasher + ElementHasher<BaseField = B>,
+    > FriAccumulatorVerifier<B, E, H>
+{
+    // should take pub_bytes here?
+    pub fn new(
+        evaluation_domain_len: usize,
+        offset: B,
+        evaluation_domain: Vec<B>,
+        num_queries: usize,
+        fri_options: FriOptions,
+    ) -> Self {
+        Self {
+            evaluation_domain_len,
+            offset,
+            evaluation_domain,
+            num_queries,
+            fri_options,
+            fri_max_degrees: Vec::new(),
+            public_coin: RandomCoin::<B, H>::new(&vec![]),
+            _e: PhantomData,
+        }
+    }
+
+
+    // run at the end
+    pub fn verify_fri_proof(
+        &mut self,
+        last_layer_commit: H::Digest,
+        proof: LowDegreeBatchProof<B, E, H>,
+    ) -> Result<bool, FractalVerifierError> {
+        let mut coin = RandomCoin::<B, H>::new(&vec![]);
+        coin.reseed(last_layer_commit);
+        Ok(verify_low_degree_batch_proof(proof, self.fri_max_degrees.clone(), &mut coin, self.num_queries).is_ok())
+    }
+}
+*/
 
 #[cfg(test)]
 mod test {

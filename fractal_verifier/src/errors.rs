@@ -7,8 +7,8 @@
 
 //! Errors for various data structure operations.
 use fractal_proofs::{errors::FractalUtilError, DeserializationError};
+use fractal_prover::errors::{AccumulatorError, ProverError};
 use winter_fri::VerifierError;
-use fractal_prover::errors::{ProverError, AccumulatorError};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]

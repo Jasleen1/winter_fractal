@@ -2,7 +2,7 @@ use std::thread::AccessError;
 
 use accumulator::Accumulator;
 use channel::DefaultFractalProverChannel;
-use errors::{ProverError, AccumulatorError};
+use errors::{AccumulatorError, ProverError};
 use fractal_proofs::{FieldElement, LowDegreeBatchProof};
 use log;
 use winter_crypto::ElementHasher;
@@ -85,7 +85,10 @@ pub trait LayeredProver<
     fn get_current_layer(&self) -> usize;
     fn get_num_layers(&self) -> usize;
     fn get_fractal_options(&self) -> FractalOptions<B>;
-    fn generate_proof(&mut self, public_input_bytes: Vec<u8>) -> Result<LowDegreeBatchProof<B, E, H>, ProverError> {
+    fn generate_proof(
+        &mut self,
+        public_input_bytes: Vec<u8>,
+    ) -> Result<LowDegreeBatchProof<B, E, H>, ProverError> {
         let options = self.get_fractal_options();
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             options.evaluation_domain.len(),
