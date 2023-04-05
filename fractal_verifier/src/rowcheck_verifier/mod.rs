@@ -187,11 +187,30 @@ fn verify_s_computation<
     Ok(())
 }
 
+/// This function will change as we extend to also accumulate the lincheck parts
+/// For now it takes in a vector of decommitted values and returns an aptly parsed decommitment.
+/// It implicitly assumes that all the vectors of decommitted values are of the same length
+pub(crate) fn prepare_rowcheck_verifier_inputs<E: FieldElement>(
+    decommits: Vec<Vec<Vec<E>>>,
+) -> Vec<Vec<E>> {
+    // Here, we first assume the first element of the input vec is the vector of (f_az, f_bz, f_cz) evaluations
+    let decommitted_fmzs = decommits[0].clone();
+    // The second element is the evals of the s polynomial
+    let decommitted_s = decommits[1].clone();
+    let mut return_vec = Vec::new();
+    for i in 0..decommitted_fmzs.len() {
+        let mut latest_tuple = decommitted_fmzs[i].clone();
+        latest_tuple.push(decommitted_s[i][0]);
+        return_vec.push(latest_tuple);
+    }
+    return_vec
+}
+
 #[cfg(test)]
 mod test {
     use crate::accumulator_verifier::AccumulatorVerifier;
     use crate::errors::TestingError;
-    use crate::rowcheck_verifier::add_rowcheck_verification;
+    use crate::rowcheck_verifier::{add_rowcheck_verification, prepare_rowcheck_verifier_inputs};
 
     use super::verify_rowcheck_proof;
     use fractal_examples2::gen_options::get_example_setup;
@@ -301,7 +320,10 @@ mod test {
         accumulator.add_unchecked_polynomial(a_coeffs.clone());
         accumulator.add_unchecked_polynomial(b_coeffs.clone());
         accumulator.add_unchecked_polynomial(c_coeffs.clone());
+        // Commit to the f_az, f_bz, f_cz polynomials before you move forward.
         accumulator.commit_layer()?;
+        let init_commit = accumulator.get_layer_commitment(1)?;
+
         let mut rowcheck_prover =
             RowcheckProver::<B, E, H>::new(a_coeffs, b_coeffs, c_coeffs, fractal_options.clone());
         let query = E::from(0u128);
@@ -309,7 +331,11 @@ mod test {
             .run_next_layer(query, &mut accumulator)
             .unwrap();
         let commit = accumulator.commit_layer()?;
-        let decommit = accumulator.decommit_layer(2)?;
+        let queries = accumulator.draw_query_positions()?;
+        println!("Queries drawn = {}", queries.clone().len());
+        println!("Fractal options = {}", fractal_options.num_queries);
+        let decommit_fmz_polys = accumulator.decommit_layer_with_qeuries(1, queries.clone())?;
+        let decommit = accumulator.decommit_layer_with_qeuries(2, queries)?;
         // add some public input bytes VVV
         let fri_proof = accumulator.create_fri_proof()?;
 
@@ -320,8 +346,16 @@ mod test {
             fractal_options.num_queries,
             fractal_options.fri_options.clone(),
         );
-        println!("About to check accum");
-        assert!(accumulator_verifier.verify_layer(commit, decommit.0.clone(), decommit.1));
+
+        println!("About to check accum for f_mz polynomials");
+        assert!(accumulator_verifier.verify_layer(
+            init_commit,
+            commit,
+            decommit_fmz_polys.0.clone(),
+            decommit_fmz_polys.1
+        ));
+        println!("About to check accum for everything inside the rowcheck");
+        assert!(accumulator_verifier.verify_layer(commit, commit, decommit.0.clone(), decommit.1));
 
         //todo: do this in the verifier accumulator only
         let mut coin = RandomCoin::<B, H>::new(&vec![]);
@@ -333,12 +367,15 @@ mod test {
             )
             .expect("failed to draw query position");
 
+        let rowcheck_decommits =
+            prepare_rowcheck_verifier_inputs(vec![decommit_fmz_polys.0, decommit.0]);
+
         println!("queried_positions: {:?}", &queried_positions);
         println!("About to check rowcheck");
         add_rowcheck_verification(
             &mut accumulator_verifier,
             &verifier_key,
-            decommit.0,
+            rowcheck_decommits,
             queried_positions,
             0,
             1,

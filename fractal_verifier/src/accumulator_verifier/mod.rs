@@ -58,17 +58,22 @@ impl<
     pub fn verify_layer(
         &mut self,
         layer_commit: H::Digest,
+        query_seed: H::Digest,
         decommit: Vec<Vec<E>>,
         proof: BatchMerkleProof<H>,
     ) -> bool {
         let mut coin = RandomCoin::<B, H>::new(&vec![]);
-        coin.reseed(layer_commit);
+        coin.reseed(query_seed);
         let indices = coin
             .draw_integers(self.num_queries, self.evaluation_domain_len)
             .expect("failed to draw query position");
+        let claimed_root = proof.get_root(&indices).unwrap();
+        if layer_commit != claimed_root {
+            return false;
+        }
         MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(
-            decommit, // todo: this should be decommit once this function is fixed,
-            &proof.get_root(&indices).unwrap(), //todo: is this okay
+            decommit,      // todo: this should be decommit once this function is fixed,
+            &claimed_root, //todo: is this okay
             &proof,
             indices.to_vec(),
         )

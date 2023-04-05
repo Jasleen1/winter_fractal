@@ -98,6 +98,7 @@ impl<
         self.fri_coefficients.append(&mut self.coefficients.clone());
         self.fri_max_degrees.append(&mut self.max_degrees.clone());
         self.coefficients = Vec::new();
+        self.unchecked_coefficients = Vec::new();
         self.max_degrees = Vec::new();
         multi_eval.commit_polynomial_evaluations()?;
         let com = multi_eval.get_commitment()?.clone();
@@ -105,7 +106,7 @@ impl<
         Ok(com)
     }
 
-    pub fn draw_queries(&mut self, count: usize) -> Result<Vec<E>, AccumulatorError> {
+    pub fn draw_query_positions(&mut self) -> Result<Vec<usize>, AccumulatorError> {
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
@@ -116,13 +117,38 @@ impl<
         ))?;
         let coin_val = latest_eval.get_commitment()?;
         channel.commit_fractal_iop_layer(*coin_val);
-        let queries = (0..count).map(|_| channel.draw_fri_alpha()).collect();
+        let queries = channel.draw_query_positions();
         Ok(queries)
     }
 
-    /// This function, implemented for the accumulator, 
+    pub fn draw_queries(&mut self, count: Option<usize>) -> Result<Vec<E>, AccumulatorError> {
+        let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+            self.evaluation_domain_len,
+            self.num_queries,
+            Vec::new(), // make sure there's actually chainging between layers
+        );
+        let latest_eval = self.layer_evals.last().ok_or(AccumulatorError::QueryErr(
+            "You tried to query the accumulator before anything was committed".to_string(),
+        ))?;
+        let coin_val = latest_eval.get_commitment()?;
+        channel.commit_fractal_iop_layer(*coin_val);
+        match count {
+            Some(count) => {
+                let queries = (0..count).map(|_| channel.draw_fri_alpha()).collect();
+                Ok(queries)
+            }
+            None => {
+                let queries = (0..self.num_queries)
+                    .map(|_| channel.draw_fri_alpha())
+                    .collect();
+                Ok(queries)
+            }
+        }
+    }
+
+    /// This function, implemented for the accumulator,
     /// expects as input the layer index, indexed starting at 1, since we
-    /// numbered the layers that way. 
+    /// numbered the layers that way.
     /// We'll subtract 1 from layer_idx to retrieve the actual index of the polynomial
     /// evals we are looking for.
     pub fn decommit_layer(
@@ -183,7 +209,10 @@ impl<
                     layer_idx,
                     "Tried to access some strange position in the multi_evals".to_string(),
                 ))?;
-        
+        println!(
+            "Multieval has {} polynomials",
+            multi_eval.coefficients.len()
+        );
         Ok(multi_eval.batch_get_values_and_proofs_at(queries)?)
     }
 
@@ -218,17 +247,17 @@ impl<
                     layer_idx,
                     "Tried to access some strange position in the multi_evals".to_string(),
                 ))?;
-        
+
         Ok(multi_eval.batch_get_values_and_proofs_at(queries)?)
     }
 
     // could be named something like "finish"
     pub fn create_fri_proof(&mut self) -> Result<LowDegreeBatchProof<B, E, H>, AccumulatorError> {
         // let channel_state = self.commit_layer()?;
-        
+
         let multi_eval = self.layer_evals.last().ok_or(AccumulatorError::QueryErr(
-                    "You tried to query the accumulator before anything was committed".to_string(),
-                ))?;
+            "You tried to query the accumulator before anything was committed".to_string(),
+        ))?;
         let channel_state = multi_eval.get_commitment()?.clone();
         let mut channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
@@ -269,10 +298,14 @@ impl<
 
     /// This function takes a one-indexed layer_idx and returns the hash for that layer
     pub fn get_layer_commitment(&self, layer_idx: usize) -> Result<H::Digest, AccumulatorError> {
-        let layer = self.layer_evals.get(layer_idx - 1).ok_or(AccumulatorError::DecommitErr(
-           layer_idx , "You tried to get a layer that doesn't exist yet.".to_string()))?;
+        let layer = self
+            .layer_evals
+            .get(layer_idx - 1)
+            .ok_or(AccumulatorError::DecommitErr(
+                layer_idx,
+                "You tried to get a layer that doesn't exist yet.".to_string(),
+            ))?;
         Ok(*layer.get_commitment()?)
-
     }
 }
 
@@ -441,7 +474,7 @@ mod test {
                 num_queries,
                 fri_options,
             );
-        let alphas = acc.draw_queries(20)?;
+        let alphas = acc.draw_queries(Some(20))?;
         assert!(alphas.len() == 20);
         Ok(())
     }
