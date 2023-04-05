@@ -97,8 +97,8 @@ impl<
         //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
         self.fri_coefficients.append(&mut self.coefficients.clone());
         self.fri_max_degrees.append(&mut self.max_degrees.clone());
-        // // self.coefficients = Vec::new();
-        // self.max_degrees = Vec::new();
+        self.coefficients = Vec::new();
+        self.max_degrees = Vec::new();
         multi_eval.commit_polynomial_evaluations()?;
         let com = multi_eval.get_commitment()?.clone();
         self.layer_evals.push(multi_eval);
@@ -106,7 +106,6 @@ impl<
     }
 
     pub fn draw_queries(&mut self, count: usize) -> Result<Vec<E>, AccumulatorError> {
-        let channel_state = self.commit_layer()?;
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
@@ -121,8 +120,10 @@ impl<
         Ok(queries)
     }
 
-    /// This function, implemented for the accumulator, expects as input the layer index, indexed starting at 1, since we
-    /// numbered the layers that way. We'll subtract 1 from layer_idx to retrieve the actual index of the polynomial
+    /// This function, implemented for the accumulator, 
+    /// expects as input the layer index, indexed starting at 1, since we
+    /// numbered the layers that way. 
+    /// We'll subtract 1 from layer_idx to retrieve the actual index of the polynomial
     /// evals we are looking for.
     pub fn decommit_layer(
         &mut self,
@@ -158,18 +159,87 @@ impl<
         Ok(multi_eval.batch_get_values_and_proofs_at(queries)?)
     }
 
+    /// This is the same as decommit_layer but with queries.
+    pub fn decommit_layer_with_qeuries(
+        &mut self,
+        layer_idx: usize,
+        queries: Vec<usize>,
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
+        // let mut coeffs_b = self.unchecked_coefficients.clone();
+        // let mut coeffs_b2 = self.coefficients.clone();
+        // coeffs_b.append(&mut coeffs_b2);
+        // let mut multi_eval = MultiEval::<B, E, H>::new(
+        //     coeffs_b,
+        //     self.coefficients_ext.clone(),
+        //     self.evaluation_domain_len,
+        //     self.offset,
+        // );
+        // multi_eval.commit_polynomial_evaluations()?;
+
+        let multi_eval =
+            self.layer_evals
+                .get(layer_idx - 1)
+                .ok_or(AccumulatorError::DecommitErr(
+                    layer_idx,
+                    "Tried to access some strange position in the multi_evals".to_string(),
+                ))?;
+        
+        Ok(multi_eval.batch_get_values_and_proofs_at(queries)?)
+    }
+
+    /// This is the same as decommit_layer but with queries.
+    pub fn decommit_layer_with_pub_input(
+        &mut self,
+        layer_idx: usize,
+        pub_input: H::Digest,
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
+        // let mut coeffs_b = self.unchecked_coefficients.clone();
+        // let mut coeffs_b2 = self.coefficients.clone();
+        // coeffs_b.append(&mut coeffs_b2);
+        // let mut multi_eval = MultiEval::<B, E, H>::new(
+        //     coeffs_b,
+        //     self.coefficients_ext.clone(),
+        //     self.evaluation_domain_len,
+        //     self.offset,
+        // );
+        // multi_eval.commit_polynomial_evaluations()?;
+        let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+            self.evaluation_domain_len,
+            self.num_queries,
+            Vec::new(), // make sure there's actually chaining between layers
+        );
+        channel.commit_fractal_iop_layer(pub_input);
+        let queries = channel.draw_query_positions();
+
+        let multi_eval =
+            self.layer_evals
+                .get(layer_idx - 1)
+                .ok_or(AccumulatorError::DecommitErr(
+                    layer_idx,
+                    "Tried to access some strange position in the multi_evals".to_string(),
+                ))?;
+        
+        Ok(multi_eval.batch_get_values_and_proofs_at(queries)?)
+    }
+
     // could be named something like "finish"
     pub fn create_fri_proof(&mut self) -> Result<LowDegreeBatchProof<B, E, H>, AccumulatorError> {
-        let channel_state = self.commit_layer()?;
+        // let channel_state = self.commit_layer()?;
+        
+        let multi_eval = self.layer_evals.last().ok_or(AccumulatorError::QueryErr(
+                    "You tried to query the accumulator before anything was committed".to_string(),
+                ))?;
+        let channel_state = multi_eval.get_commitment()?.clone();
         let mut channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
             Vec::new(),
         );
+
         channel.public_coin.reseed(channel_state);
         let mut low_degree_prover =
             LowDegreeBatchProver::<B, E, H>::new(&self.evaluation_domain, self.fri_options.clone());
-        for i in 0..self.max_degrees.len() {
+        for i in 0..self.fri_max_degrees.len() {
             // low_degree_prover.add_polynomial(
             //     self.fri_coefficients.get(i).unwrap(),
             //     *self.fri_max_degrees.get(i).unwrap(),
@@ -181,7 +251,7 @@ impl<
                 &mut channel,
             );
         }
-        for i in 0..self.max_degrees_ext.len() {
+        for i in 0..self.fri_max_degrees_ext.len() {
             // low_degree_prover.add_polynomial_e(
             //     self.coefficients_ext.get(i).unwrap(),
             //     *self.max_degrees_ext.get(i).unwrap(),
@@ -195,6 +265,14 @@ impl<
         }
 
         Ok(low_degree_prover.generate_proof(&mut channel))
+    }
+
+    /// This function takes a one-indexed layer_idx and returns the hash for that layer
+    pub fn get_layer_commitment(&self, layer_idx: usize) -> Result<H::Digest, AccumulatorError> {
+        let layer = self.layer_evals.get(layer_idx - 1).ok_or(AccumulatorError::DecommitErr(
+           layer_idx , "You tried to get a layer that doesn't exist yet.".to_string()))?;
+        Ok(*layer.get_commitment()?)
+
     }
 }
 

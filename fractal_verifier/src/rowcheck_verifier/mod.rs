@@ -301,6 +301,7 @@ mod test {
         accumulator.add_unchecked_polynomial(a_coeffs.clone());
         accumulator.add_unchecked_polynomial(b_coeffs.clone());
         accumulator.add_unchecked_polynomial(c_coeffs.clone());
+        accumulator.commit_layer()?;
         let mut rowcheck_prover =
             RowcheckProver::<B, E, H>::new(a_coeffs, b_coeffs, c_coeffs, fractal_options.clone());
         let query = E::from(0u128);
@@ -308,7 +309,7 @@ mod test {
             .run_next_layer(query, &mut accumulator)
             .unwrap();
         let commit = accumulator.commit_layer()?;
-        let decommit = accumulator.decommit_layer(1)?;
+        let decommit = accumulator.decommit_layer(2)?;
         // add some public input bytes VVV
         let fri_proof = accumulator.create_fri_proof()?;
 
@@ -319,7 +320,7 @@ mod test {
             fractal_options.num_queries,
             fractal_options.fri_options.clone(),
         );
-
+        println!("About to check accum");
         assert!(accumulator_verifier.verify_layer(commit, decommit.0.clone(), decommit.1));
 
         //todo: do this in the verifier accumulator only
@@ -333,7 +334,7 @@ mod test {
             .expect("failed to draw query position");
 
         println!("queried_positions: {:?}", &queried_positions);
-
+        println!("About to check rowcheck");
         add_rowcheck_verification(
             &mut accumulator_verifier,
             &verifier_key,
@@ -345,6 +346,8 @@ mod test {
             3,
         )?;
 
+        println!("About to check fri");
+        let last_layer_commit = accumulator.get_layer_commitment(2)?;
         assert!(accumulator_verifier.verify_fri_proof(commit, fri_proof));
         Ok(())
 
