@@ -243,6 +243,7 @@ mod test {
         E: FieldElement<BaseField = B>,
         H: ElementHasher<BaseField = B>,
     >() -> Result<(), TestingError> {
+        // Here's an initial manual setup we won't be using, but could, if needed.
         /*let lde_blowup = 4;
         let num_queries = 16;
         let fri_options = FriOptions::new(lde_blowup, 4, 32);
@@ -257,10 +258,14 @@ mod test {
         let b = vec![2,2,2,2,2,2,2,2];
         let c = vec![0,2,4,6,8,10,12,14];
 
-        let f_az_coeffs:Vec<B> = a.iter().map(|x| B::from(*x as u128)).collect();
+        let f_az_coeffs:Vec<> = a.iter().map(|x| B::from(*x as u128)).collect();
         let f_bz_coeffs:Vec<B> = b.iter().map(|x| B::from(*x as u128)).collect();
         let f_cz_coeffs:Vec<B> = c.iter().map(|x| B::from(*x as u128)).collect();
         */
+
+        // SETUP TASKS
+
+        // Let's first get the domains etc.
         let setup = get_example_setup::<B, E, H>();
         let (fractal_options, prover_key, verifier_key) = (setup.0, setup.1, setup.2);
 
@@ -268,6 +273,32 @@ mod test {
         let eval_len = evaluation_domain.len();
         let h_domain = fractal_options.h_domain.clone();
 
+        // PROVER TASKS
+        // Actually generate the f_az, f_bz, f_cz polynomials
+        // For this dummy example, we'll basically generate them randomly.
+        // But remember! To be valid, f_cz must = f_az * f_bz.
+        // random coefficients (todo, make it random)
+        let num_coeffs = (h_domain.len()) as u128;
+        let f_az_coeffs: Vec<B> = (0..num_coeffs)
+            .into_iter()
+            .map(|i| B::from(2u128 * i + i * i + 4))
+            .collect();
+        let f_bz_coeffs: Vec<B> = (0..num_coeffs)
+            .into_iter()
+            .map(|i| B::from(7u128 * i + i * i * i + 7))
+            .collect();
+
+        let f_az_evals_h = polynom::eval_many(&f_az_coeffs, &h_domain);
+        let f_bz_evals_h = polynom::eval_many(&f_bz_coeffs, &h_domain);
+        let f_cz_evals_h: Vec<B> = (0..h_domain.len())
+            .into_iter()
+            .map(|i| *f_az_evals_h.get(i).unwrap() * *f_bz_evals_h.get(i).unwrap())
+            .collect();
+
+        let f_cz_coeffs = polynom::interpolate(&h_domain, &f_cz_evals_h.to_vec(), true);
+
+        // Now that we have the f_Mz polynomials, we can commit to them, all in one go,
+        // using the accumulator.
         let mut accumulator = Accumulator::<B, E, H>::new(
             eval_len,
             fractal_options.eta,
@@ -276,69 +307,39 @@ mod test {
             fractal_options.fri_options.clone(),
         );
 
-        // random coefficients (todo, make it random)
-        let num_coeffs = (h_domain.len()) as u128;
-        let a_coeffs: Vec<B> = (0..num_coeffs)
-            .into_iter()
-            .map(|i| B::from(2u128 * i + i * i + 4))
-            .collect();
-        let b_coeffs: Vec<B> = (0..num_coeffs)
-            .into_iter()
-            .map(|i| B::from(7u128 * i + i * i * i + 7))
-            .collect();
-
-        let a_evals_h = polynom::eval_many(&a_coeffs, &h_domain);
-        let b_evals_h = polynom::eval_many(&b_coeffs, &h_domain);
-        let c_evals_h: Vec<B> = (0..h_domain.len())
-            .into_iter()
-            .map(|i| *a_evals_h.get(i).unwrap() * *b_evals_h.get(i).unwrap())
-            .collect();
-
-        let c_coeffs = polynom::interpolate(&h_domain, &c_evals_h.to_vec(), true);
-        println!("len(c_coeffs): {:?}", c_coeffs.len());
-
-        /*let a_evals = polynom::eval_many(&a_coeffs, &evaluation_domain);
-        let b_evals = polynom::eval_many(&b_coeffs, &evaluation_domain);
-        let c_evals: Vec<B> = (0..eval_len).into_iter().map(|i| *a_evals.get(i).unwrap() * *b_evals.get(i).unwrap()).collect();
-
-        let f_az_coeffs = polynom::interpolate(
-            &evaluation_domain,
-            &a_evals.to_vec(),
-            true,
-        );
-        let f_bz_coeffs = polynom::interpolate(
-            &evaluation_domain,
-            &b_evals.to_vec(),
-            true,
-        );
-        let f_cz_coeffs = polynom::interpolate(
-            &evaluation_domain,
-            &c_evals.to_vec(),
-            true,
-        );*/
-
-        accumulator.add_unchecked_polynomial(a_coeffs.clone());
-        accumulator.add_unchecked_polynomial(b_coeffs.clone());
-        accumulator.add_unchecked_polynomial(c_coeffs.clone());
+        accumulator.add_unchecked_polynomial(f_az_coeffs.clone());
+        accumulator.add_unchecked_polynomial(f_bz_coeffs.clone());
+        accumulator.add_unchecked_polynomial(f_cz_coeffs.clone());
         // Commit to the f_az, f_bz, f_cz polynomials before you move forward.
-        accumulator.commit_layer()?;
-        let init_commit = accumulator.get_layer_commitment(1)?;
+        let init_commit = accumulator.commit_layer()?;
 
-        let mut rowcheck_prover =
-            RowcheckProver::<B, E, H>::new(a_coeffs, b_coeffs, c_coeffs, fractal_options.clone());
+        // Now the rowcheck prover does its work.
+        // Recall that this is a single layer proof, so we don't need to worry about anything else yet.
+        let mut rowcheck_prover = RowcheckProver::<B, E, H>::new(
+            f_az_coeffs,
+            f_bz_coeffs,
+            f_cz_coeffs,
+            fractal_options.clone(),
+        );
         let query = E::from(0u128);
         rowcheck_prover
             .run_next_layer(query, &mut accumulator)
             .unwrap();
+        // Now all the polynomials from the rowcheck layer should be in the accumulator.
+        // (spoiler: it's only one polynomial but we still need to commit it)
         let commit = accumulator.commit_layer()?;
+
+        // Now you draw queries based on the commitment and show their correctness with
+        // respect to everything.
         let queries = accumulator.draw_query_positions()?;
-        println!("Queries drawn = {}", queries.clone().len());
-        println!("Fractal options = {}", fractal_options.num_queries);
+        // To show correctness, including of linking the two layers, query them at the same points
         let decommit_fmz_polys = accumulator.decommit_layer_with_qeuries(1, queries.clone())?;
         let decommit = accumulator.decommit_layer_with_qeuries(2, queries)?;
         // add some public input bytes VVV
         let fri_proof = accumulator.create_fri_proof()?;
 
+        // VERIFIER TASKS
+        // Instantiate the accumulator verifier to deal with all the merkle path verif.
         let mut accumulator_verifier = AccumulatorVerifier::<B, E, H>::new(
             eval_len,
             fractal_options.eta,
@@ -347,45 +348,52 @@ mod test {
             fractal_options.fri_options.clone(),
         );
 
+        let query_indices = accumulator_verifier.get_query_indices(commit);
+
+        // Check that the f_Mz decommitted values were appropriately sent by the prover
         println!("About to check accum for f_mz polynomials");
-        assert!(accumulator_verifier.verify_layer(
+        assert!(accumulator_verifier.verify_layer_with_queries(
             init_commit,
-            commit,
+            query_indices.clone(),
             decommit_fmz_polys.0.clone(),
             decommit_fmz_polys.1
         ));
+        // Check that the rowcheck layer decommitted values were appropriately sent.
         println!("About to check accum for everything inside the rowcheck");
-        assert!(accumulator_verifier.verify_layer(commit, commit, decommit.0.clone(), decommit.1));
-
-        //todo: do this in the verifier accumulator only
-        let mut coin = RandomCoin::<B, H>::new(&vec![]);
-        coin.reseed(commit);
-        let queried_positions = coin
-            .draw_integers(
-                fractal_options.num_queries,
-                fractal_options.evaluation_domain.len(),
-            )
-            .expect("failed to draw query position");
+        assert!(accumulator_verifier.verify_layer_with_queries(
+            commit,
+            query_indices.clone(),
+            decommit.0.clone(),
+            decommit.1
+        ));
 
         let rowcheck_decommits =
             prepare_rowcheck_verifier_inputs(vec![decommit_fmz_polys.0, decommit.0]);
 
-        println!("queried_positions: {:?}", &queried_positions);
+        // Check internal rowcheck relationships on values whose validity was already verified by the accumulator verification
         println!("About to check rowcheck");
         add_rowcheck_verification(
             &mut accumulator_verifier,
             &verifier_key,
             rowcheck_decommits,
-            queried_positions,
+            query_indices,
             0,
             1,
             2,
             3,
         )?;
 
+        // Check correctness of FRI
         println!("About to check fri");
-        let last_layer_commit = accumulator.get_layer_commitment(2)?;
         assert!(accumulator_verifier.verify_fri_proof(commit, fri_proof));
+        /* Proof verification complete */
+
+        // Also testing that the get_layer_commitment function is working as expected for the accum
+        let first_layer_commit = accumulator.get_layer_commitment(1)?;
+        let last_layer_commit = accumulator.get_layer_commitment(2)?;
+        assert!(last_layer_commit == commit);
+        assert!(first_layer_commit == init_commit);
+
         Ok(())
 
         //IOP struct: vecs of commits, decommits, and a fri proof at the end

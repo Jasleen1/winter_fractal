@@ -124,13 +124,14 @@ impl<
         self.f_cz_coeffs = f_cz_coeffs.to_vec();
         self.z_coeffs = z_coeffs.to_vec();
 
-        //TODO: Put in correct constraints
-        accumulator.add_polynomial(z_coeffs.to_vec(), 32);
-        accumulator.add_polynomial(f_az_coeffs.to_vec(), 32);
-        accumulator.add_polynomial(f_bz_coeffs.to_vec(), 32);
-        accumulator.add_polynomial(f_cz_coeffs.to_vec(), 32);
+        //TODO: Put in correct degree constraints
+        accumulator.add_unchecked_polynomial(z_coeffs.to_vec());
+        accumulator.add_unchecked_polynomial(f_az_coeffs.to_vec());
+        accumulator.add_unchecked_polynomial(f_bz_coeffs.to_vec());
+        accumulator.add_unchecked_polynomial(f_cz_coeffs.to_vec());
         Ok(())
     }
+
     fn fractal_layer_two(
         &mut self,
         query: E,
@@ -208,8 +209,8 @@ impl<
                 self.current_layer += 1;
             }
             1 => {
-                self.current_layer += 1;
                 self.fractal_layer_two(query, accumulator)?;
+                self.current_layer += 1;
             }
             2 => {
                 self.fractal_layer_three(query, accumulator)?;
