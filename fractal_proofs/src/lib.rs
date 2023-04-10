@@ -44,6 +44,12 @@ pub struct RowcheckProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hashe
     pub s_max_degree: usize,
 }
 
+// pub struct LayeredRowcheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
+//     pub num_evaluations: usize,
+//     pub rowcheck_poly_evals: Vec<Vec<E>>,
+//     pub s_max_degree: usize,
+// }
+
 impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
     for RowcheckProof<B, E, H>
 {

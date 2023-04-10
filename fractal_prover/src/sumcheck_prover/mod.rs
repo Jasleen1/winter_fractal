@@ -105,7 +105,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let sub_factor = self.sigma / E::from(self.summing_domain.len() as u64);
         let f_hat_minus_sub_factor = polynom::sub(&f_hat_coeffs, &vec![E::from(sub_factor)]);
         assert_eq!(f_hat_minus_sub_factor[0], E::ZERO);
-        let g_hat_coeffs_og = polynom::div(&f_hat_minus_sub_factor, &x_coeffs);
+        let g_hat_coeffs = polynom::div(&f_hat_minus_sub_factor, &x_coeffs);
 
         let eval_domain_e: Vec<E> = self
             .fractal_options
@@ -123,8 +123,8 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let dividing_factor_for_sigma: u64 = self.summing_domain.len().try_into().unwrap();
         let subtracting_factor = self.sigma * E::from(dividing_factor_for_sigma).inv();
 
-        let g_eval_domain_evals_og = polynom::eval_many(
-            &g_hat_coeffs_og,
+        let g_eval_domain_evals = polynom::eval_many(
+            &g_hat_coeffs,
             &self
                 .fractal_options
                 .evaluation_domain
@@ -160,25 +160,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             );
             g_summing_domain_evals.push(g_val);
         }
-        // TODO: clean this up
-        let summing_domain_e = self
-            .fractal_options
-            .summing_domain
-            .iter()
-            .map(|x| E::from(*x))
-            .collect::<Vec<E>>();
-        let eval_domain_e = self
-            .fractal_options
-            .evaluation_domain
-            .iter()
-            .map(|x| E::from(*x))
-            .collect::<Vec<E>>();
-        let g_hat_coeffs = polynom::interpolate(&summing_domain_e, &g_summing_domain_evals, false);
-        let g_eval_domain_evals = polynom::eval_many(&g_hat_coeffs, &eval_domain_e);
-        println!("g_og = {:?}", g_eval_domain_evals_og[76]);
-        println!("new = {:?}", g_eval_domain_evals[76]);
-        println!("coeff og = {:?}", g_hat_coeffs_og[5]);
-        println!("new coeff = {:?}", g_hat_coeffs[5]);
+        
         let mut e_eval_domain_evals: Vec<E> = Vec::new();
         for i in 0..self.fractal_options.evaluation_domain.len() {
             let e_val = self.compute_e_poly_on_val(
