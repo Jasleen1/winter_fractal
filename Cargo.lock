@@ -461,6 +461,7 @@ dependencies = [
  "winter-crypto",
  "winter-fri",
  "winter-math",
+ "winter-models",
  "winter-utils",
 ]
 

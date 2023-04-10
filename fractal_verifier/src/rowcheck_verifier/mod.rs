@@ -18,7 +18,7 @@ pub fn verify_rowcheck_proof<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
-    verifier_key: &VerifierKey<H, B>,
+    verifier_key: &VerifierKey<B, E, H>,
     proof: RowcheckProof<B, E, H>,
     public_coin: &mut RandomCoin<B, H>,
     initial_evals: Vec<Vec<B>>,
@@ -54,7 +54,7 @@ pub fn add_rowcheck_verification<
     H: ElementHasher<BaseField = B>,
 >(
     accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
-    verifier_key: &VerifierKey<H, B>,
+    verifier_key: &VerifierKey<B, E, H>,
     decommit: Vec<Vec<E>>,
     queried_positions: Vec<usize>, //Delete!
     f_az_idx: usize,
@@ -193,11 +193,12 @@ fn verify_s_computation<
 pub(crate) fn prepare_rowcheck_verifier_inputs<E: FieldElement>(
     decommits: Vec<Vec<Vec<E>>>,
 ) -> Vec<Vec<E>> {
+    let mut return_vec = Vec::new();
     // Here, we first assume the first element of the input vec is the vector of (f_az, f_bz, f_cz) evaluations
     let decommitted_fmzs = decommits[0].clone();
     // The second element is the evals of the s polynomial
     let decommitted_s = decommits[1].clone();
-    let mut return_vec = Vec::new();
+
     for i in 0..decommitted_fmzs.len() {
         let mut latest_tuple = decommitted_fmzs[i].clone();
         latest_tuple.push(decommitted_s[i][0]);
@@ -356,7 +357,7 @@ mod test {
             init_commit,
             query_indices.clone(),
             decommit_fmz_polys.0.clone(),
-            decommit_fmz_polys.1
+            &decommit_fmz_polys.1
         ));
         // Check that the rowcheck layer decommitted values were appropriately sent.
         println!("About to check accum for everything inside the rowcheck");
@@ -364,7 +365,7 @@ mod test {
             commit,
             query_indices.clone(),
             decommit.0.clone(),
-            decommit.1
+            &decommit.1
         ));
 
         let rowcheck_decommits =

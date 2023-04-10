@@ -1,7 +1,7 @@
 use crate::{errors::FractalUtilError, matrix_utils::*};
 use fractal_math::{fft, FieldElement, StarkField};
 use std::{convert::TryInto, marker::PhantomData};
-use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree};
+use winter_crypto::{BatchMerkleProof, Digest, ElementHasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions};
 use winter_utils::batch_iter_mut;
 // TODO: Add error checking and throwing
@@ -163,6 +163,13 @@ pub trait MultiPoly<
     fn batch_verify_values_and_proofs_at(
         vals: Vec<Vec<E>>,
         root: &H::Digest,
+        proof: &BatchMerkleProof<H>,
+        indices: Vec<usize>,
+    ) -> Result<(), FractalUtilError>;
+
+    fn batch_verify_transposed_values_and_proofs_at(
+        vals: Vec<[E; 1]>,
+        root: &<H>::Digest,
         proof: &BatchMerkleProof<H>,
         indices: Vec<usize>,
     ) -> Result<(), FractalUtilError>;
@@ -381,6 +388,42 @@ impl<
         //for (index, i) in indices.iter().enumerate() {
         for i in (0..indices.len()).into_iter() {
             if H::hash_elements(&vals[i]) != proof.leaves[i] {
+                println!(
+                    "Hash_elements applied to input array elts {:?}",
+                    vals.iter()
+                        .map(|x| H::hash_elements(x).as_bytes())
+                        .collect::<Vec<[u8; 32]>>()
+                );
+                println!("Leaves {:?}", proof.leaves);
+                return Err(FractalUtilError::MultiPolyErr(
+                    "The proof's value does not match the sent value".to_string(),
+                ));
+            }
+        } // TODO: still need to check this but currently leaves is private
+        MerkleTree::verify_batch(root, &indices, proof).map_err(|e| {
+            FractalUtilError::MultiPolyErr(format!(
+                "Got an error when committing to the evals: {e}"
+            ))
+        })
+    }
+
+    //todo: check vals
+    fn batch_verify_transposed_values_and_proofs_at(
+        vals: Vec<[E; 1]>,
+        root: &<H>::Digest,
+        proof: &BatchMerkleProof<H>,
+        indices: Vec<usize>,
+    ) -> Result<(), FractalUtilError> {
+        //for (index, i) in indices.iter().enumerate() {
+        for i in (0..indices.len()).into_iter() {
+            if H::hash_elements(&vals[i]) != proof.leaves[i] {
+                println!(
+                    "Hash_elements applied to input array elts {:?}",
+                    vals.iter()
+                        .map(|x| H::hash_elements(x).as_bytes())
+                        .collect::<Vec<[u8; 32]>>()
+                );
+                println!("Leaves {:?}", proof.leaves);
                 return Err(FractalUtilError::MultiPolyErr(
                     "The proof's value does not match the sent value".to_string(),
                 ));

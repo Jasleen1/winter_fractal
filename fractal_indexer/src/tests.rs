@@ -1,6 +1,7 @@
 use std::vec;
 
 use crate::{index::*, *};
+use fractal_math::smallprimefield;
 use indexed_matrix::IndexedMatrix;
 use models::r1cs::Matrix;
 use models::{errors::R1CSError, r1cs::*};
@@ -29,8 +30,8 @@ fn test_indexing() {
         eta: BaseElement::ONE,
         eta_k: BaseElement::ONE,
     };
-    let domains = build_index_domains(params.clone());
-    let indexed_a = IndexedMatrix::new(&r1cs_instance.A, &domains);
+    let domains: IndexDomains<BaseElement, BaseElement> = build_index_domains(params.clone());
+    let indexed_a: IndexedMatrix<BaseElement, _> = IndexedMatrix::new(&r1cs_instance.A, &domains);
     let indexed_b = IndexedMatrix::new(&r1cs_instance.B, &domains);
     let indexed_c = IndexedMatrix::new(&r1cs_instance.C, &domains);
     let index = Index::new(params, indexed_a, indexed_b, indexed_c);
@@ -98,7 +99,10 @@ fn test_single_indexed_matrix_17() {
         eta: SmallFieldElement17::ONE,
         eta_k: SmallFieldElement17::ONE,
     };
-    let domains = build_index_domains(params.clone());
+    let domains: IndexDomains<
+        smallprimefield::BaseElement<17, 3, 4>,
+        smallprimefield::BaseElement<17, 3, 4>,
+    > = build_index_domains(params.clone());
     println!("Domains {:?}", domains);
     let indexed_a = IndexedMatrix::new(&matrix_a, &domains);
     println!("Indexed a is {:?}", indexed_a);

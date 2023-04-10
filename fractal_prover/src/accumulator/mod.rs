@@ -98,8 +98,10 @@ impl<
         self.fri_coefficients.append(&mut self.coefficients.clone());
         self.fri_max_degrees.append(&mut self.max_degrees.clone());
         self.coefficients = Vec::new();
+        self.coefficients_ext = Vec::new();
         self.unchecked_coefficients = Vec::new();
         self.max_degrees = Vec::new();
+        self.max_degrees_ext = Vec::new();
         multi_eval.commit_polynomial_evaluations()?;
         let com = multi_eval.get_commitment()?.clone();
         self.layer_evals.push(multi_eval);

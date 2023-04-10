@@ -10,3 +10,5 @@ mod tests;
 pub mod verifier;
 
 pub use fractal_indexer;
+use fractal_indexer::{index::IndexParams, snark_keys::*};
+use models::*;

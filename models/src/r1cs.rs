@@ -4,7 +4,7 @@ use crate::errors::*;
 use crate::utils::{print_vec, print_vec_bits};
 
 pub type MatrixDimensions = (usize, usize);
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Matrix<E: StarkField> {
     pub name: String,
     pub mat: Vec<Vec<E>>,

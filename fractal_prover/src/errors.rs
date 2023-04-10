@@ -50,10 +50,29 @@ impl From<AccumulatorError> for ProverError {
 }
 
 /// Represents a generic error type
-#[derive(Debug, Display, PartialEq, Error)]
+#[derive(Debug, PartialEq, Error)]
 pub enum LincheckError {
     /// If the Merkle Tree leads to an error
     MerkleTreeErr(MerkleTreeError),
+    /// If you tried to compute gamma without having set alpha or t_alpha
+    GammaCompErr(String),
+}
+
+impl fmt::Display for LincheckError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MerkleTreeErr(err) => {
+                write!(f, "Encountered an error in Lincheck: {:?}", err,)
+            }
+            Self::GammaCompErr(err) => {
+                write!(
+                    f,
+                    "Encountered an error in Lincheck, you tried to compute gamma: {:?}",
+                    err,
+                )
+            }
+        }
+    }
 }
 
 /// Represents a generic error type
@@ -86,16 +105,6 @@ impl From<FractalUtilError> for AccumulatorError {
         AccumulatorError::FractalUtilErr(e)
     }
 }
-
-// impl fmt::Display for LincheckError {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         match self {
-//             Self::MerkleTreeErr(err) => {
-//                 write!(f, "Encountered an error in Lincheck: {:?}", err,)
-//             }
-//         }
-//     }
-// }
 
 impl fmt::Display for ProverError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

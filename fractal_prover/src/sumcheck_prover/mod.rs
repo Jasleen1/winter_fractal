@@ -105,7 +105,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let sub_factor = self.sigma / E::from(self.summing_domain.len() as u64);
         let f_hat_minus_sub_factor = polynom::sub(&f_hat_coeffs, &vec![E::from(sub_factor)]);
         assert_eq!(f_hat_minus_sub_factor[0], E::ZERO);
-        let g_hat_coeffs = polynom::div(&f_hat_minus_sub_factor, &x_coeffs);
+        let g_hat_coeffs_og = polynom::div(&f_hat_minus_sub_factor, &x_coeffs);
 
         let eval_domain_e: Vec<E> = self
             .fractal_options
@@ -123,8 +123,8 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let dividing_factor_for_sigma: u64 = self.summing_domain.len().try_into().unwrap();
         let subtracting_factor = self.sigma * E::from(dividing_factor_for_sigma).inv();
 
-        let g_eval_domain_evals = polynom::eval_many(
-            &g_hat_coeffs,
+        let g_eval_domain_evals_og = polynom::eval_many(
+            &g_hat_coeffs_og,
             &self
                 .fractal_options
                 .evaluation_domain
@@ -152,6 +152,33 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
                 .collect::<Vec<E>>(),
         );
 
+        let mut g_summing_domain_evals: Vec<E> = Vec::new();
+        for i in 0..self.fractal_options.summing_domain.len() {
+            let g_val = self.compute_g_poly_on_val(
+                E::from(self.fractal_options.summing_domain[i]),
+                E::from(f_hat_evals[i]),
+            );
+            g_summing_domain_evals.push(g_val);
+        }
+        // TODO: clean this up
+        let summing_domain_e = self
+            .fractal_options
+            .summing_domain
+            .iter()
+            .map(|x| E::from(*x))
+            .collect::<Vec<E>>();
+        let eval_domain_e = self
+            .fractal_options
+            .evaluation_domain
+            .iter()
+            .map(|x| E::from(*x))
+            .collect::<Vec<E>>();
+        let g_hat_coeffs = polynom::interpolate(&summing_domain_e, &g_summing_domain_evals, false);
+        let g_eval_domain_evals = polynom::eval_many(&g_hat_coeffs, &eval_domain_e);
+        println!("g_og = {:?}", g_eval_domain_evals_og[76]);
+        println!("new = {:?}", g_eval_domain_evals[76]);
+        println!("coeff og = {:?}", g_hat_coeffs_og[5]);
+        println!("new coeff = {:?}", g_hat_coeffs[5]);
         let mut e_eval_domain_evals: Vec<E> = Vec::new();
         for i in 0..self.fractal_options.evaluation_domain.len() {
             let e_val = self.compute_e_poly_on_val(
@@ -163,6 +190,17 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             );
             e_eval_domain_evals.push(e_val);
         }
+        // let mut e_eval_domain_evals: Vec<E> = Vec::new();
+        // for i in 0..self.fractal_options.evaluation_domain.len() {
+        //     let e_val = self.compute_e_poly_on_val(
+        //         E::from(self.fractal_options.evaluation_domain[i]),
+        //         E::from(g_eval_domain_evals[i]),
+        //         p_eval_domain_evals[i],
+        //         q_eval_domain_evals[i],
+        //         self.eta,
+        //     );
+        //     e_eval_domain_evals.push(e_val);
+        // }
 
         let e_hat_coeffs = polynom::interpolate(
             &self
@@ -192,7 +230,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
 
     pub fn compute_sigma_function_on_val(&self, x_val: E, g_val: E) -> E {
         let dividing_factor: u64 = self.summing_domain.len().try_into().unwrap();
-        x_val * g_val + (E::from(self.sigma) * E::from(dividing_factor).inv())
+        (x_val * g_val) + (E::from(self.sigma) * E::from(dividing_factor).inv())
     }
 
     pub fn compute_e_poly_on_val(
@@ -207,7 +245,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let sigma_minus_f =
             sigma_function * summing_poly_denominator_val - summing_poly_numerator_val;
         let vanishing_on_x = compute_vanishing_poly(x_val, E::from(eta), self.summing_domain.len());
-        //vanishing_poly_for_mult_subgroup(x_val, self.summing_domain.len().try_into().unwrap());
         sigma_minus_f * vanishing_on_x.inv()
     }
 }

@@ -11,7 +11,7 @@ use winter_math::StarkField;
 pub mod accumulator;
 pub mod channel;
 pub mod errors;
-mod lincheck_prover;
+pub mod lincheck_prover;
 pub mod low_degree_batch_prover;
 pub mod low_degree_prover;
 pub mod prover;

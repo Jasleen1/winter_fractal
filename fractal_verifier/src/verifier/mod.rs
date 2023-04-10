@@ -14,7 +14,7 @@ pub fn verify_fractal_proof<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
-    verifier_key: VerifierKey<H, B>,
+    verifier_key: VerifierKey<B, E, H>,
     proof: FractalProof<B, E, H>,
     pub_inputs_bytes: Vec<u8>,
     options: FractalOptions<B>,

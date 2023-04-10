@@ -93,16 +93,17 @@ pub(crate) fn orchestrate_r1cs_example<
         eta_k,
     };
 
-    let index_domains = build_index_domains::<B>(index_params.clone());
+    let index_domains = build_index_domains::<B, E>(index_params.clone());
     println!("build index domains");
-    let indexed_a = index_matrix::<B>(&r1cs.A, &index_domains);
-    let indexed_b = index_matrix::<B>(&r1cs.B, &index_domains);
-    let indexed_c = index_matrix::<B>(&r1cs.C, &index_domains);
+    let indexed_a = index_matrix::<B, E>(&r1cs.A, &index_domains);
+    let indexed_b = index_matrix::<B, E>(&r1cs.B, &index_domains);
+    let indexed_c = index_matrix::<B, E>(&r1cs.C, &index_domains);
     println!("indexed matries");
     // This is the index i.e. the pre-processed data for this r1cs
     let index = Index::new(index_params.clone(), indexed_a, indexed_b, indexed_c);
 
-    let (prover_key, verifier_key) = generate_prover_and_verifier_keys::<H, B, N>(index).unwrap();
+    let (prover_key, verifier_key) =
+        generate_prover_and_verifier_keys::<B, E, H, N>(index).unwrap();
 
     // TODO: the IndexDomains should already guarantee powers of two, so why add extraneous bit or use next_power_of_two?
 

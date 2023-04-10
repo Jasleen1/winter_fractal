@@ -32,7 +32,12 @@ pub fn get_example_setup<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
->() -> (FractalOptions<B>, ProverKey<H, B>, VerifierKey<H, B>) {
+>() -> (
+    FractalOptions<B>,
+    ProverKey<B, E, H>,
+    VerifierKey<B, E, H>,
+    Vec<B>,
+) {
     let mut options = ExampleOptions::from_args();
     options.verbose = true;
     if options.verbose {
@@ -60,7 +65,12 @@ fn files_to_setup_outputs<
     arith_file: &str,
     wire_file: &str,
     verbose: bool,
-) -> (FractalOptions<B>, ProverKey<H, B>, VerifierKey<H, B>) {
+) -> (
+    FractalOptions<B>,
+    ProverKey<B, E, H>,
+    VerifierKey<B, E, H>,
+    Vec<B>,
+) {
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
     arith_parser.parse_arith_file(&arith_file, verbose);
     let r1cs = arith_parser.clone_r1cs();
@@ -95,16 +105,17 @@ fn files_to_setup_outputs<
         eta_k,
     };
 
-    let index_domains = build_index_domains::<B>(index_params.clone());
+    let index_domains = build_index_domains::<B, E>(index_params.clone());
     println!("build index domains");
-    let indexed_a = index_matrix::<B>(&r1cs.A, &index_domains);
-    let indexed_b = index_matrix::<B>(&r1cs.B, &index_domains);
-    let indexed_c = index_matrix::<B>(&r1cs.C, &index_domains);
+    let indexed_a = index_matrix::<B, E>(&r1cs.A, &index_domains);
+    let indexed_b = index_matrix::<B, E>(&r1cs.B, &index_domains);
+    let indexed_c = index_matrix::<B, E>(&r1cs.C, &index_domains);
     println!("indexed matries");
     // This is the index i.e. the pre-processed data for this r1cs
     let index = Index::new(index_params.clone(), indexed_a, indexed_b, indexed_c);
 
-    let (prover_key, verifier_key) = generate_prover_and_verifier_keys::<H, B, N>(index).unwrap();
+    let (prover_key, verifier_key) =
+        generate_prover_and_verifier_keys::<B, E, H, N>(index).unwrap();
 
     // TODO: the IndexDomains should already guarantee powers of two, so why add extraneous bit or use next_power_of_two?
 
@@ -134,7 +145,7 @@ fn files_to_setup_outputs<
         fri_options,
         num_queries,
     };
-    (options, prover_key, verifier_key)
+    (options, prover_key, verifier_key, wires)
 }
 
 #[derive(Debug)]

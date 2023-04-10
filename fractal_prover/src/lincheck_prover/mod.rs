@@ -24,7 +24,7 @@ pub struct LincheckProver<
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
-    prover_matrix_index: ProverMatrixIndex<H, B>,
+    prover_matrix_index: ProverMatrixIndex<B, E, H>,
     f_1_poly_coeffs: Vec<B>,
     f_2_poly_coeffs: Vec<B>,
     options: FractalOptions<B>,
@@ -44,7 +44,7 @@ impl<
     > LincheckProver<B, E, H>
 {
     pub fn new(
-        prover_matrix_index: ProverMatrixIndex<H, B>,
+        prover_matrix_index: ProverMatrixIndex<B, E, H>,
         f_1_poly_coeffs: Vec<B>,
         f_2_poly_coeffs: Vec<B>,
         options: &FractalOptions<B>,
@@ -68,6 +68,14 @@ impl<
         }
     }
 
+    pub fn retrieve_gamma(&self, beta: E) -> Result<E, LincheckError> {
+        let t_alpha = self
+            .t_alpha
+            .clone()
+            .ok_or(LincheckError::GammaCompErr("t_alpha not set".to_string()))?;
+        Ok(polynom::eval(&t_alpha, beta))
+    }
+
     /// The polynomial t_alpha(X) = u_M(X, alpha).
     /// We also know that u_M(X, alpha) = M_star(X, alpha).
     /// Further, M_star(X, Y) =
@@ -79,8 +87,8 @@ impl<
         // for all values of k, since these don't change with X.
         let mut coefficient_values = Vec::new();
         for id in 0..self.options.summing_domain.len() {
-            let summing_elt = self.options.summing_domain[id];
-            let denom_term = alpha - E::from(self.prover_matrix_index.get_col_eval(summing_elt));
+            let summing_elt = E::from(self.options.summing_domain[id]);
+            let denom_term = alpha - self.prover_matrix_index.get_col_eval(summing_elt);
             let inv_denom_term = denom_term.inv();
             // This computes the term val(k) / (alpha - col(k))
             // Why does this type as B instead of E?
@@ -105,9 +113,9 @@ impl<
             let mut sum_without_vs = E::ZERO;
             for id in 0..self.options.summing_domain.len() {
                 //summing \n summing
-                let summing_elt = self.options.summing_domain[id];
+                let summing_elt = E::from(self.options.summing_domain[id]);
                 let denom_term =
-                    E::from(x_val - self.prover_matrix_index.get_row_eval(summing_elt));
+                    E::from(x_val) - self.prover_matrix_index.get_row_eval(summing_elt);
                 let prod_term = coefficient_values[id] * denom_term.inv();
                 sum_without_vs = sum_without_vs + prod_term;
             }
@@ -119,7 +127,6 @@ impl<
             let sum_with_vs = (sum_without_vs * E::from(v_h_x)) * v_h_alpha;
             t_evals.push(sum_with_vs);
         }
-        // println!("t_alpha init evals {:?}", t_evals);
         t_evals
     }
 
@@ -156,11 +163,10 @@ impl<
         // 1. find out how polynomials are represented and get u_H(X, alpha) = (X^|H| - alpha)/(X - alpha)
         // 2. Polynom includes a mul and a sub function, use these to do the respective ops
         //eta_to_h_size = eta.exp(B::PositiveInteger::from(self.options.size_subgroup_h));
-        let mut alpha_to_h_size = alpha.exp(E::PositiveInteger::from(
+        let alpha_to_h_size = alpha.exp(E::PositiveInteger::from(
             self.options.size_subgroup_h as u64,
         ));
         debug!("alpha_to_h_size: {}", &alpha_to_h_size);
-
         let mut u_numerator = vec![E::ZERO; (self.options.size_subgroup_h).try_into().unwrap()];
         u_numerator[0] = alpha_to_h_size.neg();
         u_numerator.push(E::ONE);
@@ -173,7 +179,7 @@ impl<
         .collect();*/
         //let u_alpha_coeffs2 =
         //polynom::interpolate(&self.options.evaluation_domain, &u_alpha_evals, true);
-        let mut u_alpha_coeffs = polynom::div(&u_numerator, &u_denominator);
+        let u_alpha_coeffs = polynom::div(&u_numerator, &u_denominator);
         //let reconstituted = polynom::mul(&u_alpha_coeffs, &u_denominator);
 
         let mut poly = polynom::sub(
@@ -247,7 +253,7 @@ impl<
         //none of that fft nonsense, let's do this the lagrange way
         //f_1_eval = polynom::eval_many(&self.f_1_poly_coeffs, &self.options.evaluation_domain).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
         //f_2_eval = polynom::eval_many(&self.f_2_poly_coeffs, &self.options.evaluation_domain).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
-        u_alpha = polynom::eval_many(&u_alpha, &self.evaluation_domain_e);
+        // u_alpha = polynom::eval_many(&u_alpha, &self.evaluation_domain_e);
         for pos in 0..self.options.evaluation_domain.len() {
             let next = (u_alpha[pos] * f_1_eval[pos]) - (t_alpha[pos] * f_2_eval[pos]);
             prod.push(next);
@@ -260,6 +266,7 @@ impl<
         let t_alpha_evals = self.generate_t_alpha_evals(query);
         let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
         debug!("t_alpha degree: {}", &t_alpha.len() - 1);
+        accumulator.add_polynomial_e(t_alpha.clone(), self.options.size_subgroup_h - 1);
         self.t_alpha = Some(t_alpha.clone());
 
         let poly_prod = self.generate_poly_prod_evals(query, &t_alpha_evals);
@@ -289,15 +296,15 @@ impl<
         let denom_eval = vec![B::ONE; self.options.h_domain.len()];
 
         // use h_domain rather than eval_domain
-        let poly_prod = polynom::eval_many(
-            &poly_prod_coeffs,
-            &self
-                .options
-                .h_domain
-                .iter()
-                .map(|i| E::from(*i))
-                .collect::<Vec<E>>(),
-        );
+        // let poly_prod = polynom::eval_many(
+        //     &poly_prod_coeffs,
+        //     &self
+        //         .options
+        //         .h_domain
+        //         .iter()
+        //         .map(|i| E::from(*i))
+        //         .collect::<Vec<E>>(),
+        // );
 
         let g_degree = self.options.h_domain.len() - 2;
         let e_degree = self.options.h_domain.len() - 1;
@@ -376,6 +383,8 @@ impl<
                 / polynom::eval(&matrix_proof_denominator, E::from(*k));
             mat_sum += temp;
         }
+
+        let eval_pt = E::from(self.options.evaluation_domain[76]);
 
         let mut matrix_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
             matrix_proof_numerator,

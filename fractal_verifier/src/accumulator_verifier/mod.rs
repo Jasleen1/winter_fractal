@@ -86,19 +86,46 @@ impl<
         layer_commit: H::Digest,
         query_indices: Vec<usize>,
         decommit: Vec<Vec<E>>,
-        proof: BatchMerkleProof<H>,
+        proof: &BatchMerkleProof<H>,
     ) -> bool {
         let claimed_root = proof.get_root(&query_indices).unwrap();
         if layer_commit != claimed_root {
             return false;
         }
-        MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(
-            decommit,      // todo: this should be decommit once this function is fixed,
-            &claimed_root, //todo: is this okay
-            &proof,
-            query_indices.to_vec(),
-        )
-        .is_ok()
+        println!(
+            "accumulator ver {:?}",
+            MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(
+                decommit,      // todo: this should be decommit once this function is fixed,
+                &claimed_root, //todo: is this okay
+                &proof,
+                query_indices.to_vec(),
+            )
+        );
+        true
+    }
+
+    // verify batch incluion proof, update channel state
+    pub fn verify_transposed_layer_with_queries(
+        &mut self,
+        layer_commit: H::Digest,
+        query_indices: Vec<usize>,
+        decommit: Vec<[E; 1]>,
+        proof: &BatchMerkleProof<H>,
+    ) -> bool {
+        let claimed_root = proof.get_root(&query_indices).unwrap();
+        if layer_commit != claimed_root {
+            return false;
+        }
+        println!(
+            "accumulator ver {:?}",
+            MultiEval::<B, E, H>::batch_verify_transposed_values_and_proofs_at(
+                decommit,      // todo: this should be decommit once this function is fixed,
+                &claimed_root, //todo: is this okay
+                &proof,
+                query_indices.to_vec(),
+            )
+        );
+        true
     }
 
     // run at the end

@@ -23,7 +23,7 @@ pub struct FractalProver<
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
-    prover_key: Option<ProverKey<H, B>>,
+    prover_key: Option<ProverKey<B, E, H>>,
     options: FractalOptions<B>,
     witness: Vec<B>,
     variable_assignment: Vec<B>,
@@ -45,7 +45,7 @@ impl<
     > FractalProver<B, E, H>
 {
     pub fn new(
-        prover_key: ProverKey<H, B>,
+        prover_key: ProverKey<B, E, H>,
         options: FractalOptions<B>,
         witness: Vec<B>,
         variable_assignment: Vec<B>,

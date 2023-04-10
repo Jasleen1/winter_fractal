@@ -7,7 +7,8 @@
 
 //! Errors for various data structure operations.
 use fractal_proofs::{errors::FractalUtilError, DeserializationError};
-use fractal_prover::errors::{AccumulatorError, ProverError};
+use fractal_prover::errors::{AccumulatorError, LincheckError, ProverError};
+use winter_crypto::MerkleTreeError;
 use winter_fri::VerifierError;
 
 #[cfg_attr(test, derive(PartialEq))]
@@ -192,6 +193,8 @@ pub enum SumcheckVerifierError {
     FriVerifierErr(LowDegreeVerifierError),
     /// Error propagation
     DeserializationErr(DeserializationError),
+    /// The e polynomial does not match up with the g_polynomial as needed
+    ConsistentValuesErr(usize),
 }
 
 impl From<LowDegreeVerifierError> for SumcheckVerifierError {
@@ -215,6 +218,13 @@ impl std::fmt::Display for SumcheckVerifierError {
             SumcheckVerifierError::DeserializationErr(err) => {
                 writeln!(f, "Winterfell Utils Deserialization Error: {}", err)
             }
+            SumcheckVerifierError::ConsistentValuesErr(err) => {
+                writeln!(
+                    f,
+                    "Sumcheck verifier's equality test failed at position: {}",
+                    err
+                )
+            }
         }
     }
 }
@@ -224,8 +234,11 @@ impl std::fmt::Display for SumcheckVerifierError {
 pub enum TestingError {
     ProverErr(ProverError),
     VerifierErr(FractalVerifierError),
+    LincheckProverErr(LincheckError),
     RowcheckVerifierErr(RowcheckVerifierError),
+    LincheckVerifierErr(LincheckVerifierError),
     AccumulatorErr(AccumulatorError),
+    MerkleTreeErr(MerkleTreeError),
 }
 
 impl From<FractalVerifierError> for TestingError {
@@ -240,15 +253,33 @@ impl From<ProverError> for TestingError {
     }
 }
 
+impl From<LincheckVerifierError> for TestingError {
+    fn from(err: LincheckVerifierError) -> Self {
+        TestingError::LincheckVerifierErr(err)
+    }
+}
+
 impl From<RowcheckVerifierError> for TestingError {
     fn from(err: RowcheckVerifierError) -> Self {
         TestingError::RowcheckVerifierErr(err)
     }
 }
 
+impl From<LincheckError> for TestingError {
+    fn from(err: LincheckError) -> Self {
+        TestingError::LincheckProverErr(err)
+    }
+}
+
 impl From<AccumulatorError> for TestingError {
     fn from(err: AccumulatorError) -> Self {
         TestingError::AccumulatorErr(err)
+    }
+}
+
+impl From<MerkleTreeError> for TestingError {
+    fn from(err: MerkleTreeError) -> Self {
+        TestingError::MerkleTreeErr(err)
     }
 }
 
@@ -264,8 +295,17 @@ impl std::fmt::Display for TestingError {
             TestingError::RowcheckVerifierErr(err) => {
                 writeln!(f, "Fractal rowcheck verifier error: {}", err)
             }
+            TestingError::LincheckVerifierErr(err) => {
+                writeln!(f, "Fractal lincheck verifier error: {}", err)
+            }
             TestingError::AccumulatorErr(err) => {
                 writeln!(f, "Fractal accumulator error: {}", err)
+            }
+            TestingError::MerkleTreeErr(err) => {
+                writeln!(f, "Fractal accumulator error: {}", err)
+            }
+            TestingError::LincheckProverErr(err) => {
+                writeln!(f, "Fractal lincheck prover error: {}", err)
             }
         }
     }
