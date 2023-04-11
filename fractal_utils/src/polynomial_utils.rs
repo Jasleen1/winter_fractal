@@ -161,7 +161,7 @@ pub trait MultiPoly<
     /// This function takes as input the value of the polynomials at multiple indices and
     /// verifies them wrt to the commitment.
     fn batch_verify_values_and_proofs_at(
-        vals: Vec<Vec<E>>,
+        vals: &Vec<Vec<E>>,
         root: &H::Digest,
         proof: &BatchMerkleProof<H>,
         indices: Vec<usize>,
@@ -380,7 +380,7 @@ impl<
     }
     //todo: check vals
     fn batch_verify_values_and_proofs_at(
-        vals: Vec<Vec<E>>,
+        vals: &Vec<Vec<E>>,
         root: &<H>::Digest,
         proof: &BatchMerkleProof<H>,
         indices: Vec<usize>,

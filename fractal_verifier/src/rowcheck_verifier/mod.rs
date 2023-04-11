@@ -395,16 +395,16 @@ mod test {
         println!("About to check accum for f_mz polynomials");
         assert!(accumulator_verifier.verify_layer_with_queries(
             init_commit,
-            query_indices.clone(),
-            decommit_fmz_polys.0.clone(),
+            &query_indices,
+            &decommit_fmz_polys.0.clone(),
             &decommit_fmz_polys.1
         ));
         // Check that the rowcheck layer decommitted values were appropriately sent.
         println!("About to check accum for everything inside the rowcheck");
         assert!(accumulator_verifier.verify_layer_with_queries(
             commit,
-            query_indices.clone(),
-            decommit.0.clone(),
+            &query_indices,
+            &decommit.0.clone(),
             &decommit.1
         ));
 

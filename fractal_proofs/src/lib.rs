@@ -160,10 +160,12 @@ pub struct LayeredSumcheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
 }
 
 pub struct LayeredFractalProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
-    decommitted_values: Vec<Vec<E>>,
-    layer_commitments: [H::Digest; 3],
-    batched_layer_decommits: [BatchMerkleProof<H>; 3],
-    low_degree_proof: LowDegreeBatchProof<B, E, H>,
+    pub preprocessing_decommits_a: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
+    pub preprocessing_decommits_b: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
+    pub preprocessing_decommits_c: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
+    pub layer_commitments: [H::Digest; 3],
+    pub layer_decommits: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
+    pub low_degree_proof: LowDegreeBatchProof<B, E, H>,
 }
 
 #[derive(Debug, Clone)]

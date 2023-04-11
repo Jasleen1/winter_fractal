@@ -1,7 +1,12 @@
-use crate::errors::FractalVerifierError;
+use crate::{
+    accumulator_verifier::{self, AccumulatorVerifier},
+    errors::FractalVerifierError,
+};
 
 use fractal_indexer::snark_keys::*;
-use fractal_proofs::{FieldElement, FractalProof, MultiEval, MultiPoly, StarkField};
+use fractal_proofs::{
+    FieldElement, FractalProof, LayeredFractalProof, MultiEval, MultiPoly, StarkField,
+};
 
 use fractal_prover::{channel::DefaultFractalProverChannel, FractalOptions};
 use log::debug;
@@ -70,5 +75,117 @@ pub fn verify_fractal_proof<
         options.num_queries,
     )?;
     println!("Rowcheck verified");
+    Ok(())
+}
+
+fn verify_layered_fractal_proof<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher<BaseField = B>,
+>(
+    verifier_key: VerifierKey<B, E, H>,
+    proof: LayeredFractalProof<B, E, H>,
+    pub_inputs_bytes: H::Digest,
+    options: FractalOptions<B>,
+) -> Result<(), FractalVerifierError> {
+    let mut accumulator_verifier: AccumulatorVerifier<B, E, H> = AccumulatorVerifier::new(
+        options.evaluation_domain.len(),
+        options.eta,
+        options.evaluation_domain.clone(),
+        options.num_queries,
+        options.fri_options.clone(),
+    );
+
+    // Here, we check that the sent over proofs verify with respect to the sent commitments.
+    // Step A: draw queries
+    let query_seed = proof.layer_commitments[2];
+    let mut coin = RandomCoin::<B, H>::new(&vec![]);
+    coin.reseed(query_seed);
+    let query_indices = coin
+        .draw_integers(options.num_queries, options.evaluation_domain.len())
+        .expect("failed to draw query position");
+    // Step B: Verify that the preprocessing was queried correctly
+    // Do everything for matrix A preprocessing
+    accumulator_verifier.verify_layer_with_queries(
+        verifier_key.matrix_a_commitments.row_poly_commitment,
+        &query_indices,
+        &proof.preprocessing_decommits_a[0].0,
+        &proof.preprocessing_decommits_a[0].1,
+    );
+    accumulator_verifier.verify_layer_with_queries(
+        verifier_key.matrix_a_commitments.col_poly_commitment,
+        &query_indices,
+        &proof.preprocessing_decommits_a[1].0,
+        &proof.preprocessing_decommits_a[1].1,
+    );
+    accumulator_verifier.verify_layer_with_queries(
+        verifier_key.matrix_a_commitments.val_poly_commitment,
+        &query_indices,
+        &proof.preprocessing_decommits_a[2].0,
+        &proof.preprocessing_decommits_a[2].1,
+    );
+    // Do everything for matrix B preprocessing
+    accumulator_verifier.verify_layer_with_queries(
+        verifier_key.matrix_b_commitments.row_poly_commitment,
+        &query_indices,
+        &proof.preprocessing_decommits_b[0].0,
+        &proof.preprocessing_decommits_b[0].1,
+    );
+    accumulator_verifier.verify_layer_with_queries(
+        verifier_key.matrix_b_commitments.col_poly_commitment,
+        &query_indices,
+        &proof.preprocessing_decommits_b[1].0,
+        &proof.preprocessing_decommits_b[1].1,
+    );
+    accumulator_verifier.verify_layer_with_queries(
+        verifier_key.matrix_b_commitments.val_poly_commitment,
+        &query_indices,
+        &proof.preprocessing_decommits_b[2].0,
+        &proof.preprocessing_decommits_b[2].1,
+    );
+    // Do everything for matrix C preprocessing
+    accumulator_verifier.verify_layer_with_queries(
+        verifier_key.matrix_c_commitments.row_poly_commitment,
+        &query_indices,
+        &proof.preprocessing_decommits_c[0].0,
+        &proof.preprocessing_decommits_c[0].1,
+    );
+    accumulator_verifier.verify_layer_with_queries(
+        verifier_key.matrix_c_commitments.col_poly_commitment,
+        &query_indices,
+        &proof.preprocessing_decommits_c[1].0,
+        &proof.preprocessing_decommits_c[1].1,
+    );
+    accumulator_verifier.verify_layer_with_queries(
+        verifier_key.matrix_c_commitments.val_poly_commitment,
+        &query_indices,
+        &proof.preprocessing_decommits_c[2].0,
+        &proof.preprocessing_decommits_c[2].1,
+    );
+
+    // Step C: Verify that the committed layers were queried correctly
+    accumulator_verifier.verify_layer_with_queries(
+        proof.layer_commitments[0],
+        &query_indices,
+        &proof.layer_decommits[0].0,
+        &proof.layer_decommits[0].1,
+    );
+    accumulator_verifier.verify_layer_with_queries(
+        proof.layer_commitments[1],
+        &query_indices,
+        &proof.layer_decommits[1].0,
+        &proof.layer_decommits[1].1,
+    );
+    accumulator_verifier.verify_layer_with_queries(
+        proof.layer_commitments[2],
+        &query_indices,
+        &proof.layer_decommits[2].0,
+        &proof.layer_decommits[2].1,
+    );
+
+    // Parse all the various proof fields into inputs for the 3 layered_lincheck_verifier instances and for the rowcheck instance.
+
+    // Verify FRI proof.
+
     Ok(())
 }

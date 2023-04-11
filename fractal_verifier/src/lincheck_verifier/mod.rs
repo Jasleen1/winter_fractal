@@ -583,16 +583,16 @@ mod test {
         println!("About to check accum for f_mz polynomials");
         assert!(accumulator_verifier.verify_layer_with_queries(
             init_commit,
-            query_indices.clone(),
-            decommit_layer_1_polys.0.clone(),
+            &query_indices,
+            &decommit_layer_1_polys.0.clone(),
             &decommit_layer_1_polys.1
         ));
         // Check that the rowcheck layer decommitted values were appropriately sent.
         println!("About to check accum for everything inside the lincheck layer 1");
         assert!(accumulator_verifier.verify_layer_with_queries(
             commit_layer_2,
-            query_indices.clone(),
-            decommit_layer_2_polys.0.clone(),
+            &query_indices,
+            &decommit_layer_2_polys.0.clone(),
             &decommit_layer_2_polys.1
         ));
 
@@ -600,8 +600,8 @@ mod test {
         println!("About to check accum for everything inside the lincheck layer 2");
         assert!(accumulator_verifier.verify_layer_with_queries(
             verifier_key.matrix_a_commitments.row_poly_commitment,
-            query_indices.clone(),
-            preprocessed_inputs_0,
+            &query_indices,
+            &preprocessed_inputs_0,
             &pp_0.1,
         ));
 
