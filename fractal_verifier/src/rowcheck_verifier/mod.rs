@@ -5,7 +5,8 @@ use crate::{
 
 use fractal_indexer::snark_keys::VerifierKey;
 use fractal_proofs::{
-    fft, get_complementary_poly, get_vanishing_poly, polynom, FieldElement, RowcheckProof, TryInto,
+    fft, get_complementary_poly, get_vanishing_poly, polynom, FieldElement, LayeredRowcheckProof,
+    RowcheckProof, TryInto,
 };
 
 use log::debug;
@@ -42,6 +43,45 @@ pub fn verify_rowcheck_proof<
 
     //verify_s_computation::<B, E, H>(eval_domain_size, h_domain_size, indices,
     //    E::from(verifier_key.params.eta), initial_evals, s_evals)?;
+
+    Ok(())
+}
+
+// should verify s was computed correctly and pass along the correct degree constraint
+// just needs evals at queried positions?
+pub fn verify_layered_rowcheck_proof<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher<BaseField = B>,
+>(
+    accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
+    verifier_key: &VerifierKey<B, E, H>,
+    queried_positions: &Vec<usize>,
+    proof: LayeredRowcheckProof<B, E>,
+) -> Result<(), RowcheckVerifierError> {
+    // todo: get this value from the same place consistently
+    let h_domain_size = std::cmp::max(
+        verifier_key.params.num_input_variables,
+        verifier_key.params.num_constraints,
+    );
+    // The rowcheck is supposed to prove whether f_az * f_bz - f_cz = 0 on all of H.
+    // Which means that the polynomial f_az * f_bz - f_cz must be divisible by the
+    // vanishing polynomial for H.
+    // Since the degree of f_az and f_bz is each |H| - 1, the degree of the polynomial
+    // s = (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
+
+    accumulator_verifier.add_constraint(h_domain_size - 2);
+
+    verify_s_computation::<B, E, H>(
+        accumulator_verifier.evaluation_domain_len,
+        h_domain_size,
+        queried_positions,
+        E::from(verifier_key.params.eta),
+        proof.f_az_vals,
+        proof.f_bz_vals,
+        proof.f_cz_vals,
+        proof.s_vals,
+    )?;
 
     Ok(())
 }
@@ -112,7 +152,7 @@ pub fn add_rowcheck_verification<
     verify_s_computation::<B, E, H>(
         accumulator_verifier.evaluation_domain_len,
         h_domain_size,
-        queried_positions,
+        &queried_positions,
         E::from(verifier_key.params.eta),
         f_az_evals,
         f_bz_evals,
@@ -130,7 +170,7 @@ fn verify_s_computation<
 >(
     eval_domain_size: usize,
     vanishing_domain_size: usize,
-    positions: Vec<usize>,
+    positions: &Vec<usize>,
     eta: E,
     f_az_evals: Vec<E>,
     f_bz_evals: Vec<E>,

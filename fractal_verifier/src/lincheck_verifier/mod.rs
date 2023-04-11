@@ -1,10 +1,12 @@
+use crate::accumulator_verifier::AccumulatorVerifier;
 use crate::errors::{LincheckVerifierError, SumcheckVerifierError};
 
-use crate::sumcheck_verifier::verify_sumcheck_proof;
+use crate::sumcheck_verifier::{verify_layered_sumcheck_proof, verify_sumcheck_proof};
 use fractal_indexer::indexed_matrix::compute_derivative_xx;
 use fractal_indexer::snark_keys::{ProverKey, VerifierKey};
 use fractal_proofs::{
-    compute_derivative_on_single_val, FieldElement, LincheckProof, QueriedPositions,
+    compute_derivative_on_single_val, FieldElement, LayeredLincheckProof, LayeredSumcheckProof,
+    LincheckProof, QueriedPositions,
 };
 use log::debug;
 
@@ -79,38 +81,92 @@ pub fn verify_lincheck_proof<
     Ok(())
 }
 
-pub fn add_rational_zero_sumcheck_verification<
+fn verify_layered_lincheck_proof<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
+    accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
+    verifier_key: &VerifierKey<B, E, H>,
     queried_positions: &Vec<usize>,
-    numerator_decommits: Vec<E>,
-    denominator_decommits: Vec<E>,
-    g_decommits: Vec<E>,
-    e_decommits: Vec<E>,
-    eval_domain_size: usize,
-    summing_domain_size: usize,
-    eval_domain_offset: B,
-    summing_domain_offset: B,
-) -> Result<(), SumcheckVerifierError> {
-    let summing_domain_size_u64: u64 = summing_domain_size.try_into().unwrap();
-    let l_field_base = E::from(B::get_root_of_unity(
-        eval_domain_size.trailing_zeros().try_into().unwrap(),
+    proof: &LayeredLincheckProof<B, E>,
+) -> Result<(), LincheckVerifierError> {
+    let eta = verifier_key.params.eta;
+    let h_size_u64: u64 = verifier_key.params.num_input_variables.try_into().unwrap();
+    let k_size_u64: u64 = verifier_key.params.num_non_zero.try_into().unwrap();
+    let l_size_u64: u64 = (verifier_key.params.max_degree * 4).try_into().unwrap();
+    let l_base_elt = E::from(B::get_root_of_unity(
+        l_size_u64.trailing_zeros().try_into().unwrap(),
     ));
-    let eta = summing_domain_offset;
-    for i in 0..numerator_decommits.len() {
-        let position_u64: u64 = queried_positions[i].try_into().unwrap();
-        let x_val =
-            l_field_base.exp(E::PositiveInteger::from(position_u64)) * E::from(eval_domain_offset);
-        let denom_val = compute_vanishing_poly::<B, E>(x_val, summing_domain_size_u64, eta);
-        let lhs = ((x_val * g_decommits[i] * denominator_decommits[i]) - numerator_decommits[i])
-            / denom_val;
-        if lhs != e_decommits[i] {
-            println!("lhs = {:?}, e = {:?}", lhs, e_decommits[i]);
-            return Err(SumcheckVerifierError::ConsistentValuesErr(i));
-        }
+    let v_h_alpha = compute_vanishing_poly::<B, E>(proof.alpha, h_size_u64, eta);
+    let v_h_beta = compute_vanishing_poly::<B, E>(proof.beta, h_size_u64, eta);
+    let eval_domain_size = verifier_key.params.max_degree * 4;
+    let h_domain_size = verifier_key.params.num_input_variables;
+    let k_domain_size = verifier_key.params.num_non_zero;
+    accumulator_verifier.add_constraint(h_domain_size - 1);
+
+    let mut product_sumcheck_g_decommits = Vec::<E>::new();
+    let mut product_sumcheck_e_decommits = Vec::<E>::new();
+    let mut product_sumcheck_numerator_decommits = Vec::<E>::new();
+    let product_sumcheck_denominator_decommits = vec![E::ONE; queried_positions.len()];
+
+    let mut matrix_sumcheck_g_decommits = Vec::<E>::new();
+    let mut matrix_sumcheck_e_decommits = Vec::<E>::new();
+    let mut matrix_sumcheck_numerator_decommits = Vec::<E>::new();
+    let mut matrix_sumcheck_denominator_decommits = Vec::<E>::new();
+
+    for i in 0..queried_positions.len() {
+        let local_pow: u64 = queried_positions[i].try_into().unwrap();
+        let current_x = l_base_elt.exp(E::PositiveInteger::from(local_pow));
+        let u_alpha = compute_derivative(current_x, proof.alpha, h_size_u64);
+        let f_1 = proof.f_mz_vals[i];
+        let f_2 = proof.f_z_vals[i];
+        let t_alpha = proof.t_alpha_vals[i];
+        product_sumcheck_g_decommits.push(proof.product_sumcheck_vals[i].0);
+        product_sumcheck_e_decommits.push(proof.product_sumcheck_vals[i].1);
+        product_sumcheck_numerator_decommits.push((u_alpha * f_1) - (f_2 * t_alpha));
+
+        matrix_sumcheck_g_decommits.push(proof.matrix_sumcheck_vals[i].0);
+        matrix_sumcheck_e_decommits.push(proof.matrix_sumcheck_vals[i].1);
+        matrix_sumcheck_numerator_decommits.push(proof.val_vals[i] * v_h_alpha * v_h_beta);
+        matrix_sumcheck_denominator_decommits
+            .push((proof.alpha - proof.col_vals[i]) * (proof.beta - proof.row_vals[i]));
     }
+
+    let layered_product_sumcheck_proof = LayeredSumcheckProof {
+        numerator_vals: product_sumcheck_numerator_decommits,
+        denominator_vals: product_sumcheck_denominator_decommits,
+        sumcheck_g_vals: product_sumcheck_g_decommits,
+        sumcheck_e_vals: product_sumcheck_e_decommits,
+    };
+
+    verify_layered_sumcheck_proof::<B, E, H>(
+        queried_positions,
+        layered_product_sumcheck_proof,
+        eval_domain_size,
+        h_domain_size,
+        B::ONE,
+        eta,
+        proof.gamma,
+    )?;
+
+    let layered_matrix_sumcheck_proof = LayeredSumcheckProof {
+        numerator_vals: matrix_sumcheck_numerator_decommits,
+        denominator_vals: matrix_sumcheck_denominator_decommits,
+        sumcheck_g_vals: matrix_sumcheck_g_decommits,
+        sumcheck_e_vals: matrix_sumcheck_e_decommits,
+    };
+
+    verify_layered_sumcheck_proof::<B, E, H>(
+        queried_positions,
+        layered_matrix_sumcheck_proof,
+        eval_domain_size,
+        k_domain_size,
+        B::ONE,
+        verifier_key.params.eta_k,
+        proof.gamma,
+    )?;
+
     Ok(())
 }
 
@@ -160,6 +216,7 @@ pub fn add_lincheck_verification<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
+    accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
     verifier_key: &VerifierKey<B, E, H>,
     decommit: Vec<Vec<E>>,
     row_idx: usize,
@@ -177,11 +234,12 @@ pub fn add_lincheck_verification<
 ) -> Result<(), LincheckVerifierError> {
     let eta = verifier_key.params.eta;
     let h_size_u64: u64 = verifier_key.params.num_input_variables.try_into().unwrap();
-    let k_size_u64: u64 = verifier_key.params.num_non_zero.try_into().unwrap();
     let l_size_u64: u64 = (verifier_key.params.max_degree * 4).try_into().unwrap();
     let l_base_elt = E::from(B::get_root_of_unity(
         l_size_u64.trailing_zeros().try_into().unwrap(),
     ));
+
+    // accumulator_verifier.add_constraint(h_domain_size - 1);
 
     let v_h_alpha = compute_vanishing_poly::<B, E>(alpha, h_size_u64, eta);
     let v_h_beta = compute_vanishing_poly::<B, E>(beta, h_size_u64, eta);
@@ -189,7 +247,6 @@ pub fn add_lincheck_verification<
     let eval_domain_size = verifier_key.params.max_degree * 4;
     let h_domain_size = verifier_key.params.num_input_variables;
     let k_domain_size = verifier_key.params.num_non_zero;
-
     let mut product_sumcheck_g_decommits = Vec::<E>::new();
     let mut product_sumcheck_e_decommits = Vec::<E>::new();
     let mut product_sumcheck_numerator_decommits = Vec::<E>::new();
@@ -215,12 +272,11 @@ pub fn add_lincheck_verification<
         matrix_sumcheck_g_decommits.push(decommit[i][matrix_sumcheck_idxs.0]);
         matrix_sumcheck_e_decommits.push(decommit[i][matrix_sumcheck_idxs.1]);
         matrix_sumcheck_numerator_decommits.push(decommit[i][val_idx] * v_h_alpha * v_h_beta);
-        // TODO: check if we need to do this or the transpose
         matrix_sumcheck_denominator_decommits
             .push((alpha - decommit[i][col_idx]) * (beta - decommit[i][row_idx]));
     }
 
-    add_rational_zero_sumcheck_verification::<B, E, H>(
+    add_rational_sumcheck_verification::<B, E, H>(
         &queried_positions,
         product_sumcheck_numerator_decommits,
         product_sumcheck_denominator_decommits,
@@ -230,7 +286,11 @@ pub fn add_lincheck_verification<
         h_domain_size,
         B::ONE,
         verifier_key.params.eta,
+        E::ZERO,
     )?;
+
+    // accumulator_verifier.add_constraint(h_domain_size - 2);
+    // accumulator_verifier.add_constraint(h_domain_size - 1);
 
     println!("Checked the first sumcheck");
 
@@ -246,6 +306,9 @@ pub fn add_lincheck_verification<
         verifier_key.params.eta_k,
         gamma,
     )?;
+
+    // accumulator_verifier.add_constraint(k_domain_size - 2);
+    // accumulator_verifier.add_constraint(2*k_domain_size - 3);
 
     Ok(())
 }
@@ -544,6 +607,7 @@ mod test {
 
         let gamma = lincheck_prover_a.retrieve_gamma(beta)?;
         add_lincheck_verification::<B, E, H>(
+            &mut accumulator_verifier,
             &verifier_key,
             lincheck_values,
             0,

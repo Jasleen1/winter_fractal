@@ -130,6 +130,42 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
     }
 }
 
+pub struct LayeredLincheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
+    pub row_vals: Vec<E>,
+    pub col_vals: Vec<E>,
+    pub val_vals: Vec<E>,
+    pub f_z_vals: Vec<E>,
+    pub f_mz_vals: Vec<E>,
+    pub t_alpha_vals: Vec<E>,
+    pub product_sumcheck_vals: Vec<(E, E)>,
+    pub matrix_sumcheck_vals: Vec<(E, E)>,
+    pub alpha: E,
+    pub beta: E,
+    pub gamma: E,
+}
+
+pub struct LayeredRowcheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
+    pub f_z_vals: Vec<E>,
+    pub f_az_vals: Vec<E>,
+    pub f_bz_vals: Vec<E>,
+    pub f_cz_vals: Vec<E>,
+    pub s_vals: Vec<E>,
+}
+
+pub struct LayeredSumcheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
+    pub numerator_vals: Vec<E>,
+    pub denominator_vals: Vec<E>,
+    pub sumcheck_g_vals: Vec<E>,
+    pub sumcheck_e_vals: Vec<E>,
+}
+
+pub struct LayeredFractalProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
+    decommitted_values: Vec<Vec<E>>,
+    layer_commitments: [H::Digest; 3],
+    batched_layer_decommits: [BatchMerkleProof<H>; 3],
+    low_degree_proof: LowDegreeBatchProof<B, E, H>,
+}
+
 #[derive(Debug, Clone)]
 pub struct QueriedPositions {
     pub queried_positions: Vec<usize>,

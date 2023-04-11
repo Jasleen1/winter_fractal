@@ -160,7 +160,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             );
             g_summing_domain_evals.push(g_val);
         }
-        
+
         let mut e_eval_domain_evals: Vec<E> = Vec::new();
         for i in 0..self.fractal_options.evaluation_domain.len() {
             let e_val = self.compute_e_poly_on_val(

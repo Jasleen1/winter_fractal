@@ -68,6 +68,145 @@ impl<
         }
     }
 
+    fn lincheck_layer_one(&mut self, query: E, accumulator: &mut Accumulator<B, E, H>) {
+        self.alpha = Some(query);
+        let t_alpha_evals = self.generate_t_alpha_evals(query);
+        let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
+        debug!("t_alpha degree: {}", &t_alpha.len() - 1);
+        accumulator.add_polynomial_e(t_alpha.clone(), self.options.size_subgroup_h - 1);
+        self.t_alpha = Some(t_alpha.clone());
+
+        let poly_prod = self.generate_poly_prod_evals(query, &t_alpha_evals);
+        let poly_prod_coeffs = self.generate_poly_prod(query, &t_alpha);
+        debug!(
+            "poly_prod_coeffs degree {}",
+            polynom::degree_of(&poly_prod_coeffs)
+        );
+
+        //poly_prod_coeffs should evaluate to 0 when summed over H. Let's double check this
+        let mut pp_sum = E::ZERO;
+        for h in self.options.h_domain.iter() {
+            let temp = polynom::eval(&poly_prod_coeffs, E::from(*h));
+            pp_sum += temp;
+        }
+        debug_assert!(
+            pp_sum == E::ZERO,
+            "Sum of product polynomials over h domain is not 0"
+        );
+
+        // Next use poly_beta in a sumcheck proof but
+        // the sumcheck domain is H, which isn't included here
+        // Use that to produce the sumcheck proof.
+        debug!("Poly prod len = {}", poly_prod.len());
+
+        //let denom_eval = vec![B::ONE; self.options.evaluation_domain.len()];
+        let denom_eval = vec![B::ONE; self.options.h_domain.len()];
+
+        // use h_domain rather than eval_domain
+        // let poly_prod = polynom::eval_many(
+        //     &poly_prod_coeffs,
+        //     &self
+        //         .options
+        //         .h_domain
+        //         .iter()
+        //         .map(|i| E::from(*i))
+        //         .collect::<Vec<E>>(),
+        // );
+
+        let g_degree = self.options.h_domain.len() - 2;
+        let e_degree = self.options.h_domain.len() - 1;
+
+        let mut product_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
+            poly_prod_coeffs.clone(),
+            vec![E::ONE],
+            E::ZERO,
+            self.options.h_domain.clone(),
+            self.options.eta,
+            g_degree,
+            e_degree,
+            self.options.clone(),
+        );
+        //if this needs a channel... problem
+        product_sumcheck_prover.run_next_layer(query, accumulator);
+    }
+
+    fn lincheck_layer_two(&self, query: E, accumulator: &mut Accumulator<B, E, H>) {
+        let beta = query;
+        let alpha = self.alpha.unwrap();
+        // t_alpha is the only state we need to retain from layer 1
+        // if we wanted to be really fancy, we could extract this from the accumulator...
+        let gamma = polynom::eval(&self.t_alpha.as_ref().unwrap(), beta);
+        let matrix_proof_numerator = polynom::mul_by_scalar(
+            &self
+                .prover_matrix_index
+                .val_poly
+                .polynomial
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>(),
+            compute_vanishing_poly(
+                alpha,
+                E::from(self.options.eta),
+                self.options.size_subgroup_h,
+            ) * compute_vanishing_poly(
+                beta,
+                E::from(self.options.eta),
+                self.options.size_subgroup_h,
+            ),
+        );
+        let mut alpha_minus_row =
+            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE)
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>();
+        alpha_minus_row[0] += alpha;
+        let mut beta_minus_col =
+            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE)
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>();
+        beta_minus_col[0] += beta;
+
+        let mut alpha_minus_col =
+            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE)
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>();
+        alpha_minus_col[0] += alpha;
+        let mut beta_minus_row =
+            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE)
+                .iter()
+                .map(|i| E::from(*i))
+                .collect::<Vec<E>>();
+        beta_minus_row[0] += beta;
+
+        //let matrix_proof_denominator = polynom::mul(&alpha_minus_row, &beta_minus_col);
+        let matrix_proof_denominator = polynom::mul(&alpha_minus_col, &beta_minus_row);
+
+        //matrix_proof_numerator/matrix_proof_denominator should evaluate to gamma when summed over K. Let's double check this
+        let mut mat_sum = E::ZERO;
+        for k in self.options.summing_domain.iter() {
+            let temp = polynom::eval(&matrix_proof_numerator, E::from(*k))
+                / polynom::eval(&matrix_proof_denominator, E::from(*k));
+            mat_sum += temp;
+        }
+
+        let eval_pt = E::from(self.options.evaluation_domain[76]);
+
+        let mut matrix_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
+            matrix_proof_numerator,
+            matrix_proof_denominator,
+            gamma,
+            self.options.summing_domain.clone(),
+            self.options.eta_k,
+            self.options.summing_domain.len() - 2,
+            2 * self.options.summing_domain.len() - 3,
+            self.options.clone(),
+        );
+
+        matrix_sumcheck_prover.run_next_layer(query, accumulator);
+    }
+
     pub fn retrieve_gamma(&self, beta: E) -> Result<E, LincheckError> {
         let t_alpha = self
             .t_alpha
@@ -259,145 +398,6 @@ impl<
             prod.push(next);
         }
         prod
-    }
-
-    fn lincheck_layer_one(&mut self, query: E, accumulator: &mut Accumulator<B, E, H>) {
-        self.alpha = Some(query);
-        let t_alpha_evals = self.generate_t_alpha_evals(query);
-        let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
-        debug!("t_alpha degree: {}", &t_alpha.len() - 1);
-        accumulator.add_polynomial_e(t_alpha.clone(), self.options.size_subgroup_h - 1);
-        self.t_alpha = Some(t_alpha.clone());
-
-        let poly_prod = self.generate_poly_prod_evals(query, &t_alpha_evals);
-        let poly_prod_coeffs = self.generate_poly_prod(query, &t_alpha);
-        debug!(
-            "poly_prod_coeffs degree {}",
-            polynom::degree_of(&poly_prod_coeffs)
-        );
-
-        //poly_prod_coeffs should evaluate to 0 when summed over H. Let's double check this
-        let mut pp_sum = E::ZERO;
-        for h in self.options.h_domain.iter() {
-            let temp = polynom::eval(&poly_prod_coeffs, E::from(*h));
-            pp_sum += temp;
-        }
-        debug_assert!(
-            pp_sum == E::ZERO,
-            "Sum of product polynomials over h domain is not 0"
-        );
-
-        // Next use poly_beta in a sumcheck proof but
-        // the sumcheck domain is H, which isn't included here
-        // Use that to produce the sumcheck proof.
-        debug!("Poly prod len = {}", poly_prod.len());
-
-        //let denom_eval = vec![B::ONE; self.options.evaluation_domain.len()];
-        let denom_eval = vec![B::ONE; self.options.h_domain.len()];
-
-        // use h_domain rather than eval_domain
-        // let poly_prod = polynom::eval_many(
-        //     &poly_prod_coeffs,
-        //     &self
-        //         .options
-        //         .h_domain
-        //         .iter()
-        //         .map(|i| E::from(*i))
-        //         .collect::<Vec<E>>(),
-        // );
-
-        let g_degree = self.options.h_domain.len() - 2;
-        let e_degree = self.options.h_domain.len() - 1;
-
-        let mut product_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
-            poly_prod_coeffs.clone(),
-            vec![E::ONE],
-            E::ZERO,
-            self.options.h_domain.clone(),
-            self.options.eta,
-            g_degree,
-            e_degree,
-            self.options.clone(),
-        );
-        //if this needs a channel... problem
-        product_sumcheck_prover.run_next_layer(query, accumulator);
-    }
-
-    fn lincheck_layer_two(&self, query: E, accumulator: &mut Accumulator<B, E, H>) {
-        let beta = query;
-        let alpha = self.alpha.unwrap();
-        // t_alpha is the only state we need to retain from layer 1
-        // if we wanted to be really fancy, we could extract this from the accumulator...
-        let gamma = polynom::eval(&self.t_alpha.as_ref().unwrap(), beta);
-        let matrix_proof_numerator = polynom::mul_by_scalar(
-            &self
-                .prover_matrix_index
-                .val_poly
-                .polynomial
-                .iter()
-                .map(|i| E::from(*i))
-                .collect::<Vec<E>>(),
-            compute_vanishing_poly(
-                alpha,
-                E::from(self.options.eta),
-                self.options.size_subgroup_h,
-            ) * compute_vanishing_poly(
-                beta,
-                E::from(self.options.eta),
-                self.options.size_subgroup_h,
-            ),
-        );
-        let mut alpha_minus_row =
-            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE)
-                .iter()
-                .map(|i| E::from(*i))
-                .collect::<Vec<E>>();
-        alpha_minus_row[0] += alpha;
-        let mut beta_minus_col =
-            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE)
-                .iter()
-                .map(|i| E::from(*i))
-                .collect::<Vec<E>>();
-        beta_minus_col[0] += beta;
-
-        let mut alpha_minus_col =
-            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE)
-                .iter()
-                .map(|i| E::from(*i))
-                .collect::<Vec<E>>();
-        alpha_minus_col[0] += alpha;
-        let mut beta_minus_row =
-            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE)
-                .iter()
-                .map(|i| E::from(*i))
-                .collect::<Vec<E>>();
-        beta_minus_row[0] += beta;
-
-        //let matrix_proof_denominator = polynom::mul(&alpha_minus_row, &beta_minus_col);
-        let matrix_proof_denominator = polynom::mul(&alpha_minus_col, &beta_minus_row);
-
-        //matrix_proof_numerator/matrix_proof_denominator should evaluate to gamma when summed over K. Let's double check this
-        let mut mat_sum = E::ZERO;
-        for k in self.options.summing_domain.iter() {
-            let temp = polynom::eval(&matrix_proof_numerator, E::from(*k))
-                / polynom::eval(&matrix_proof_denominator, E::from(*k));
-            mat_sum += temp;
-        }
-
-        let eval_pt = E::from(self.options.evaluation_domain[76]);
-
-        let mut matrix_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
-            matrix_proof_numerator,
-            matrix_proof_denominator,
-            gamma,
-            self.options.summing_domain.clone(),
-            self.options.eta_k,
-            self.options.summing_domain.len() - 2,
-            2 * self.options.summing_domain.len() - 3,
-            self.options.clone(),
-        );
-
-        matrix_sumcheck_prover.run_next_layer(query, accumulator);
     }
 }
 
