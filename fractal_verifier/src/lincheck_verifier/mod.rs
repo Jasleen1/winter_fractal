@@ -81,7 +81,7 @@ pub fn verify_lincheck_proof<
     Ok(())
 }
 
-fn verify_layered_lincheck_proof<
+pub(crate) fn verify_layered_lincheck_proof<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,

@@ -164,6 +164,7 @@ pub struct LayeredFractalProof<B: StarkField, E: FieldElement<BaseField = B>, H:
     pub preprocessing_decommits_b: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
     pub preprocessing_decommits_c: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
     pub layer_commitments: [H::Digest; 3],
+    pub gamma: E,
     pub layer_decommits: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
     pub low_degree_proof: LowDegreeBatchProof<B, E, H>,
 }
