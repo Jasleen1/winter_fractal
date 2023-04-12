@@ -11,7 +11,7 @@ use winter_utils::transpose_slice;
 
 use crate::{
     accumulator::Accumulator, channel::DefaultFractalProverChannel, errors::ProverError,
-    low_degree_prover::LowDegreeProver, FractalOptions, LayeredProver,
+    low_degree_prover::LowDegreeProver, FractalOptions, LayeredSubProver,
 };
 
 pub struct RowcheckProver<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
@@ -161,7 +161,7 @@ impl<
         B: StarkField,
         E: FieldElement<BaseField = B>,
         H: ElementHasher + ElementHasher<BaseField = B>,
-    > LayeredProver<B, E, H> for RowcheckProver<B, E, H>
+    > LayeredSubProver<B, E, H> for RowcheckProver<B, E, H>
 {
     fn run_next_layer(
         &mut self,

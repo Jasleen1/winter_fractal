@@ -5,12 +5,12 @@ use fractal_utils::polynomial_utils::*;
 
 use crate::{
     accumulator::Accumulator, channel::DefaultFractalProverChannel, errors::ProverError,
-    sumcheck_prover::*, LayeredProver,
+    sumcheck_prover::*, LayeredSubProver,
 };
 
 use fractal_proofs::{fft, polynom, DefaultProverChannel, LincheckProof, OracleQueries, TryInto};
 
-use winter_crypto::{ElementHasher, MerkleTree};
+use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree, MerkleTreeError};
 use winter_fri::ProverChannel;
 use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
@@ -215,6 +215,12 @@ impl<
         Ok(polynom::eval(&t_alpha, beta))
     }
 
+    pub(crate) fn decommit_proprocessing(
+        &self,
+        queries: &Vec<usize>,
+    ) -> Result<[(Vec<Vec<E>>, BatchMerkleProof<H>); 3], MerkleTreeError> {
+        self.prover_matrix_index.decommit_evals(queries)
+    }
     /// The polynomial t_alpha(X) = u_M(X, alpha).
     /// We also know that u_M(X, alpha) = M_star(X, alpha).
     /// Further, M_star(X, Y) =
@@ -405,7 +411,7 @@ impl<
         B: StarkField,
         E: FieldElement<BaseField = B>,
         H: ElementHasher + ElementHasher<BaseField = B>,
-    > LayeredProver<B, E, H> for LincheckProver<B, E, H>
+    > LayeredSubProver<B, E, H> for LincheckProver<B, E, H>
 {
     fn run_next_layer(
         &mut self,

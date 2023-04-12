@@ -3,7 +3,7 @@ use std::thread::AccessError;
 use accumulator::Accumulator;
 use channel::DefaultFractalProverChannel;
 use errors::{AccumulatorError, ProverError};
-use fractal_proofs::{FieldElement, LowDegreeBatchProof};
+use fractal_proofs::{FieldElement, LayeredProof, LowDegreeBatchProof};
 use log;
 use winter_crypto::ElementHasher;
 use winter_fri::{FriOptions, ProverChannel};
@@ -19,6 +19,8 @@ pub mod rowcheck_prover;
 pub mod sumcheck_prover;
 #[cfg(test)]
 mod tests;
+
+pub const FRACTAL_LAYERS: usize = 3;
 
 #[derive(Clone)]
 pub struct FractalOptions<B: StarkField> {
@@ -65,7 +67,7 @@ pub struct FractalOptions<B: StarkField> {
 //-you probably need to pass it around to get all the polynomials and degrees you need for the end part
 //maybe pass a cloned channel into each then smoosh them together
 
-pub trait LayeredProver<
+pub trait LayeredSubProver<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
@@ -82,33 +84,71 @@ pub trait LayeredProver<
         query: E,
         accumulator: &mut Accumulator<B, E, H>,
     ) -> Result<(), ProverError>;
+
+    /// Gets the id of the current layer, count starts at zero
     fn get_current_layer(&self) -> usize;
+
+    /// Gets the total number of layers for this layered prover
     fn get_num_layers(&self) -> usize;
+
+    /// Gets options for fractal proofs
     fn get_fractal_options(&self) -> FractalOptions<B>;
-    fn generate_proof(
-        &mut self,
-        public_input_bytes: Vec<u8>,
-    ) -> Result<LowDegreeBatchProof<B, E, H>, ProverError> {
-        let options = self.get_fractal_options();
-        let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
-            options.evaluation_domain.len(),
-            options.num_queries,
-            public_input_bytes,
-        );
-        let mut acc = Accumulator::<B, E, H>::new(
-            options.evaluation_domain.len(),
-            B::ONE,
-            options.evaluation_domain.clone(),
-            options.num_queries,
-            options.fri_options.clone(),
-        );
-        for i in 0..self.get_num_layers() {
-            let query = channel.draw_fri_alpha();
-            self.run_next_layer(query, &mut acc);
-            acc.commit_layer(); //todo: do something with this
-        }
-        Ok(acc.create_fri_proof()?)
-    }
+
+    // fn generate_proof(
+    //     &mut self,
+    //     public_input_bytes: Vec<u8>,
+    // ) -> Result<LowDegreeBatchProof<B, E, H>, ProverError> {
+    //     let options = self.get_fractal_options();
+    //     let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+    //         options.evaluation_domain.len(),
+    //         options.num_queries,
+    //         public_input_bytes,
+    //     );
+    //     let mut acc = Accumulator::<B, E, H>::new(
+    //         options.evaluation_domain.len(),
+    //         B::ONE,
+    //         options.evaluation_domain.clone(),
+    //         options.num_queries,
+    //         options.fri_options.clone(),
+    //     );
+    //     for i in 0..self.get_num_layers() {
+    //         let query = channel.draw_fri_alpha();
+    //         self.run_next_layer(query, &mut acc);
+    //         acc.commit_layer(); //todo: do something with this
+    //     }
+    //     Ok(acc.create_fri_proof()?)
+    // }
+}
+
+pub trait LayeredProver<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher + ElementHasher<BaseField = B>,
+    L: LayeredProof<B, E, H>,
+>: LayeredSubProver<B, E, H>
+{
+    fn generate_proof(&mut self, public_input_bytes: Vec<u8>) -> Result<L, ProverError>;
+    // {
+    //     let options = self.get_fractal_options();
+    //     let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+    //         options.evaluation_domain.len(),
+    //         options.num_queries,
+    //         public_input_bytes,
+    //     );
+    //     let mut acc = Accumulator::<B, E, H>::new(
+    //         options.evaluation_domain.len(),
+    //         B::ONE,
+    //         options.evaluation_domain.clone(),
+    //         options.num_queries,
+    //         options.fri_options.clone(),
+    //     );
+    //     for i in 0..self.get_num_layers() {
+    //         let query = channel.draw_fri_alpha();
+    //         self.run_next_layer(query, &mut acc);
+    //         acc.commit_layer(); //todo: do something with this
+    //     }
+    //     Ok(acc.create_fri_proof()?)
+    // }
 }
 
 /*

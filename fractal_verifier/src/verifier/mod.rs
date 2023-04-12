@@ -81,14 +81,14 @@ pub fn verify_fractal_proof<
     Ok(())
 }
 
-fn verify_layered_fractal_proof<
+pub fn verify_layered_fractal_proof<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
     verifier_key: VerifierKey<B, E, H>,
     proof: LayeredFractalProof<B, E, H>,
-    pub_inputs_bytes: H::Digest,
+    _pub_inputs_bytes: Vec<u8>,
     options: FractalOptions<B>,
 ) -> Result<(), FractalVerifierError> {
     // First let's parse out the sub-proofs so we don't have borrow-checker issues
@@ -215,6 +215,7 @@ fn verify_layered_fractal_proof<
         &query_indices,
         &lincheck_proofs[2],
     )?;
+
     // Verify FRI proof.
     // TODO error handling
     accumulator_verifier.verify_fri_proof(proof.layer_commitments[2], proof.low_degree_proof);
@@ -275,7 +276,7 @@ fn parse_proofs_for_subroutines<
     coin.reseed(proof.layer_commitments[1]);
     let beta: E = coin.draw().expect("failed to draw FRI alpha");
 
-    let gamma = proof.gamma;
+    let gammas = proof.gammas;
 
     let lincheck_a_proof = LayeredLincheckProof {
         row_vals: row_a,
@@ -288,7 +289,7 @@ fn parse_proofs_for_subroutines<
         matrix_sumcheck_vals: matrix_sumcheck_a_vals,
         alpha,
         beta,
-        gamma,
+        gamma: gammas[0],
     };
 
     let lincheck_b_proof = LayeredLincheckProof {
@@ -302,7 +303,7 @@ fn parse_proofs_for_subroutines<
         matrix_sumcheck_vals: matrix_sumcheck_b_vals,
         alpha,
         beta,
-        gamma,
+        gamma: gammas[1],
     };
 
     let lincheck_c_proof = LayeredLincheckProof {
@@ -316,7 +317,7 @@ fn parse_proofs_for_subroutines<
         matrix_sumcheck_vals: matrix_sumcheck_c_vals,
         alpha,
         beta,
-        gamma,
+        gamma: gammas[2],
     };
 
     let rowcheck_proof = LayeredRowcheckProof {

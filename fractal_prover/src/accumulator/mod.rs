@@ -184,14 +184,14 @@ impl<
         channel.commit_fractal_iop_layer(channel_state);
         let queries = channel.draw_query_positions();
         println!("queries: {:?}", &queries);
-        Ok(multi_eval.batch_get_values_and_proofs_at(queries)?)
+        Ok(multi_eval.batch_get_values_and_proofs_at(&queries)?)
     }
 
     /// This is the same as decommit_layer but with queries.
     pub fn decommit_layer_with_qeuries(
         &mut self,
         layer_idx: usize,
-        queries: Vec<usize>,
+        queries: &Vec<usize>,
     ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
         // let mut coeffs_b = self.unchecked_coefficients.clone();
         // let mut coeffs_b2 = self.coefficients.clone();
@@ -250,7 +250,7 @@ impl<
                     "Tried to access some strange position in the multi_evals".to_string(),
                 ))?;
 
-        Ok(multi_eval.batch_get_values_and_proofs_at(queries)?)
+        Ok(multi_eval.batch_get_values_and_proofs_at(&queries)?)
     }
 
     // could be named something like "finish"

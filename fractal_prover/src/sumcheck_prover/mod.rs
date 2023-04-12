@@ -5,7 +5,7 @@ use crate::errors::ProverError;
 use crate::low_degree_batch_prover::LowDegreeBatchProver;
 use crate::low_degree_prover::LowDegreeProver;
 use crate::{channel::DefaultFractalProverChannel, log::debug};
-use crate::{FractalOptions, LayeredProver};
+use crate::{FractalOptions, LayeredSubProver};
 use fractal_utils::polynomial_utils::*;
 use winter_crypto::ElementHasher;
 use winter_fri::{DefaultProverChannel, FriOptions};
@@ -235,7 +235,7 @@ impl<
         B: StarkField,
         E: FieldElement<BaseField = B>,
         H: ElementHasher + ElementHasher<BaseField = B>,
-    > LayeredProver<B, E, H> for RationalSumcheckProver<B, E, H>
+    > LayeredSubProver<B, E, H> for RationalSumcheckProver<B, E, H>
 {
     fn run_next_layer(
         &mut self,

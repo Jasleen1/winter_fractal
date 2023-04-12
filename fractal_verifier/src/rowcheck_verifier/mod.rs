@@ -262,7 +262,7 @@ mod test {
     use fractal_prover::channel::DefaultFractalProverChannel;
     use fractal_prover::errors::ProverError;
     use fractal_prover::rowcheck_prover::RowcheckProver;
-    use fractal_prover::{FractalOptions, LayeredProver};
+    use fractal_prover::{FractalOptions, LayeredSubProver};
     use std::ops::Add;
     use std::time::{SystemTime, UNIX_EPOCH};
     use winter_crypto::hashers::{Blake3_256, Rp64_256};
@@ -374,8 +374,8 @@ mod test {
         // respect to everything.
         let queries = accumulator.draw_query_positions()?;
         // To show correctness, including of linking the two layers, query them at the same points
-        let decommit_fmz_polys = accumulator.decommit_layer_with_qeuries(1, queries.clone())?;
-        let decommit = accumulator.decommit_layer_with_qeuries(2, queries)?;
+        let decommit_fmz_polys = accumulator.decommit_layer_with_qeuries(1, &queries.clone())?;
+        let decommit = accumulator.decommit_layer_with_qeuries(2, &queries)?;
         // add some public input bytes VVV
         let fri_proof = accumulator.create_fri_proof()?;
 

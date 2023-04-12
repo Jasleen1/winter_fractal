@@ -75,7 +75,7 @@ impl<
             decommit,      // todo: this should be decommit once this function is fixed,
             &claimed_root, //todo: is this okay
             &proof,
-            indices.to_vec(),
+            &indices.to_vec(),
         )
         .is_ok()
     }
@@ -98,7 +98,7 @@ impl<
                 &decommit,     // todo: this should be decommit once this function is fixed,
                 &claimed_root, //todo: is this okay
                 &proof,
-                query_indices.to_vec(),
+                &query_indices.to_vec(),
             )
         );
         true
@@ -122,7 +122,7 @@ impl<
                 decommit,      // todo: this should be decommit once this function is fixed,
                 &claimed_root, //todo: is this okay
                 &proof,
-                query_indices.to_vec(),
+                &query_indices.to_vec(),
             )
         );
         true

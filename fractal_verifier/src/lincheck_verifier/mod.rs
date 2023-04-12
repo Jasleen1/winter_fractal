@@ -393,7 +393,7 @@ mod test {
     use fractal_prover::errors::ProverError;
     use fractal_prover::lincheck_prover::LincheckProver;
     use fractal_prover::prover::*;
-    use fractal_prover::{FractalOptions, LayeredProver};
+    use fractal_prover::{FractalOptions, LayeredSubProver};
     use models::r1cs::Matrix;
     use std::ops::Add;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -524,32 +524,27 @@ mod test {
 
         let layer_3_queries = accumulator.draw_query_positions()?;
         // To show correctness, including of linking the two layers, query them at the same points
-        let preprocessed_values = prover_key
-            .matrix_a_index
-            .decommit_evals(layer_3_queries.clone())?;
+        let preprocessed_values = prover_key.matrix_a_index.decommit_evals(&layer_3_queries)?;
         let decommit_layer_1_polys =
-            accumulator.decommit_layer_with_qeuries(1, layer_3_queries.clone())?;
+            accumulator.decommit_layer_with_qeuries(1, &layer_3_queries)?;
         let decommit_layer_2_polys =
-            accumulator.decommit_layer_with_qeuries(2, layer_3_queries.clone())?;
+            accumulator.decommit_layer_with_qeuries(2, &layer_3_queries)?;
         let decommit_layer_3_lincheck =
-            accumulator.decommit_layer_with_qeuries(3, layer_3_queries.clone())?;
+            accumulator.decommit_layer_with_qeuries(3, &layer_3_queries)?;
 
         let pp_0 = &preprocessed_values[0];
-        let preprocessed_inputs_0 = pp_0
-            .0
-            .iter()
-            .map(|val| vec![E::from(*val)])
-            .collect::<Vec<Vec<E>>>();
-        let preprocessed_inputs_1 = preprocessed_values[1]
-            .0
-            .iter()
-            .map(|val| vec![E::from(*val)])
-            .collect::<Vec<Vec<E>>>();
-        let preprocessed_inputs_2 = preprocessed_values[2]
-            .0
-            .iter()
-            .map(|val| vec![E::from(*val)])
-            .collect::<Vec<Vec<E>>>();
+        let preprocessed_inputs_0 = &pp_0.0;
+        // .iter()
+        // .map(|val| vec![E::from(*val)])
+        // .collect::<Vec<Vec<E>>>();
+        let preprocessed_inputs_1 = &preprocessed_values[1].0;
+        // .iter()
+        // .map(|val| vec![E::from(*val)])
+        // .collect::<Vec<Vec<E>>>();
+        let preprocessed_inputs_2 = &preprocessed_values[2].0;
+        // .iter()
+        // .map(|val| vec![E::from(*val)])
+        // .collect::<Vec<Vec<E>>>();
 
         // let preprocessed_proof_0 = pp_0.1;//prover_key_2.matrix_a_index.decommit_proof(layer_3_queries.clone(), 0)?;
 

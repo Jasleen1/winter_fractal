@@ -130,6 +130,8 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
     }
 }
 
+pub trait LayeredProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {}
+
 pub struct LayeredLincheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
     pub row_vals: Vec<E>,
     pub col_vals: Vec<E>,
@@ -143,6 +145,25 @@ pub struct LayeredLincheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
     pub beta: E,
     pub gamma: E,
 }
+
+// impl<B: StarkField, E: FieldElement<BaseField = B>> Serializable
+//     for LayeredLincheckProof<B, E>
+// {
+//     /// Serializes `self` and writes the resulting bytes into the `target` writer.
+//     fn write_into<W: ByteWriter>(&self, target: &mut W) {
+//         self.row_vals.write_into(target);
+//         self.col_vals.write_into(target);
+//         self.val_vals.write_into(target);
+//         self.f_z_vals.write_into(target);
+//         self.f_mz_vals.write_into(target);
+//         self.t_alpha_vals.write_into(target);
+//         self.product_sumcheck_vals.write_into(target);
+//         self.matrix_sumcheck_vals.write_into(target);
+//         self.alpha.write_into(target);
+//         self.beta.write_into(target);
+//         self.gamma.write_into(target);
+//     }
+// }
 
 pub struct LayeredRowcheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
     pub f_z_vals: Vec<E>,
@@ -164,9 +185,14 @@ pub struct LayeredFractalProof<B: StarkField, E: FieldElement<BaseField = B>, H:
     pub preprocessing_decommits_b: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
     pub preprocessing_decommits_c: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
     pub layer_commitments: [H::Digest; 3],
-    pub gamma: E,
+    pub gammas: [E; 3],
     pub layer_decommits: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
     pub low_degree_proof: LowDegreeBatchProof<B, E, H>,
+}
+
+impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> LayeredProof<B, E, H>
+    for LayeredFractalProof<B, E, H>
+{
 }
 
 #[derive(Debug, Clone)]

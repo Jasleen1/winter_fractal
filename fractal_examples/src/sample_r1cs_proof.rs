@@ -8,8 +8,9 @@ use std::cmp::max;
 
 use fractal_indexer::index::get_max_degree;
 use fractal_proofs::FriOptions;
-use fractal_prover::FractalOptions;
-use fractal_prover::{prover::FractalProver, LayeredProver};
+use fractal_prover::{prover::FractalProver, LayeredSubProver};
+use fractal_prover::{FractalOptions, LayeredProver};
+use fractal_verifier::verifier::verify_layered_fractal_proof;
 use structopt::StructOpt;
 
 use fractal_indexer::{
@@ -142,7 +143,9 @@ pub(crate) fn orchestrate_r1cs_example<
         wires,
         pub_inputs_bytes.clone(),
     );
-    let proof = prover.generate_proof(pub_inputs_bytes);
+    let proof = prover.generate_proof(pub_inputs_bytes.clone()).unwrap();
+
+    verify_layered_fractal_proof(verifier_key, proof, pub_inputs_bytes, options).unwrap();
 
     // println!(
     //     "Verified: {:?}",

@@ -17,6 +17,7 @@ pub enum ProverError {
     MultiPolyErr(String),
     FractalUtilErr(FractalUtilError),
     AccumulatorErr(AccumulatorError),
+    ProverKeyNoneErr(),
 }
 
 impl From<LincheckError> for ProverError {
@@ -148,6 +149,12 @@ impl fmt::Display for ProverError {
                     f,
                     "Encountered an error in the accumulator somewhere in the fractal prover: {:?}",
                     err,
+                )
+            }
+            Self::ProverKeyNoneErr() => {
+                write!(
+                    f,
+                    "Encountered an error in the proof generation: you tried to unwrap a None ProverKey"
                 )
             }
         }

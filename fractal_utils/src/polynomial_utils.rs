@@ -135,7 +135,7 @@ pub trait MultiPoly<
     /// index in the evaluation domain.
     fn get_values_at(&self, index: usize) -> Result<Vec<E>, FractalUtilError>;
     /// This function retrieves the evals of the polynomials at a set of evaluation points.
-    fn batch_get_values_at(&self, indices: Vec<usize>) -> Result<Vec<Vec<E>>, FractalUtilError>;
+    fn batch_get_values_at(&self, indices: &Vec<usize>) -> Result<Vec<Vec<E>>, FractalUtilError>;
     /// This function takes as input an index of a point in the evaluation domain and
     /// outputs the evals committed at that point and a proof.
     fn get_values_and_proof_at(
@@ -147,7 +147,7 @@ pub trait MultiPoly<
     /// proof showing that this eval was done correctly.
     fn batch_get_values_and_proofs_at(
         &self,
-        indices: Vec<usize>,
+        indices: &Vec<usize>,
     ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), FractalUtilError>;
     /// This function takes as input the value of the polynomials at a particular index and
     /// verifies it wrt to the commitment.
@@ -164,14 +164,14 @@ pub trait MultiPoly<
         vals: &Vec<Vec<E>>,
         root: &H::Digest,
         proof: &BatchMerkleProof<H>,
-        indices: Vec<usize>,
+        indices: &Vec<usize>,
     ) -> Result<(), FractalUtilError>;
 
     fn batch_verify_transposed_values_and_proofs_at(
         vals: Vec<[E; 1]>,
         root: &<H>::Digest,
         proof: &BatchMerkleProof<H>,
-        indices: Vec<usize>,
+        indices: &Vec<usize>,
     ) -> Result<(), FractalUtilError>;
 }
 
@@ -316,7 +316,7 @@ impl<
         Ok(self.evaluations[index].clone())
     }
 
-    fn batch_get_values_at(&self, indices: Vec<usize>) -> Result<Vec<Vec<E>>, FractalUtilError> {
+    fn batch_get_values_at(&self, indices: &Vec<usize>) -> Result<Vec<Vec<E>>, FractalUtilError> {
         let mut output_vals = Vec::<Vec<E>>::new();
         for (_, &index) in indices.iter().enumerate() {
             output_vals.push(self.evaluations[index].clone());
@@ -344,9 +344,9 @@ impl<
 
     fn batch_get_values_and_proofs_at(
         &self,
-        indices: Vec<usize>,
+        indices: &Vec<usize>,
     ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), FractalUtilError> {
-        let values = self.batch_get_values_at(indices.clone())?;
+        let values = self.batch_get_values_at(indices)?;
         let proof = match &self.committed_tree {
             None => Err(FractalUtilError::MultiPolyErr(
                 "Nothing committed yet!".to_string(),
@@ -383,7 +383,7 @@ impl<
         vals: &Vec<Vec<E>>,
         root: &<H>::Digest,
         proof: &BatchMerkleProof<H>,
-        indices: Vec<usize>,
+        indices: &Vec<usize>,
     ) -> Result<(), FractalUtilError> {
         //for (index, i) in indices.iter().enumerate() {
         for i in (0..indices.len()).into_iter() {
@@ -412,7 +412,7 @@ impl<
         vals: Vec<[E; 1]>,
         root: &<H>::Digest,
         proof: &BatchMerkleProof<H>,
-        indices: Vec<usize>,
+        indices: &Vec<usize>,
     ) -> Result<(), FractalUtilError> {
         //for (index, i) in indices.iter().enumerate() {
         for i in (0..indices.len()).into_iter() {

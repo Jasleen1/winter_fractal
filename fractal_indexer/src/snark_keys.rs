@@ -104,11 +104,11 @@ impl<
     pub fn decommit_row_eval(
         &self,
         queries: &Vec<usize>,
-    ) -> Result<(Vec<E>, BatchMerkleProof<H>), MerkleTreeError> {
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), MerkleTreeError> {
         let values = queries
             .iter()
-            .map(|q| self.row_poly.evaluations[*q])
-            .collect::<Vec<E>>()
+            .map(|q| vec![self.row_poly.evaluations[*q]])
+            .collect::<Vec<Vec<E>>>()
             .to_vec();
         let proof = self.row_poly.tree.prove_batch(queries)?;
         Ok((values, proof))
@@ -131,11 +131,11 @@ impl<
     pub fn decommit_col_eval(
         &self,
         queries: &Vec<usize>,
-    ) -> Result<(Vec<E>, BatchMerkleProof<H>), MerkleTreeError> {
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), MerkleTreeError> {
         let values = queries
             .iter()
-            .map(|q| self.col_poly.evaluations[*q])
-            .collect::<Vec<E>>()
+            .map(|q| vec![self.col_poly.evaluations[*q]])
+            .collect::<Vec<Vec<E>>>()
             .to_vec();
         let proof = self.col_poly.tree.prove_batch(queries)?;
         Ok((values, proof))
@@ -144,11 +144,11 @@ impl<
     pub fn decommit_val_eval(
         &self,
         queries: &Vec<usize>,
-    ) -> Result<(Vec<E>, BatchMerkleProof<H>), MerkleTreeError> {
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), MerkleTreeError> {
         let values = queries
             .iter()
-            .map(|q| self.val_poly.evaluations[*q])
-            .collect::<Vec<E>>()
+            .map(|q| vec![self.val_poly.evaluations[*q]])
+            .collect::<Vec<Vec<E>>>()
             .to_vec();
         let proof = self.val_poly.tree.prove_batch(queries)?;
         Ok((values, proof))
@@ -156,12 +156,12 @@ impl<
 
     pub fn decommit_evals(
         &self,
-        queries: Vec<usize>,
-    ) -> Result<Vec<(Vec<E>, BatchMerkleProof<H>)>, MerkleTreeError> {
-        let row_evals = self.decommit_row_eval(&queries)?;
-        let col_evals = self.decommit_col_eval(&queries)?;
-        let val_evals = self.decommit_val_eval(&queries)?;
-        Ok(vec![row_evals, col_evals, val_evals])
+        queries: &Vec<usize>,
+    ) -> Result<[(Vec<Vec<E>>, BatchMerkleProof<H>); 3], MerkleTreeError> {
+        let row_evals = self.decommit_row_eval(queries)?;
+        let col_evals = self.decommit_col_eval(queries)?;
+        let val_evals = self.decommit_val_eval(queries)?;
+        Ok([row_evals, col_evals, val_evals])
     }
     pub fn decommit_proofs(
         &self,

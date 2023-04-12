@@ -2,12 +2,12 @@ use std::marker::PhantomData;
 
 use fractal_indexer::{index::IndexParams, snark_keys::*};
 use fractal_proofs::{
-    fft, polynom, DefaultProverChannel, FractalProof, FriOptions, InitialPolyProof, LincheckProof,
-    LowDegreeBatchProof, MultiEval, MultiPoly, TryInto,
+    fft, polynom, DefaultProverChannel, FractalProof, FriOptions, InitialPolyProof,
+    LayeredFractalProof, LincheckProof, LowDegreeBatchProof, MultiEval, MultiPoly, TryInto,
 };
 use models::r1cs::Matrix;
 
-use winter_crypto::{ElementHasher, MerkleTree, RandomCoin};
+use winter_crypto::{ElementHasher, Hasher, MerkleTree, RandomCoin};
 use winter_fri::ProverChannel;
 use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
@@ -15,7 +15,7 @@ use winter_utils::transpose_slice;
 use crate::{
     accumulator::Accumulator, channel::DefaultFractalProverChannel, errors::ProverError,
     lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver, FractalOptions,
-    LayeredProver,
+    LayeredProver, LayeredSubProver, FRACTAL_LAYERS,
 };
 
 pub struct FractalProver<
@@ -196,7 +196,7 @@ impl<
         B: StarkField,
         E: FieldElement<BaseField = B>,
         H: ElementHasher + ElementHasher<BaseField = B>,
-    > LayeredProver<B, E, H> for FractalProver<B, E, H>
+    > LayeredSubProver<B, E, H> for FractalProver<B, E, H>
 {
     fn run_next_layer(
         &mut self,
@@ -224,9 +224,75 @@ impl<
         self.current_layer
     }
     fn get_num_layers(&self) -> usize {
-        3
+        FRACTAL_LAYERS
     }
     fn get_fractal_options(&self) -> FractalOptions<B> {
         self.options.clone()
+    }
+}
+
+impl<
+        B: StarkField,
+        E: FieldElement<BaseField = B>,
+        H: ElementHasher + ElementHasher<BaseField = B>,
+    > LayeredProver<B, E, H, LayeredFractalProof<B, E, H>> for FractalProver<B, E, H>
+{
+    fn generate_proof(
+        &mut self,
+        public_input_bytes: Vec<u8>,
+    ) -> Result<LayeredFractalProof<B, E, H>, ProverError> {
+        let options = self.get_fractal_options();
+        let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+            options.evaluation_domain.len(),
+            options.num_queries,
+            public_input_bytes,
+        );
+        let mut acc = Accumulator::<B, E, H>::new(
+            options.evaluation_domain.len(),
+            B::ONE,
+            options.evaluation_domain.clone(),
+            options.num_queries,
+            options.fri_options.clone(),
+        );
+        let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 3];
+        let mut local_queries = Vec::<E>::new();
+        for i in 0..self.get_num_layers() {
+            let query = channel.draw_fri_alpha();
+            local_queries.push(query);
+            self.run_next_layer(query, &mut acc)?;
+            layer_commitments[i] = acc.commit_layer()?; //todo: do something with this
+        }
+
+        let queries = acc.draw_query_positions()?;
+
+        let beta = local_queries[1];
+
+        let preprocessing_decommits_a =
+            self.lincheck_provers[0].decommit_proprocessing(&queries)?;
+        let preprocessing_decommits_b =
+            self.lincheck_provers[1].decommit_proprocessing(&queries)?;
+        let preprocessing_decommits_c =
+            self.lincheck_provers[2].decommit_proprocessing(&queries)?;
+        let layer_decommits = [
+            acc.decommit_layer_with_qeuries(1, &queries)?,
+            acc.decommit_layer_with_qeuries(2, &queries)?,
+            acc.decommit_layer_with_qeuries(2, &queries)?,
+        ];
+        let gammas = [
+            self.lincheck_provers[0].retrieve_gamma(beta)?,
+            self.lincheck_provers[1].retrieve_gamma(beta)?,
+            self.lincheck_provers[1].retrieve_gamma(beta)?,
+        ];
+        let low_degree_proof = acc.create_fri_proof()?;
+        let proof = LayeredFractalProof {
+            preprocessing_decommits_a,
+            preprocessing_decommits_b,
+            preprocessing_decommits_c,
+            layer_commitments,
+            gammas,
+            layer_decommits,
+            low_degree_proof,
+        };
+        Ok(proof)
     }
 }
