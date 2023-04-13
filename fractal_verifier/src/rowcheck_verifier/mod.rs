@@ -388,24 +388,24 @@ mod test {
             fractal_options.fri_options.clone(),
         );
 
-        let query_indices = accumulator_verifier.get_query_indices(commit);
+        let query_indices = accumulator_verifier.get_query_indices(commit)?;
 
         // Check that the f_Mz decommitted values were appropriately sent by the prover
         println!("About to check accum for f_mz polynomials");
-        assert!(accumulator_verifier.verify_layer_with_queries(
+        accumulator_verifier.verify_layer_with_queries(
             init_commit,
             &query_indices,
             &decommit_fmz_polys.0.clone(),
-            &decommit_fmz_polys.1
-        ));
+            &decommit_fmz_polys.1,
+        )?;
         // Check that the rowcheck layer decommitted values were appropriately sent.
         println!("About to check accum for everything inside the rowcheck");
-        assert!(accumulator_verifier.verify_layer_with_queries(
+        accumulator_verifier.verify_layer_with_queries(
             commit,
             &query_indices,
             &decommit.0.clone(),
-            &decommit.1
-        ));
+            &decommit.1,
+        )?;
 
         let rowcheck_decommits =
             prepare_rowcheck_verifier_inputs(vec![decommit_fmz_polys.0, decommit.0]);
@@ -425,7 +425,7 @@ mod test {
 
         // Check correctness of FRI
         println!("About to check fri");
-        assert!(accumulator_verifier.verify_fri_proof(commit, fri_proof));
+        accumulator_verifier.verify_fri_proof(commit, fri_proof)?;
         /* Proof verification complete */
 
         // Also testing that the get_layer_commitment function is working as expected for the accum

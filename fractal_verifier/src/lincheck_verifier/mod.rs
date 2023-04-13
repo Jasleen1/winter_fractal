@@ -575,35 +575,35 @@ mod test {
             fractal_options.fri_options.clone(),
         );
 
-        let query_indices = accumulator_verifier.get_query_indices(commit_layer_3);
+        let query_indices = accumulator_verifier.get_query_indices(commit_layer_3)?;
 
         assert!(layer_3_queries == query_indices);
 
         // Check that the f_Mz decommitted values were appropriately sent by the prover
         println!("About to check accum for f_mz polynomials");
-        assert!(accumulator_verifier.verify_layer_with_queries(
+        accumulator_verifier.verify_layer_with_queries(
             init_commit,
             &query_indices,
             &decommit_layer_1_polys.0.clone(),
-            &decommit_layer_1_polys.1
-        ));
+            &decommit_layer_1_polys.1,
+        )?;
         // Check that the rowcheck layer decommitted values were appropriately sent.
         println!("About to check accum for everything inside the lincheck layer 1");
-        assert!(accumulator_verifier.verify_layer_with_queries(
+        accumulator_verifier.verify_layer_with_queries(
             commit_layer_2,
             &query_indices,
             &decommit_layer_2_polys.0.clone(),
-            &decommit_layer_2_polys.1
-        ));
+            &decommit_layer_2_polys.1,
+        )?;
 
         // Check that the rowcheck layer decommitted values were appropriately sent.
         println!("About to check accum for everything inside the lincheck layer 2");
-        assert!(accumulator_verifier.verify_layer_with_queries(
+        accumulator_verifier.verify_layer_with_queries(
             verifier_key.matrix_a_commitments.row_poly_commitment,
             &query_indices,
             &preprocessed_inputs_0,
             &pp_0.1,
-        ));
+        )?;
 
         let gamma = lincheck_prover_a.retrieve_gamma(beta)?;
         add_lincheck_verification::<B, E, H>(
@@ -626,7 +626,7 @@ mod test {
 
         // Check correctness of FRI
         println!("About to check fri");
-        assert!(accumulator_verifier.verify_fri_proof(commit_layer_3, fri_proof));
+        accumulator_verifier.verify_fri_proof(commit_layer_3, fri_proof)?;
         /* Proof verification complete */
 
         // Also testing that the get_layer_commitment function is working as expected for the accum

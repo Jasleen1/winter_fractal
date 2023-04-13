@@ -6,7 +6,8 @@ use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel, VerifierError}
 use winter_math::{fft, FieldElement, StarkField};
 
 use crate::{
-    errors::FractalVerifierError, low_degree_batch_verifier::verify_low_degree_batch_proof,
+    errors::{AccumulatorVerifierError, FractalVerifierError},
+    low_degree_batch_verifier::verify_low_degree_batch_proof,
 };
 
 pub struct AccumulatorVerifier<
@@ -61,7 +62,7 @@ impl<
         query_seed: H::Digest,
         decommit: &Vec<Vec<E>>,
         proof: &BatchMerkleProof<H>,
-    ) -> bool {
+    ) -> Result<(), AccumulatorVerifierError> {
         let mut coin = RandomCoin::<B, H>::new(&vec![]);
         coin.reseed(query_seed);
         let indices = coin
@@ -69,15 +70,18 @@ impl<
             .expect("failed to draw query position");
         let claimed_root = proof.get_root(&indices).unwrap();
         if layer_commit != claimed_root {
-            return false;
+            return Err(AccumulatorVerifierError::CommitMatchErr(format!(
+                "Claimed root = {:?}, Layer commitment = {:?}",
+                claimed_root, claimed_root
+            )));
         }
         MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(
             decommit,      // todo: this should be decommit once this function is fixed,
             &claimed_root, //todo: is this okay
             &proof,
             &indices.to_vec(),
-        )
-        .is_ok()
+        )?;
+        Ok(())
     }
 
     // verify batch incluion proof, update channel state
@@ -87,21 +91,23 @@ impl<
         query_indices: &Vec<usize>,
         decommit: &Vec<Vec<E>>,
         proof: &BatchMerkleProof<H>,
-    ) -> bool {
+    ) -> Result<(), AccumulatorVerifierError> {
         let claimed_root = proof.get_root(&query_indices).unwrap();
         if layer_commit != claimed_root {
-            return false;
+            return Err(AccumulatorVerifierError::CommitMatchErr(format!(
+                "Claimed root = {:?}, Layer commitment = {:?}",
+                claimed_root, claimed_root
+            )));
         }
-        println!(
-            "accumulator ver {:?}",
-            MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(
-                &decommit,     // todo: this should be decommit once this function is fixed,
-                &claimed_root, //todo: is this okay
-                &proof,
-                &query_indices.to_vec(),
-            )
-        );
-        true
+
+        MultiEval::<B, E, H>::batch_verify_values_and_proofs_at(
+            &decommit,     // todo: this should be decommit once this function is fixed,
+            &claimed_root, //todo: is this okay
+            &proof,
+            &query_indices.to_vec(),
+        )?;
+
+        Ok(())
     }
 
     // verify batch incluion proof, update channel state
@@ -111,21 +117,23 @@ impl<
         query_indices: Vec<usize>,
         decommit: Vec<[E; 1]>,
         proof: &BatchMerkleProof<H>,
-    ) -> bool {
+    ) -> Result<(), AccumulatorVerifierError> {
         let claimed_root = proof.get_root(&query_indices).unwrap();
         if layer_commit != claimed_root {
-            return false;
+            return Err(AccumulatorVerifierError::CommitMatchErr(format!(
+                "Claimed root = {:?}, Layer commitment = {:?}",
+                claimed_root, claimed_root
+            )));
         }
-        println!(
-            "accumulator ver {:?}",
-            MultiEval::<B, E, H>::batch_verify_transposed_values_and_proofs_at(
-                decommit,      // todo: this should be decommit once this function is fixed,
-                &claimed_root, //todo: is this okay
-                &proof,
-                &query_indices.to_vec(),
-            )
-        );
-        true
+
+        MultiEval::<B, E, H>::batch_verify_transposed_values_and_proofs_at(
+            decommit,      // todo: this should be decommit once this function is fixed,
+            &claimed_root, //todo: is this okay
+            &proof,
+            &query_indices.to_vec(),
+        )?;
+
+        Ok(())
     }
 
     // run at the end
@@ -133,20 +141,27 @@ impl<
         &mut self,
         last_layer_commit: H::Digest,
         proof: LowDegreeBatchProof<B, E, H>,
-    ) -> bool {
+    ) -> Result<(), AccumulatorVerifierError> {
         let mut coin = RandomCoin::<B, H>::new(&vec![]);
         coin.reseed(last_layer_commit);
-        verify_low_degree_batch_proof(proof, self.max_degrees.clone(), &mut coin, self.num_queries)
-            .is_ok()
+        let res = verify_low_degree_batch_proof(
+            proof,
+            self.max_degrees.clone(),
+            &mut coin,
+            self.num_queries,
+        );
+        println!("res = {:?}", res);
+        Ok(res?)
     }
 
-    pub fn get_query_indices(&self, query_seed: H::Digest) -> Vec<usize> {
+    pub fn get_query_indices(
+        &self,
+        query_seed: H::Digest,
+    ) -> Result<Vec<usize>, AccumulatorVerifierError> {
         let mut coin = RandomCoin::<B, H>::new(&vec![]);
         coin.reseed(query_seed);
-        let indices = coin
-            .draw_integers(self.num_queries, self.evaluation_domain_len)
-            .expect("failed to draw query position");
-        indices
+        let indices = coin.draw_integers(self.num_queries, self.evaluation_domain_len)?;
+        Ok(indices)
     }
 }
 

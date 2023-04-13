@@ -7,8 +7,9 @@
 
 //! Errors for various data structure operations.
 use fractal_proofs::{errors::FractalUtilError, DeserializationError};
-use fractal_prover::errors::{AccumulatorError, LincheckError, ProverError};
-use winter_crypto::MerkleTreeError;
+use fractal_prover::errors::{AccumulatorProverError, LincheckError, ProverError};
+use thiserror::Error;
+use winter_crypto::{MerkleTreeError, RandomCoinError};
 use winter_fri::VerifierError;
 
 #[cfg_attr(test, derive(PartialEq))]
@@ -34,6 +35,81 @@ impl std::fmt::Display for LincheckVerifierError {
             }
             LincheckVerifierError::UnsoundMatrix(err) => {
                 writeln!(f, "Lincheck error: unsound matrix: {}", err)
+            }
+        }
+    }
+}
+
+/// Represents a generic error type
+#[derive(Debug, Error, PartialEq)]
+pub enum AccumulatorVerifierError {
+    /// If the accumulator's decommit leads to an error
+    QueryVerificationErr(String),
+    /// Merkle tree error within the accumulator
+    MerkleTreeErr(MerkleTreeError),
+    /// Util Error
+    FractalUtilErr(FractalUtilError),
+    /// If the caller tries to operate on an accumulator which doesn't yet have commitments.
+    QueryErr(String),
+    /// Claimed root and layer commit don't match
+    CommitMatchErr(String),
+    /// Low degree verification error
+    LowDegreeVerifierErr(LowDegreeVerifierError),
+    /// Random coin error
+    RandomCoinErr(RandomCoinError),
+}
+
+impl From<MerkleTreeError> for AccumulatorVerifierError {
+    fn from(e: MerkleTreeError) -> AccumulatorVerifierError {
+        AccumulatorVerifierError::MerkleTreeErr(e)
+    }
+}
+
+impl From<FractalUtilError> for AccumulatorVerifierError {
+    fn from(e: FractalUtilError) -> AccumulatorVerifierError {
+        AccumulatorVerifierError::FractalUtilErr(e)
+    }
+}
+
+impl From<LowDegreeVerifierError> for AccumulatorVerifierError {
+    fn from(e: LowDegreeVerifierError) -> AccumulatorVerifierError {
+        AccumulatorVerifierError::LowDegreeVerifierErr(e)
+    }
+}
+
+impl From<RandomCoinError> for AccumulatorVerifierError {
+    fn from(e: RandomCoinError) -> AccumulatorVerifierError {
+        AccumulatorVerifierError::RandomCoinErr(e)
+    }
+}
+
+impl std::fmt::Display for AccumulatorVerifierError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            AccumulatorVerifierError::QueryVerificationErr(err) => {
+                writeln!(f, "Accumulator verification error from queries: {}", err)
+            }
+            AccumulatorVerifierError::MerkleTreeErr(err) => {
+                writeln!(f, "Fractal accumulator verifier Merkle Tree error: {}", err)
+            }
+            AccumulatorVerifierError::FractalUtilErr(err) => {
+                writeln!(f, "Fractal accumulator util error: {}", err)
+            }
+            AccumulatorVerifierError::QueryErr(err) => {
+                writeln!(f, "Problem with query in the accumulator: {}", err)
+            }
+            AccumulatorVerifierError::CommitMatchErr(err) => {
+                writeln!(
+                    f,
+                    "The commitment input here didn't match that derived from the proof: {}",
+                    err
+                )
+            }
+            AccumulatorVerifierError::LowDegreeVerifierErr(err) => {
+                writeln!(f, "The low degree proof didn't verify: {}", err)
+            }
+            AccumulatorVerifierError::RandomCoinErr(err) => {
+                writeln!(f, "Problem with the random coin: {}", err)
             }
         }
     }
@@ -114,6 +190,8 @@ pub enum FractalVerifierError {
     RowcheckVerifierErr(RowcheckVerifierError),
     /// Error propagation
     FractalUtilErr(FractalUtilError),
+    /// Error propagation
+    AccumulatorVerifierErr(AccumulatorVerifierError),
 }
 
 impl From<LincheckVerifierError> for FractalVerifierError {
@@ -134,6 +212,12 @@ impl From<FractalUtilError> for FractalVerifierError {
     }
 }
 
+impl From<AccumulatorVerifierError> for FractalVerifierError {
+    fn from(error: AccumulatorVerifierError) -> Self {
+        Self::AccumulatorVerifierErr(error)
+    }
+}
+
 impl std::fmt::Display for FractalVerifierError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
@@ -144,6 +228,9 @@ impl std::fmt::Display for FractalVerifierError {
                 writeln!(f, "Rowcheck error: {}", err)
             }
             FractalVerifierError::FractalUtilErr(err) => {
+                writeln!(f, "Fractal utils error: {}", err)
+            }
+            FractalVerifierError::AccumulatorVerifierErr(err) => {
                 writeln!(f, "Fractal utils error: {}", err)
             }
         }
@@ -237,8 +324,9 @@ pub enum TestingError {
     LincheckProverErr(LincheckError),
     RowcheckVerifierErr(RowcheckVerifierError),
     LincheckVerifierErr(LincheckVerifierError),
-    AccumulatorErr(AccumulatorError),
+    AccumulatorProverErr(AccumulatorProverError),
     MerkleTreeErr(MerkleTreeError),
+    AccumulatorVerifierErr(AccumulatorVerifierError),
 }
 
 impl From<FractalVerifierError> for TestingError {
@@ -271,9 +359,15 @@ impl From<LincheckError> for TestingError {
     }
 }
 
-impl From<AccumulatorError> for TestingError {
-    fn from(err: AccumulatorError) -> Self {
-        TestingError::AccumulatorErr(err)
+impl From<AccumulatorProverError> for TestingError {
+    fn from(err: AccumulatorProverError) -> Self {
+        TestingError::AccumulatorProverErr(err)
+    }
+}
+
+impl From<AccumulatorVerifierError> for TestingError {
+    fn from(err: AccumulatorVerifierError) -> Self {
+        TestingError::AccumulatorVerifierErr(err)
     }
 }
 
@@ -298,7 +392,10 @@ impl std::fmt::Display for TestingError {
             TestingError::LincheckVerifierErr(err) => {
                 writeln!(f, "Fractal lincheck verifier error: {}", err)
             }
-            TestingError::AccumulatorErr(err) => {
+            TestingError::AccumulatorProverErr(err) => {
+                writeln!(f, "Fractal accumulator error: {}", err)
+            }
+            TestingError::AccumulatorVerifierErr(err) => {
                 writeln!(f, "Fractal accumulator error: {}", err)
             }
             TestingError::MerkleTreeErr(err) => {

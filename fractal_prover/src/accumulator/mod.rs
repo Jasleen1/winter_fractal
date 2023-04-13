@@ -7,7 +7,7 @@ use winter_math::{fft, FieldElement, StarkField};
 
 use crate::{
     channel::DefaultFractalProverChannel,
-    errors::{AccumulatorError, ProverError},
+    errors::{AccumulatorProverError, ProverError},
     low_degree_batch_prover::LowDegreeBatchProver,
 };
 
@@ -84,7 +84,7 @@ impl<
         self.unchecked_coefficients.push(coefficients);
     }
 
-    pub fn commit_layer(&mut self) -> Result<<H>::Digest, AccumulatorError> {
+    pub fn commit_layer(&mut self) -> Result<<H>::Digest, AccumulatorProverError> {
         let mut coeffs_b = self.unchecked_coefficients.clone();
         let mut coeffs_b2 = self.coefficients.clone();
         coeffs_b.append(&mut coeffs_b2);
@@ -112,30 +112,36 @@ impl<
         Ok(com)
     }
 
-    pub fn draw_query_positions(&mut self) -> Result<Vec<usize>, AccumulatorError> {
+    pub fn draw_query_positions(&mut self) -> Result<Vec<usize>, AccumulatorProverError> {
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
             Vec::new(), // make sure there's actually chainging between layers
         );
-        let latest_eval = self.layer_evals.last().ok_or(AccumulatorError::QueryErr(
-            "You tried to query the accumulator before anything was committed".to_string(),
-        ))?;
+        let latest_eval = self
+            .layer_evals
+            .last()
+            .ok_or(AccumulatorProverError::QueryErr(
+                "You tried to query the accumulator before anything was committed".to_string(),
+            ))?;
         let coin_val = latest_eval.get_commitment()?;
         channel.commit_fractal_iop_layer(*coin_val);
         let queries = channel.draw_query_positions();
         Ok(queries)
     }
 
-    pub fn draw_queries(&mut self, count: Option<usize>) -> Result<Vec<E>, AccumulatorError> {
+    pub fn draw_queries(&mut self, count: Option<usize>) -> Result<Vec<E>, AccumulatorProverError> {
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
             Vec::new(), // make sure there's actually chainging between layers
         );
-        let latest_eval = self.layer_evals.last().ok_or(AccumulatorError::QueryErr(
-            "You tried to query the accumulator before anything was committed".to_string(),
-        ))?;
+        let latest_eval = self
+            .layer_evals
+            .last()
+            .ok_or(AccumulatorProverError::QueryErr(
+                "You tried to query the accumulator before anything was committed".to_string(),
+            ))?;
         let coin_val = latest_eval.get_commitment()?;
         channel.commit_fractal_iop_layer(*coin_val);
         match count {
@@ -160,7 +166,7 @@ impl<
     pub fn decommit_layer(
         &mut self,
         layer_idx: usize,
-    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorProverError> {
         // let mut coeffs_b = self.unchecked_coefficients.clone();
         // let mut coeffs_b2 = self.coefficients.clone();
         // coeffs_b.append(&mut coeffs_b2);
@@ -175,7 +181,7 @@ impl<
         let multi_eval =
             self.layer_evals
                 .get(layer_idx - 1)
-                .ok_or(AccumulatorError::DecommitErr(
+                .ok_or(AccumulatorProverError::DecommitErr(
                     layer_idx,
                     "Tried to access some strange position in the multi_evals".to_string(),
                 ))?;
@@ -196,7 +202,7 @@ impl<
         &mut self,
         layer_idx: usize,
         queries: &Vec<usize>,
-    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorProverError> {
         // let mut coeffs_b = self.unchecked_coefficients.clone();
         // let mut coeffs_b2 = self.coefficients.clone();
         // coeffs_b.append(&mut coeffs_b2);
@@ -211,7 +217,7 @@ impl<
         let multi_eval =
             self.layer_evals
                 .get(layer_idx - 1)
-                .ok_or(AccumulatorError::DecommitErr(
+                .ok_or(AccumulatorProverError::DecommitErr(
                     layer_idx,
                     "Tried to access some strange position in the multi_evals".to_string(),
                 ))?;
@@ -224,7 +230,7 @@ impl<
         &mut self,
         layer_idx: usize,
         pub_input: H::Digest,
-    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorError> {
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorProverError> {
         // let mut coeffs_b = self.unchecked_coefficients.clone();
         // let mut coeffs_b2 = self.coefficients.clone();
         // coeffs_b.append(&mut coeffs_b2);
@@ -246,7 +252,7 @@ impl<
         let multi_eval =
             self.layer_evals
                 .get(layer_idx - 1)
-                .ok_or(AccumulatorError::DecommitErr(
+                .ok_or(AccumulatorProverError::DecommitErr(
                     layer_idx,
                     "Tried to access some strange position in the multi_evals".to_string(),
                 ))?;
@@ -255,12 +261,17 @@ impl<
     }
 
     // could be named something like "finish"
-    pub fn create_fri_proof(&mut self) -> Result<LowDegreeBatchProof<B, E, H>, AccumulatorError> {
+    pub fn create_fri_proof(
+        &mut self,
+    ) -> Result<LowDegreeBatchProof<B, E, H>, AccumulatorProverError> {
         // let channel_state = self.commit_layer()?;
 
-        let multi_eval = self.layer_evals.last().ok_or(AccumulatorError::QueryErr(
-            "You tried to query the accumulator before anything was committed".to_string(),
-        ))?;
+        let multi_eval = self
+            .layer_evals
+            .last()
+            .ok_or(AccumulatorProverError::QueryErr(
+                "You tried to query the accumulator before anything was committed".to_string(),
+            ))?;
         let channel_state = multi_eval.get_commitment()?.clone();
         let mut channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
@@ -300,14 +311,17 @@ impl<
     }
 
     /// This function takes a one-indexed layer_idx and returns the hash for that layer
-    pub fn get_layer_commitment(&self, layer_idx: usize) -> Result<H::Digest, AccumulatorError> {
-        let layer = self
-            .layer_evals
-            .get(layer_idx - 1)
-            .ok_or(AccumulatorError::DecommitErr(
-                layer_idx,
-                "You tried to get a layer that doesn't exist yet.".to_string(),
-            ))?;
+    pub fn get_layer_commitment(
+        &self,
+        layer_idx: usize,
+    ) -> Result<H::Digest, AccumulatorProverError> {
+        let layer =
+            self.layer_evals
+                .get(layer_idx - 1)
+                .ok_or(AccumulatorProverError::DecommitErr(
+                    layer_idx,
+                    "You tried to get a layer that doesn't exist yet.".to_string(),
+                ))?;
         Ok(*layer.get_commitment()?)
     }
 }
@@ -456,11 +470,11 @@ mod test {
     use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
     use winter_math::{fft, FieldElement, StarkField};
 
-    use crate::errors::AccumulatorError;
+    use crate::errors::AccumulatorProverError;
 
     use super::Accumulator;
     #[test]
-    fn test_accumulator() -> Result<(), AccumulatorError> {
+    fn test_accumulator() -> Result<(), AccumulatorProverError> {
         let lde_blowup = 4;
         let num_queries = 16;
         let fri_options = FriOptions::new(lde_blowup, 4, 32);

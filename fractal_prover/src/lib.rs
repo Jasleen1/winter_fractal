@@ -2,7 +2,7 @@ use std::thread::AccessError;
 
 use accumulator::Accumulator;
 use channel::DefaultFractalProverChannel;
-use errors::{AccumulatorError, ProverError};
+use errors::{AccumulatorProverError, ProverError};
 use fractal_proofs::{FieldElement, LayeredProof, LowDegreeBatchProof};
 use log;
 use winter_crypto::ElementHasher;

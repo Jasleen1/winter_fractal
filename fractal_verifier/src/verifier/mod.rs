@@ -218,7 +218,7 @@ pub fn verify_layered_fractal_proof<
 
     // Verify FRI proof.
     // TODO error handling
-    accumulator_verifier.verify_fri_proof(proof.layer_commitments[2], proof.low_degree_proof);
+    accumulator_verifier.verify_fri_proof(proof.layer_commitments[2], proof.low_degree_proof)?;
 
     Ok(())
 }

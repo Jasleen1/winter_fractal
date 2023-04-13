@@ -16,7 +16,7 @@ pub enum ProverError {
     MerkleTreeErr(MerkleTreeError),
     MultiPolyErr(String),
     FractalUtilErr(FractalUtilError),
-    AccumulatorErr(AccumulatorError),
+    AccumulatorErr(AccumulatorProverError),
     ProverKeyNoneErr(),
 }
 
@@ -44,8 +44,8 @@ impl From<FractalUtilError> for ProverError {
     }
 }
 
-impl From<AccumulatorError> for ProverError {
-    fn from(e: AccumulatorError) -> ProverError {
+impl From<AccumulatorProverError> for ProverError {
+    fn from(e: AccumulatorProverError) -> ProverError {
         ProverError::AccumulatorErr(e)
     }
 }
@@ -78,7 +78,7 @@ impl fmt::Display for LincheckError {
 
 /// Represents a generic error type
 #[derive(Debug, Display, Error, PartialEq)]
-pub enum AccumulatorError {
+pub enum AccumulatorProverError {
     /// If the accumulator's decommit leads to an error
     DecommitErr(usize, String),
     /// Merkle tree error within the accumulator
@@ -95,15 +95,15 @@ impl From<MerkleTreeError> for LincheckError {
     }
 }
 
-impl From<MerkleTreeError> for AccumulatorError {
-    fn from(e: MerkleTreeError) -> AccumulatorError {
-        AccumulatorError::MerkleTreeErr(e)
+impl From<MerkleTreeError> for AccumulatorProverError {
+    fn from(e: MerkleTreeError) -> AccumulatorProverError {
+        AccumulatorProverError::MerkleTreeErr(e)
     }
 }
 
-impl From<FractalUtilError> for AccumulatorError {
-    fn from(e: FractalUtilError) -> AccumulatorError {
-        AccumulatorError::FractalUtilErr(e)
+impl From<FractalUtilError> for AccumulatorProverError {
+    fn from(e: FractalUtilError) -> AccumulatorProverError {
+        AccumulatorProverError::FractalUtilErr(e)
     }
 }
 
