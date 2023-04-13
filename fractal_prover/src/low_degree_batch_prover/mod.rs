@@ -81,8 +81,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     ) {
         let alpha = channel.draw_fri_alpha();
         let beta = channel.draw_fri_alpha();
-        println!("alpha: {:?}", &alpha);
-        println!("beta: {:?}", &beta);
+
         let comp_coeffs =
             get_randomized_complementary_poly::<E>(max_degree, self.fri_max_degree, alpha, beta);
 

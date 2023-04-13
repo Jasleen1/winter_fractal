@@ -98,6 +98,7 @@ pub(crate) fn verify_layered_lincheck_proof<
     let l_base_elt = E::from(B::get_root_of_unity(
         l_size_u64.trailing_zeros().try_into().unwrap(),
     ));
+
     let v_h_alpha = compute_vanishing_poly::<B, E>(proof.alpha, h_size_u64, eta);
     let v_h_beta = compute_vanishing_poly::<B, E>(proof.beta, h_size_u64, eta);
     let eval_domain_size = verifier_key.params.max_degree * 4;
@@ -147,8 +148,11 @@ pub(crate) fn verify_layered_lincheck_proof<
         h_domain_size,
         B::ONE,
         eta,
-        proof.gamma,
+        E::ZERO,
     )?;
+
+    accumulator_verifier.add_constraint(h_domain_size - 2);
+    accumulator_verifier.add_constraint(h_domain_size - 1);
 
     let layered_matrix_sumcheck_proof = LayeredSumcheckProof {
         numerator_vals: matrix_sumcheck_numerator_decommits,
@@ -166,6 +170,9 @@ pub(crate) fn verify_layered_lincheck_proof<
         verifier_key.params.eta_k,
         proof.gamma,
     )?;
+
+    accumulator_verifier.add_constraint(k_domain_size - 2);
+    accumulator_verifier.add_constraint(2 * k_domain_size - 3);
 
     Ok(())
 }
@@ -239,14 +246,15 @@ pub fn add_lincheck_verification<
         l_size_u64.trailing_zeros().try_into().unwrap(),
     ));
 
-    // accumulator_verifier.add_constraint(h_domain_size - 1);
-
     let v_h_alpha = compute_vanishing_poly::<B, E>(alpha, h_size_u64, eta);
     let v_h_beta = compute_vanishing_poly::<B, E>(beta, h_size_u64, eta);
 
     let eval_domain_size = verifier_key.params.max_degree * 4;
     let h_domain_size = verifier_key.params.num_input_variables;
     let k_domain_size = verifier_key.params.num_non_zero;
+
+    accumulator_verifier.add_constraint(h_domain_size - 1);
+
     let mut product_sumcheck_g_decommits = Vec::<E>::new();
     let mut product_sumcheck_e_decommits = Vec::<E>::new();
     let mut product_sumcheck_numerator_decommits = Vec::<E>::new();
@@ -289,8 +297,8 @@ pub fn add_lincheck_verification<
         E::ZERO,
     )?;
 
-    // accumulator_verifier.add_constraint(h_domain_size - 2);
-    // accumulator_verifier.add_constraint(h_domain_size - 1);
+    accumulator_verifier.add_constraint(h_domain_size - 2);
+    accumulator_verifier.add_constraint(h_domain_size - 1);
 
     println!("Checked the first sumcheck");
 
@@ -307,8 +315,8 @@ pub fn add_lincheck_verification<
         gamma,
     )?;
 
-    // accumulator_verifier.add_constraint(k_domain_size - 2);
-    // accumulator_verifier.add_constraint(2*k_domain_size - 3);
+    accumulator_verifier.add_constraint(k_domain_size - 2);
+    accumulator_verifier.add_constraint(2 * k_domain_size - 3);
 
     Ok(())
 }
@@ -463,6 +471,7 @@ mod test {
         let mut z_coeffs = &mut wires.clone(); // evals
         fft::interpolate_poly_with_offset(&mut z_coeffs, &inv_twiddles_h, prover_key.params.eta); // coeffs
                                                                                                   // let matrix_a_index = prover_key.matrix_a_index;
+                                                                                                  // Get the f_az coeffs
         let f_az_coeffs = &mut compute_matrix_mul_poly_coeffs::<B, E, H>(
             &prover_key.matrix_a_index.matrix,
             &wires.clone(),
@@ -483,11 +492,10 @@ mod test {
         accumulator.add_unchecked_polynomial(z_coeffs.clone());
         accumulator.add_unchecked_polynomial(f_az_coeffs.clone());
 
-        // Commit to the f_az, f_bz, f_cz polynomials before you move forward.
+        // Commit to the f_z and f_az polynomials before you move forward.
         let init_commit = accumulator.commit_layer()?;
 
-        // Now the rowcheck prover does its work.
-        // Recall that this is a single layer proof, so we don't need to worry about anything else yet.
+        // Now the lincheck prover does its work.
         let mut lincheck_prover_a = LincheckProver::<B, E, H>::new(
             prover_key_2.matrix_a_index,
             f_az_coeffs.to_vec(),
@@ -498,13 +506,10 @@ mod test {
         lincheck_prover_a
             .run_next_layer(alpha, &mut accumulator)
             .unwrap();
-        // Now all the polynomials from the rowcheck layer should be in the accumulator.
-        // (spoiler: it's only one polynomial but we still need to commit it)
+        // Now all the polynomials from the lincheck layer should be in the accumulator.
+        // (spoiler: it's only three polynomials but we still need to commit it)
         let commit_layer_2 = accumulator.commit_layer()?;
 
-        // // Now you draw queries based on the commitment and show their correctness with
-        // // respect to everything.
-        // let layer_2_queries = accumulator.draw_query_positions()?;
         // // To show correctness, including of linking the two layers, query them at the same points
         // let decommit_fmz_polys = accumulator.decommit_layer_with_qeuries(1, layer_2_queries.clone())?;
         // let decommit_layer_2_lincheck = accumulator.decommit_layer_with_qeuries(2, layer_2_queries)?;

@@ -30,7 +30,6 @@ pub fn verify_low_degree_batch_proof<
         alphas.push(public_coin.draw::<E>().unwrap());
         betas.push(public_coin.draw::<E>().unwrap());
     }
-    println!("batch verifier alphas: {:?}", &alphas);
 
     // rederive the evaluation domain size the same way as in the FRI verifier
     let eval_domain_size = proof.options.blowup_factor() * (proof.fri_max_degree + 1);

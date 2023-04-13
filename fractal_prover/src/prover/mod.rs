@@ -167,16 +167,17 @@ impl<
         );
         let mut lincheck_prover_c = LincheckProver::<B, E, H>::new(
             c_index,
-            self.f_bz_coeffs.to_vec(),
+            self.f_cz_coeffs.to_vec(),
             self.z_coeffs.to_vec(),
             &self.options,
         );
 
+        rowcheck_prover.run_next_layer(query, accumulator)?;
         lincheck_prover_a.run_next_layer(query, accumulator)?;
         lincheck_prover_b.run_next_layer(query, accumulator)?;
         lincheck_prover_c.run_next_layer(query, accumulator)?;
         self.lincheck_provers = vec![lincheck_prover_a, lincheck_prover_b, lincheck_prover_c];
-        rowcheck_prover.run_next_layer(query, accumulator)?;
+
         Ok(())
     }
 
@@ -256,8 +257,18 @@ impl<
         );
         let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 3];
         let mut local_queries = Vec::<E>::new();
+
+        let mut coin = RandomCoin::<B, H>::new(&vec![]);
+
         for i in 0..self.get_num_layers() {
-            let query = channel.draw_fri_alpha();
+            // local_queries.push(query);
+            // Doing this rn to make sure prover and verifier sample identically
+            if i > 0 {
+                let previous_commit = acc.get_layer_commitment(i)?;
+                channel.commit_fractal_iop_layer(previous_commit);
+                coin.reseed(previous_commit);
+            }
+            let query = coin.draw().expect("failed to draw FRI alpha"); //channel.draw_fri_alpha();
             local_queries.push(query);
             self.run_next_layer(query, &mut acc)?;
             layer_commitments[i] = acc.commit_layer()?; //todo: do something with this
@@ -265,7 +276,7 @@ impl<
 
         let queries = acc.draw_query_positions()?;
 
-        let beta = local_queries[1];
+        let beta = local_queries[2];
 
         let preprocessing_decommits_a =
             self.lincheck_provers[0].decommit_proprocessing(&queries)?;
@@ -276,13 +287,14 @@ impl<
         let layer_decommits = [
             acc.decommit_layer_with_qeuries(1, &queries)?,
             acc.decommit_layer_with_qeuries(2, &queries)?,
-            acc.decommit_layer_with_qeuries(2, &queries)?,
+            acc.decommit_layer_with_qeuries(3, &queries)?,
         ];
         let gammas = [
             self.lincheck_provers[0].retrieve_gamma(beta)?,
             self.lincheck_provers[1].retrieve_gamma(beta)?,
-            self.lincheck_provers[1].retrieve_gamma(beta)?,
+            self.lincheck_provers[2].retrieve_gamma(beta)?,
         ];
+
         let low_degree_proof = acc.create_fri_proof()?;
         let proof = LayeredFractalProof {
             preprocessing_decommits_a,

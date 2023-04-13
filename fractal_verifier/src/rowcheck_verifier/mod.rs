@@ -177,7 +177,6 @@ fn verify_s_computation<
     f_cz_evals: Vec<E>,
     s_evals: Vec<E>,
 ) -> Result<(), RowcheckVerifierError> {
-    println!("s_evals: {:?}", s_evals);
     let eval_domain_base = E::from(B::get_root_of_unity(eval_domain_size.trailing_zeros()));
     let eval_domain_pows = positions.iter().map(|&x| x as u64).collect::<Vec<u64>>();
     let eval_domain_elts = eval_domain_pows

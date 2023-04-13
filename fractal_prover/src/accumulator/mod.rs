@@ -97,6 +97,10 @@ impl<
         //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
         self.fri_coefficients.append(&mut self.coefficients.clone());
         self.fri_max_degrees.append(&mut self.max_degrees.clone());
+        self.fri_coefficients_ext
+            .append(&mut self.coefficients_ext.clone());
+        self.fri_max_degrees_ext
+            .append(&mut self.max_degrees_ext.clone());
         self.coefficients = Vec::new();
         self.coefficients_ext = Vec::new();
         self.unchecked_coefficients = Vec::new();
@@ -183,7 +187,7 @@ impl<
         );
         channel.commit_fractal_iop_layer(channel_state);
         let queries = channel.draw_query_positions();
-        println!("queries: {:?}", &queries);
+
         Ok(multi_eval.batch_get_values_and_proofs_at(&queries)?)
     }
 
@@ -211,10 +215,7 @@ impl<
                     layer_idx,
                     "Tried to access some strange position in the multi_evals".to_string(),
                 ))?;
-        println!(
-            "Multieval has {} polynomials",
-            multi_eval.coefficients.len()
-        );
+
         Ok(multi_eval.batch_get_values_and_proofs_at(queries)?)
     }
 

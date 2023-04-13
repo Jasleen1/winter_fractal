@@ -133,6 +133,10 @@ impl<
     fn lincheck_layer_two(&self, query: E, accumulator: &mut Accumulator<B, E, H>) {
         let beta = query;
         let alpha = self.alpha.unwrap();
+        debug!(
+            "Alpha and beta in lincheck prover l2 = {:?}, {:?}",
+            alpha, beta
+        );
         // t_alpha is the only state we need to retain from layer 1
         // if we wanted to be really fancy, we could extract this from the accumulator...
         let gamma = polynom::eval(&self.t_alpha.as_ref().unwrap(), beta);
@@ -191,8 +195,6 @@ impl<
             mat_sum += temp;
         }
 
-        let eval_pt = E::from(self.options.evaluation_domain[76]);
-
         let mut matrix_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
             matrix_proof_numerator,
             matrix_proof_denominator,
@@ -204,7 +206,9 @@ impl<
             self.options.clone(),
         );
 
-        matrix_sumcheck_prover.run_next_layer(query, accumulator);
+        matrix_sumcheck_prover
+            .run_next_layer(query, accumulator)
+            .unwrap();
     }
 
     pub fn retrieve_gamma(&self, beta: E) -> Result<E, LincheckError> {

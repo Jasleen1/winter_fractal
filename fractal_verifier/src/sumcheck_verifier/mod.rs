@@ -1,6 +1,7 @@
 use crate::errors::SumcheckVerifierError;
 
 use fractal_proofs::{compute_vanishing_poly, FieldElement, LayeredSumcheckProof, SumcheckProof};
+use fractal_prover::accumulator;
 
 use crate::low_degree_batch_verifier::verify_low_degree_batch_proof;
 use crate::low_degree_verifier::verify_low_degree_proof;
