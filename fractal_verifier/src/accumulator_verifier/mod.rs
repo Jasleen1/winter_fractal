@@ -21,6 +21,7 @@ pub struct AccumulatorVerifier<
     pub num_queries: usize,
     pub fri_options: FriOptions,
     pub max_degrees: Vec<usize>,
+    pub max_degrees_by_layer: Vec<Vec<usize>>,
     pub public_coin: RandomCoin<B, H>,
     _e: PhantomData<E>,
 }
@@ -46,13 +47,18 @@ impl<
             num_queries,
             fri_options,
             max_degrees: Vec::new(),
+            max_degrees_by_layer: Vec::new(),
             public_coin: RandomCoin::<B, H>::new(&vec![]),
             _e: PhantomData,
         }
     }
 
-    pub fn add_constraint(&mut self, max_degree: usize) {
+    pub fn add_constraint(&mut self, max_degree: usize, current_layer: usize) {
         self.max_degrees.push(max_degree);
+        while self.max_degrees_by_layer.len() <= current_layer{
+            self.max_degrees_by_layer.push(Vec::new());
+        }
+        self.max_degrees_by_layer[current_layer].push(max_degree);
     }
 
     // verify batch incluion proof, update channel state
@@ -144,9 +150,14 @@ impl<
     ) -> Result<(), AccumulatorVerifierError> {
         let mut coin = RandomCoin::<B, H>::new(&vec![]);
         coin.reseed(last_layer_commit);
+        let mut max_degrees = Vec::new();
+        for v in self.max_degrees_by_layer.iter(){
+            max_degrees.extend(v);
+        }
+        println!("verifier max_degrees: {:?}", &max_degrees);
         let res = verify_low_degree_batch_proof(
             proof,
-            self.max_degrees.clone(),
+            max_degrees,
             &mut coin,
             self.num_queries,
         );

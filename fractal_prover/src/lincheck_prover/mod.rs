@@ -68,7 +68,7 @@ impl<
         }
     }
 
-    fn lincheck_layer_one(&mut self, query: E, accumulator: &mut Accumulator<B, E, H>) {
+    fn lincheck_layer_one(&mut self, query: E, accumulator: &mut Accumulator<B, E, H>) -> Result<(), ProverError> {
         self.alpha = Some(query);
         let t_alpha_evals = self.generate_t_alpha_evals(query);
         let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
@@ -127,7 +127,8 @@ impl<
             self.options.clone(),
         );
         //if this needs a channel... problem
-        product_sumcheck_prover.run_next_layer(query, accumulator);
+        product_sumcheck_prover.run_next_layer(query, accumulator)?;
+        Ok(())
     }
 
     fn lincheck_layer_two(&self, query: E, accumulator: &mut Accumulator<B, E, H>) {

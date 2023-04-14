@@ -58,6 +58,7 @@ pub fn verify_layered_rowcheck_proof<
     verifier_key: &VerifierKey<B, E, H>,
     queried_positions: &Vec<usize>,
     proof: LayeredRowcheckProof<B, E>,
+    starting_layer: usize,
 ) -> Result<(), RowcheckVerifierError> {
     // todo: get this value from the same place consistently
     let h_domain_size = std::cmp::max(
@@ -70,7 +71,7 @@ pub fn verify_layered_rowcheck_proof<
     // Since the degree of f_az and f_bz is each |H| - 1, the degree of the polynomial
     // s = (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
 
-    accumulator_verifier.add_constraint(h_domain_size - 2);
+    accumulator_verifier.add_constraint(h_domain_size - 2, starting_layer);
 
     verify_s_computation::<B, E, H>(
         accumulator_verifier.evaluation_domain_len,
@@ -101,6 +102,7 @@ pub fn add_rowcheck_verification<
     f_bz_idx: usize,
     f_cz_idx: usize,
     s_idx: usize,
+    starting_layer: usize,
 ) -> Result<(), RowcheckVerifierError> {
     println!(
         "length of decommit: {}, {}",
@@ -130,7 +132,7 @@ pub fn add_rowcheck_verification<
     // Since the degree of f_az and f_bz is each |H| - 1, the degree of the polynomial
     // s = (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
 
-    accumulator_verifier.add_constraint(h_domain_size - 2);
+    accumulator_verifier.add_constraint(h_domain_size - 2, starting_layer);
 
     let f_az_evals: Vec<E> = (0..queried_positions.len())
         .into_iter()
@@ -373,8 +375,8 @@ mod test {
         // respect to everything.
         let queries = accumulator.draw_query_positions()?;
         // To show correctness, including of linking the two layers, query them at the same points
-        let decommit_fmz_polys = accumulator.decommit_layer_with_qeuries(1, &queries.clone())?;
-        let decommit = accumulator.decommit_layer_with_qeuries(2, &queries)?;
+        let decommit_fmz_polys = accumulator.decommit_layer_with_queries(1, &queries.clone())?;
+        let decommit = accumulator.decommit_layer_with_queries(2, &queries)?;
         // add some public input bytes VVV
         let fri_proof = accumulator.create_fri_proof()?;
 
@@ -421,6 +423,7 @@ mod test {
             1,
             2,
             3,
+            1
         )?;
 
         // Check correctness of FRI

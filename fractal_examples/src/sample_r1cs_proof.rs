@@ -145,7 +145,7 @@ pub(crate) fn orchestrate_r1cs_example<
     );
     let proof = prover.generate_proof(pub_inputs_bytes.clone()).unwrap();
 
-    verify_layered_fractal_proof(verifier_key, proof, pub_inputs_bytes, options).unwrap();
+    verify_layered_fractal_proof(verifier_key, proof, pub_inputs_bytes, options, 1).unwrap();
 
     // println!(
     //     "Verified: {:?}",

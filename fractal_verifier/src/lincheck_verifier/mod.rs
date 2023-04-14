@@ -90,6 +90,7 @@ pub(crate) fn verify_layered_lincheck_proof<
     verifier_key: &VerifierKey<B, E, H>,
     queried_positions: &Vec<usize>,
     proof: &LayeredLincheckProof<B, E>,
+    starting_layer: usize,
 ) -> Result<(), LincheckVerifierError> {
     let eta = verifier_key.params.eta;
     let h_size_u64: u64 = verifier_key.params.num_input_variables.try_into().unwrap();
@@ -104,7 +105,7 @@ pub(crate) fn verify_layered_lincheck_proof<
     let eval_domain_size = verifier_key.params.max_degree * 4;
     let h_domain_size = verifier_key.params.num_input_variables;
     let k_domain_size = verifier_key.params.num_non_zero;
-    accumulator_verifier.add_constraint(h_domain_size - 1);
+    accumulator_verifier.add_constraint(h_domain_size - 1, starting_layer);
 
     let mut product_sumcheck_g_decommits = Vec::<E>::new();
     let mut product_sumcheck_e_decommits = Vec::<E>::new();
@@ -149,10 +150,12 @@ pub(crate) fn verify_layered_lincheck_proof<
         B::ONE,
         eta,
         E::ZERO,
+        starting_layer,
     )?;
 
-    accumulator_verifier.add_constraint(h_domain_size - 2);
-    accumulator_verifier.add_constraint(h_domain_size - 1);
+    // todo: g and e degree_max should be arguments to the sumcheck
+    accumulator_verifier.add_constraint(h_domain_size - 2, starting_layer);
+    accumulator_verifier.add_constraint(h_domain_size - 1, starting_layer);
 
     let layered_matrix_sumcheck_proof = LayeredSumcheckProof {
         numerator_vals: matrix_sumcheck_numerator_decommits,
@@ -169,10 +172,11 @@ pub(crate) fn verify_layered_lincheck_proof<
         B::ONE,
         verifier_key.params.eta_k,
         proof.gamma,
+        starting_layer +1
     )?;
 
-    accumulator_verifier.add_constraint(k_domain_size - 2);
-    accumulator_verifier.add_constraint(2 * k_domain_size - 3);
+    accumulator_verifier.add_constraint(k_domain_size - 2, starting_layer+1);
+    accumulator_verifier.add_constraint(2 * k_domain_size - 3, starting_layer+1);
 
     Ok(())
 }
@@ -238,6 +242,7 @@ pub fn add_lincheck_verification<
     alpha: E,
     beta: E,
     gamma: E,
+    starting_layer: usize
 ) -> Result<(), LincheckVerifierError> {
     let eta = verifier_key.params.eta;
     let h_size_u64: u64 = verifier_key.params.num_input_variables.try_into().unwrap();
@@ -253,7 +258,7 @@ pub fn add_lincheck_verification<
     let h_domain_size = verifier_key.params.num_input_variables;
     let k_domain_size = verifier_key.params.num_non_zero;
 
-    accumulator_verifier.add_constraint(h_domain_size - 1);
+    accumulator_verifier.add_constraint(h_domain_size - 1, starting_layer);
 
     let mut product_sumcheck_g_decommits = Vec::<E>::new();
     let mut product_sumcheck_e_decommits = Vec::<E>::new();
@@ -297,8 +302,8 @@ pub fn add_lincheck_verification<
         E::ZERO,
     )?;
 
-    accumulator_verifier.add_constraint(h_domain_size - 2);
-    accumulator_verifier.add_constraint(h_domain_size - 1);
+    accumulator_verifier.add_constraint(h_domain_size - 2, starting_layer);
+    accumulator_verifier.add_constraint(h_domain_size - 1, starting_layer);
 
     println!("Checked the first sumcheck");
 
@@ -315,8 +320,8 @@ pub fn add_lincheck_verification<
         gamma,
     )?;
 
-    accumulator_verifier.add_constraint(k_domain_size - 2);
-    accumulator_verifier.add_constraint(2 * k_domain_size - 3);
+    accumulator_verifier.add_constraint(k_domain_size - 2, starting_layer+1);
+    accumulator_verifier.add_constraint(2 * k_domain_size - 3, starting_layer+1);
 
     Ok(())
 }
@@ -531,11 +536,11 @@ mod test {
         // To show correctness, including of linking the two layers, query them at the same points
         let preprocessed_values = prover_key.matrix_a_index.decommit_evals(&layer_3_queries)?;
         let decommit_layer_1_polys =
-            accumulator.decommit_layer_with_qeuries(1, &layer_3_queries)?;
+            accumulator.decommit_layer_with_queries(1, &layer_3_queries)?;
         let decommit_layer_2_polys =
-            accumulator.decommit_layer_with_qeuries(2, &layer_3_queries)?;
+            accumulator.decommit_layer_with_queries(2, &layer_3_queries)?;
         let decommit_layer_3_lincheck =
-            accumulator.decommit_layer_with_qeuries(3, &layer_3_queries)?;
+            accumulator.decommit_layer_with_queries(3, &layer_3_queries)?;
 
         let pp_0 = &preprocessed_values[0];
         let preprocessed_inputs_0 = &pp_0.0;
@@ -622,6 +627,7 @@ mod test {
             alpha,
             beta,
             gamma,
+            1
         )?;
 
         // Check correctness of FRI

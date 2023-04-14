@@ -285,9 +285,9 @@ impl<
         let preprocessing_decommits_c =
             self.lincheck_provers[2].decommit_proprocessing(&queries)?;
         let layer_decommits = [
-            acc.decommit_layer_with_qeuries(1, &queries)?,
-            acc.decommit_layer_with_qeuries(2, &queries)?,
-            acc.decommit_layer_with_qeuries(3, &queries)?,
+            acc.decommit_layer_with_queries(1, &queries)?,
+            acc.decommit_layer_with_queries(2, &queries)?,
+            acc.decommit_layer_with_queries(3, &queries)?,
         ];
         let gammas = [
             self.lincheck_provers[0].retrieve_gamma(beta)?,

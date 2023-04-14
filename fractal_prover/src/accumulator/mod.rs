@@ -23,13 +23,13 @@ pub struct Accumulator<
     pub fri_options: FriOptions,
     pub coefficients: Vec<Vec<B>>,
     pub coefficients_ext: Vec<Vec<E>>,
-    pub max_degrees: Vec<usize>,
+    //pub max_degrees: Vec<usize>,
     pub max_degrees_ext: Vec<usize>,
     pub unchecked_coefficients: Vec<Vec<B>>,
     pub unchecked_coefficients_ext: Vec<Vec<E>>,
-    pub fri_coefficients: Vec<Vec<B>>,
+    //pub fri_coefficients: Vec<Vec<B>>,
     pub fri_coefficients_ext: Vec<Vec<E>>,
-    pub fri_max_degrees: Vec<usize>,
+    //pub fri_max_degrees: Vec<usize>,
     pub fri_max_degrees_ext: Vec<usize>,
     pub layer_evals: Vec<MultiEval<B, E, H>>,
     _h: PhantomData<H>,
@@ -56,13 +56,13 @@ impl<
             fri_options,
             coefficients: Vec::new(),
             coefficients_ext: Vec::new(),
-            max_degrees: Vec::new(),
+            //max_degrees: Vec::new(),
             max_degrees_ext: Vec::new(),
             unchecked_coefficients: Vec::new(),
             unchecked_coefficients_ext: Vec::new(),
-            fri_coefficients: Vec::new(),
+            //fri_coefficients: Vec::new(),
             fri_coefficients_ext: Vec::new(),
-            fri_max_degrees: Vec::new(),
+            //fri_max_degrees: Vec::new(),
             fri_max_degrees_ext: Vec::new(),
             layer_evals: Vec::new(),
             _h: PhantomData,
@@ -70,8 +70,9 @@ impl<
     }
 
     pub fn add_polynomial(&mut self, coefficients: Vec<B>, max_degree: usize) {
-        self.coefficients.push(coefficients);
-        self.max_degrees.push(max_degree);
+        let coeffs_ext: Vec<E> = coefficients.iter().map(|y| E::from(*y)).collect();
+        self.coefficients_ext.push(coeffs_ext);
+        self.max_degrees_ext.push(max_degree);
     }
 
     pub fn add_polynomial_e(&mut self, coefficients: Vec<E>, max_degree: usize) {
@@ -95,8 +96,8 @@ impl<
             self.offset,
         );
         //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
-        self.fri_coefficients.append(&mut self.coefficients.clone());
-        self.fri_max_degrees.append(&mut self.max_degrees.clone());
+        //self.fri_coefficients.append(&mut self.coefficients.clone());
+        //self.fri_max_degrees.append(&mut self.max_degrees.clone());
         self.fri_coefficients_ext
             .append(&mut self.coefficients_ext.clone());
         self.fri_max_degrees_ext
@@ -104,7 +105,7 @@ impl<
         self.coefficients = Vec::new();
         self.coefficients_ext = Vec::new();
         self.unchecked_coefficients = Vec::new();
-        self.max_degrees = Vec::new();
+        //self.max_degrees = Vec::new();
         self.max_degrees_ext = Vec::new();
         multi_eval.commit_polynomial_evaluations()?;
         let com = multi_eval.get_commitment()?.clone();
@@ -198,7 +199,7 @@ impl<
     }
 
     /// This is the same as decommit_layer but with queries.
-    pub fn decommit_layer_with_qeuries(
+    pub fn decommit_layer_with_queries(
         &mut self,
         layer_idx: usize,
         queries: &Vec<usize>,
@@ -282,24 +283,9 @@ impl<
         channel.public_coin.reseed(channel_state);
         let mut low_degree_prover =
             LowDegreeBatchProver::<B, E, H>::new(&self.evaluation_domain, self.fri_options.clone());
-        for i in 0..self.fri_max_degrees.len() {
-            // low_degree_prover.add_polynomial(
-            //     self.fri_coefficients.get(i).unwrap(),
-            //     *self.fri_max_degrees.get(i).unwrap(),
-            //     &mut channel,
-            // );
-            low_degree_prover.add_polynomial(
-                self.fri_coefficients.get(i).unwrap(),
-                *self.fri_max_degrees.get(i).unwrap(),
-                &mut channel,
-            );
-        }
+
         for i in 0..self.fri_max_degrees_ext.len() {
-            // low_degree_prover.add_polynomial_e(
-            //     self.coefficients_ext.get(i).unwrap(),
-            //     *self.max_degrees_ext.get(i).unwrap(),
-            //     &mut channel,
-            // );
+            //println!("prover adding max_degree_ext {}", self.fri_max_degrees_ext.get(i).unwrap());
             low_degree_prover.add_polynomial_e(
                 self.fri_coefficients_ext.get(i).unwrap(),
                 *self.fri_max_degrees_ext.get(i).unwrap(),

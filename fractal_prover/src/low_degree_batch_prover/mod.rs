@@ -60,17 +60,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         channel: &mut DefaultFractalProverChannel<B, E, H>,
     ) {
         let polynomial_coeffs_e: Vec<E> = polynomial_coeffs.iter().map(|y| E::from(*y)).collect();
-        let alpha = channel.draw_fri_alpha();
-        let beta = channel.draw_fri_alpha();
-        println!("alpha: {:?}", &alpha);
-        println!("beta: {:?}", &beta);
-        let comp_coeffs =
-            get_randomized_complementary_poly::<E>(max_degree, self.fri_max_degree, alpha, beta);
-
-        let randomized_padded_coeffs = polynom::mul(&polynomial_coeffs_e, &comp_coeffs);
-        self.randomized_sum = polynom::add(&self.randomized_sum, &randomized_padded_coeffs);
-        self.max_degrees.push(max_degree);
-        self.constituant_polynomials.push(polynomial_coeffs_e);
+        self.add_polynomial_e(&polynomial_coeffs_e, max_degree, channel);
     }
 
     pub fn add_polynomial_e(

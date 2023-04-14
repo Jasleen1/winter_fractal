@@ -89,8 +89,10 @@ fn test_getting_roots_17() {
 
 #[test]
 fn test_single_indexed_matrix_17() {
+    println!("starting");
     let m1 = make_all_ones_matrix_f17("A", 2, 2);
     let matrix_a = m1.unwrap();
+    println!("95");
     let params = IndexParams::<SmallFieldElement17> {
         num_input_variables: 2,
         num_constraints: 2,
@@ -99,6 +101,7 @@ fn test_single_indexed_matrix_17() {
         eta: SmallFieldElement17::ONE,
         eta_k: SmallFieldElement17::ONE,
     };
+    println!("104");
     let domains: IndexDomains<
         smallprimefield::BaseElement<17, 3, 4>,
         smallprimefield::BaseElement<17, 3, 4>,
