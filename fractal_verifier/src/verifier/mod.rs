@@ -102,16 +102,21 @@ pub fn verify_layered_fractal_proof_from_top<
         pub_inputs_bytes.clone(),
     );
 
+    // draw queries using only the last iop layer commit and the public input.
+    // this helps keep the rngs in sync, but proper chaining of layers needs to be checked elsewhere!
     let query_seed = proof.layer_commitments[2];
     let mut coin = RandomCoin::<B, H>::new(&pub_inputs_bytes);
     coin.reseed(query_seed);
+
     let query_indices = coin
         .draw_integers(options.num_queries, options.evaluation_domain.len())
         .expect("failed to draw query position");
     
     verify_decommitments(&verifier_key, &proof, &query_indices, &mut accumulator_verifier)?;
+
     let fractal_proof = parse_proofs_for_subroutines(&proof, &pub_inputs_bytes);
     verify_layered_fractal_proof(&verifier_key, fractal_proof, query_indices, 1, &mut accumulator_verifier)?;
+    
     accumulator_verifier.verify_fri_proof(proof.layer_commitments[2], proof.low_degree_proof, pub_inputs_bytes)?;
     
     Ok(())

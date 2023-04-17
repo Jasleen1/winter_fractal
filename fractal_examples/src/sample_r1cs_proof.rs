@@ -135,9 +135,8 @@ pub(crate) fn orchestrate_r1cs_example<
         num_queries,
     };
 
-    // TODO: currently, only vec![] works as a vule for pub_inputs_bytes. Anything else causes a proof failure
-    //let pub_inputs_bytes = vec![0u8];
-    let pub_inputs_bytes = vec![];
+    let pub_inputs_bytes = vec![0u8, 1u8, 2u8];
+    //let pub_inputs_bytes = vec![];
     let mut prover = FractalProver::<B, E, H>::new(
         prover_key,
         options.clone(),

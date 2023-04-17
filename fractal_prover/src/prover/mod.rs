@@ -235,15 +235,15 @@ impl<
 {
     fn generate_proof(
         &mut self,
-        public_input_bytes: Vec<u8>,
+        public_inputs_bytes: Vec<u8>,
     ) -> Result<TopLevelProof<B, E, H>, ProverError> {
         let options = self.get_fractal_options();
-        let mut coin = RandomCoin::<B, H>::new(&public_input_bytes);
+        let mut coin = RandomCoin::<B, H>::new(&public_inputs_bytes);
 
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             options.evaluation_domain.len(),
             options.num_queries,
-            public_input_bytes,
+            public_inputs_bytes.clone(),
         );
         let mut acc = Accumulator::<B, E, H>::new(
             options.evaluation_domain.len(),
@@ -251,6 +251,7 @@ impl<
             options.evaluation_domain.clone(),
             options.num_queries,
             options.fri_options.clone(),
+            public_inputs_bytes
         );
         let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 3];
         let mut local_queries = Vec::<E>::new();

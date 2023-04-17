@@ -32,6 +32,7 @@ pub struct Accumulator<
     //pub fri_max_degrees: Vec<usize>,
     pub fri_max_degrees_ext: Vec<usize>,
     pub layer_evals: Vec<MultiEval<B, E, H>>,
+    pub public_inputs_bytes: Vec<u8>,
     _h: PhantomData<H>,
 }
 
@@ -47,6 +48,7 @@ impl<
         evaluation_domain: Vec<B>,
         num_queries: usize,
         fri_options: FriOptions,
+        public_inputs_bytes: Vec<u8>
     ) -> Self {
         Self {
             evaluation_domain_len,
@@ -65,6 +67,7 @@ impl<
             //fri_max_degrees: Vec::new(),
             fri_max_degrees_ext: Vec::new(),
             layer_evals: Vec::new(),
+            public_inputs_bytes,
             _h: PhantomData,
         }
     }
@@ -117,7 +120,7 @@ impl<
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
-            Vec::new(), // make sure there's actually chainging between layers
+            self.public_inputs_bytes.clone(), // make sure there's actually chainging between layers
         );
         let latest_eval = self
             .layer_evals
@@ -135,7 +138,7 @@ impl<
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
-            Vec::new(), // make sure there's actually chainging between layers
+            self.public_inputs_bytes.clone(), // make sure there's actually chainging between layers
         );
         let latest_eval = self
             .layer_evals
@@ -190,7 +193,7 @@ impl<
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
-            Vec::new(), // make sure there's actually chaining between layers
+            self.public_inputs_bytes.clone(), // make sure there's actually chaining between layers
         );
         channel.commit_fractal_iop_layer(channel_state);
         let queries = channel.draw_query_positions();
@@ -245,7 +248,7 @@ impl<
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
-            Vec::new(), // make sure there's actually chaining between layers
+            self.public_inputs_bytes.clone(), // make sure there's actually chaining between layers
         );
         channel.commit_fractal_iop_layer(pub_input);
         let queries = channel.draw_query_positions();
@@ -277,7 +280,7 @@ impl<
         let mut channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
-            Vec::new(),
+            self.public_inputs_bytes.clone(),
         );
 
         channel.public_coin.reseed(channel_state);
@@ -476,6 +479,7 @@ mod test {
                 evaluation_domain,
                 num_queries,
                 fri_options,
+                vec![],
             );
         let alphas = acc.draw_queries(Some(20))?;
         assert!(alphas.len() == 20);
