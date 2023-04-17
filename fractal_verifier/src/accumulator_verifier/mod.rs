@@ -22,8 +22,10 @@ pub struct AccumulatorVerifier<
     pub fri_options: FriOptions,
     pub max_degrees: Vec<usize>,
     pub max_degrees_by_layer: Vec<Vec<usize>>,
-    pub public_coin: RandomCoin<B, H>,
+    //pub public_coin: RandomCoin<B, H>,
+    pub public_inputs_bytes: Vec<u8>,
     _e: PhantomData<E>,
+    _h: PhantomData<H>
 }
 
 impl<
@@ -39,6 +41,7 @@ impl<
         evaluation_domain: Vec<B>,
         num_queries: usize,
         fri_options: FriOptions,
+        public_inputs_bytes: Vec<u8>
     ) -> Self {
         Self {
             evaluation_domain_len,
@@ -48,14 +51,16 @@ impl<
             fri_options,
             max_degrees: Vec::new(),
             max_degrees_by_layer: Vec::new(),
-            public_coin: RandomCoin::<B, H>::new(&vec![]),
+            public_inputs_bytes,
+            //public_coin: RandomCoin::<B, H>::new(&pub_inputs_bytes), //todo: this is unused
             _e: PhantomData,
+            _h: PhantomData,
         }
     }
 
     pub fn add_constraint(&mut self, max_degree: usize, current_layer: usize) {
         self.max_degrees.push(max_degree);
-        while self.max_degrees_by_layer.len() <= current_layer{
+        while self.max_degrees_by_layer.len() <= current_layer {
             self.max_degrees_by_layer.push(Vec::new());
         }
         self.max_degrees_by_layer[current_layer].push(max_degree);
@@ -69,7 +74,7 @@ impl<
         decommit: &Vec<Vec<E>>,
         proof: &BatchMerkleProof<H>,
     ) -> Result<(), AccumulatorVerifierError> {
-        let mut coin = RandomCoin::<B, H>::new(&vec![]);
+        let mut coin = RandomCoin::<B, H>::new(&self.public_inputs_bytes);
         coin.reseed(query_seed);
         let indices = coin
             .draw_integers(self.num_queries, self.evaluation_domain_len)
@@ -147,20 +152,16 @@ impl<
         &mut self,
         last_layer_commit: H::Digest,
         proof: LowDegreeBatchProof<B, E, H>,
+        pub_inputs_bytes: Vec<u8>
     ) -> Result<(), AccumulatorVerifierError> {
-        let mut coin = RandomCoin::<B, H>::new(&vec![]);
+        let mut coin = RandomCoin::<B, H>::new(&pub_inputs_bytes);
         coin.reseed(last_layer_commit);
         let mut max_degrees = Vec::new();
-        for v in self.max_degrees_by_layer.iter(){
+        for v in self.max_degrees_by_layer.iter() {
             max_degrees.extend(v);
         }
         println!("verifier max_degrees: {:?}", &max_degrees);
-        let res = verify_low_degree_batch_proof(
-            proof,
-            max_degrees,
-            &mut coin,
-            self.num_queries,
-        );
+        let res = verify_low_degree_batch_proof(proof, max_degrees, &mut coin, self.num_queries);
         println!("res = {:?}", res);
         Ok(res?)
     }
@@ -168,8 +169,9 @@ impl<
     pub fn get_query_indices(
         &self,
         query_seed: H::Digest,
+        pub_inputs_bytes: Vec<u8>
     ) -> Result<Vec<usize>, AccumulatorVerifierError> {
-        let mut coin = RandomCoin::<B, H>::new(&vec![]);
+        let mut coin = RandomCoin::<B, H>::new(&pub_inputs_bytes);
         coin.reseed(query_seed);
         let indices = coin.draw_integers(self.num_queries, self.evaluation_domain_len)?;
         Ok(indices)

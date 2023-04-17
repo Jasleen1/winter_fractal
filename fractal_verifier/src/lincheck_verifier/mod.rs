@@ -172,11 +172,11 @@ pub(crate) fn verify_layered_lincheck_proof<
         B::ONE,
         verifier_key.params.eta_k,
         proof.gamma,
-        starting_layer +1
+        starting_layer + 1,
     )?;
 
-    accumulator_verifier.add_constraint(k_domain_size - 2, starting_layer+1);
-    accumulator_verifier.add_constraint(2 * k_domain_size - 3, starting_layer+1);
+    accumulator_verifier.add_constraint(k_domain_size - 2, starting_layer + 1);
+    accumulator_verifier.add_constraint(2 * k_domain_size - 3, starting_layer + 1);
 
     Ok(())
 }
@@ -242,7 +242,7 @@ pub fn add_lincheck_verification<
     alpha: E,
     beta: E,
     gamma: E,
-    starting_layer: usize
+    starting_layer: usize,
 ) -> Result<(), LincheckVerifierError> {
     let eta = verifier_key.params.eta;
     let h_size_u64: u64 = verifier_key.params.num_input_variables.try_into().unwrap();
@@ -320,8 +320,8 @@ pub fn add_lincheck_verification<
         gamma,
     )?;
 
-    accumulator_verifier.add_constraint(k_domain_size - 2, starting_layer+1);
-    accumulator_verifier.add_constraint(2 * k_domain_size - 3, starting_layer+1);
+    accumulator_verifier.add_constraint(k_domain_size - 2, starting_layer + 1);
+    accumulator_verifier.add_constraint(2 * k_domain_size - 3, starting_layer + 1);
 
     Ok(())
 }
@@ -429,26 +429,6 @@ mod test {
         E: FieldElement<BaseField = B>,
         H: ElementHasher<BaseField = B>,
     >() -> Result<(), TestingError> {
-        // Here's an initial manual setup we won't be using, but could, if needed.
-        /*let lde_blowup = 4;
-        let num_queries = 16;
-        let fri_options = FriOptions::new(lde_blowup, 4, 32);
-        let max_degree: usize = 63;
-        let l_field_size: usize = 4 * max_degree.next_power_of_two();
-        let l_field_base = B::get_root_of_unity(l_field_size.trailing_zeros());
-        let evaluation_domain = utils::get_power_series(l_field_base, l_field_size);
-        let offset = B::ONE;
-        let mut accumulator = Accumulator::<B,E,H>::new(evaluation_domain.len(), offset, evaluation_domain, num_queries, fri_options);
-
-        let a = vec![0,1,2,3,4,5,6,7];
-        let b = vec![2,2,2,2,2,2,2,2];
-        let c = vec![0,2,4,6,8,10,12,14];
-
-        let f_az_coeffs:Vec<> = a.iter().map(|x| B::from(*x as u128)).collect();
-        let f_bz_coeffs:Vec<B> = b.iter().map(|x| B::from(*x as u128)).collect();
-        let f_cz_coeffs:Vec<B> = c.iter().map(|x| B::from(*x as u128)).collect();
-        */
-
         // SETUP TASKS
 
         // Let's first get the domains etc.
@@ -463,6 +443,7 @@ mod test {
         let evaluation_domain = fractal_options.evaluation_domain.clone();
         let eval_len = evaluation_domain.len();
         let h_domain = fractal_options.h_domain.clone();
+        let pub_inputs_bytes = vec![];
 
         // PROVER TASKS
         // Actually generate the f_az, f_bz, f_cz polynomials
@@ -578,9 +559,10 @@ mod test {
             evaluation_domain.clone(),
             fractal_options.num_queries,
             fractal_options.fri_options.clone(),
+            pub_inputs_bytes.clone()
         );
 
-        let query_indices = accumulator_verifier.get_query_indices(commit_layer_3)?;
+        let query_indices = accumulator_verifier.get_query_indices(commit_layer_3, pub_inputs_bytes.clone())?;
 
         assert!(layer_3_queries == query_indices);
 
@@ -627,12 +609,12 @@ mod test {
             alpha,
             beta,
             gamma,
-            1
+            1,
         )?;
 
         // Check correctness of FRI
         println!("About to check fri");
-        accumulator_verifier.verify_fri_proof(commit_layer_3, fri_proof)?;
+        accumulator_verifier.verify_fri_proof(commit_layer_3, fri_proof, pub_inputs_bytes.clone())?;
         /* Proof verification complete */
 
         // Also testing that the get_layer_commitment function is working as expected for the accum

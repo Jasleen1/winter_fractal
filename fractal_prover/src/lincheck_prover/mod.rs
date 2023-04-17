@@ -68,7 +68,11 @@ impl<
         }
     }
 
-    fn lincheck_layer_one(&mut self, query: E, accumulator: &mut Accumulator<B, E, H>) -> Result<(), ProverError> {
+    fn lincheck_layer_one(
+        &mut self,
+        query: E,
+        accumulator: &mut Accumulator<B, E, H>,
+    ) -> Result<(), ProverError> {
         self.alpha = Some(query);
         let t_alpha_evals = self.generate_t_alpha_evals(query);
         let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());

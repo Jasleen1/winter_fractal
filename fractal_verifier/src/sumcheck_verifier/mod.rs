@@ -50,7 +50,7 @@ pub fn verify_layered_sumcheck_proof<
     eval_domain_offset: B,
     summing_domain_offset: B,
     gamma: E,
-    starting_layer: usize
+    starting_layer: usize,
 ) -> Result<(), SumcheckVerifierError> {
     let summing_domain_size_u64: u64 = summing_domain_size.try_into().unwrap();
     let summing_domain_size_field = E::from(summing_domain_size_u64);

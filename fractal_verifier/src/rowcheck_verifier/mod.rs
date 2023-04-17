@@ -57,7 +57,7 @@ pub fn verify_layered_rowcheck_proof<
     accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
     verifier_key: &VerifierKey<B, E, H>,
     queried_positions: &Vec<usize>,
-    proof: LayeredRowcheckProof<B, E>,
+    proof: &LayeredRowcheckProof<B, E>,
     starting_layer: usize,
 ) -> Result<(), RowcheckVerifierError> {
     // todo: get this value from the same place consistently
@@ -78,10 +78,10 @@ pub fn verify_layered_rowcheck_proof<
         h_domain_size,
         queried_positions,
         E::from(verifier_key.params.eta),
-        proof.f_az_vals,
-        proof.f_bz_vals,
-        proof.f_cz_vals,
-        proof.s_vals,
+        &proof.f_az_vals,
+        &proof.f_bz_vals,
+        &proof.f_cz_vals,
+        &proof.s_vals,
     )?;
 
     Ok(())
@@ -156,10 +156,10 @@ pub fn add_rowcheck_verification<
         h_domain_size,
         &queried_positions,
         E::from(verifier_key.params.eta),
-        f_az_evals,
-        f_bz_evals,
-        f_cz_evals,
-        s_evals,
+        &f_az_evals,
+        &f_bz_evals,
+        &f_cz_evals,
+        &s_evals,
     )?;
 
     Ok(())
@@ -174,10 +174,10 @@ fn verify_s_computation<
     vanishing_domain_size: usize,
     positions: &Vec<usize>,
     eta: E,
-    f_az_evals: Vec<E>,
-    f_bz_evals: Vec<E>,
-    f_cz_evals: Vec<E>,
-    s_evals: Vec<E>,
+    f_az_evals: &Vec<E>,
+    f_bz_evals: &Vec<E>,
+    f_cz_evals: &Vec<E>,
+    s_evals: &Vec<E>,
 ) -> Result<(), RowcheckVerifierError> {
     let eval_domain_base = E::from(B::get_root_of_unity(eval_domain_size.trailing_zeros()));
     let eval_domain_pows = positions.iter().map(|&x| x as u64).collect::<Vec<u64>>();
@@ -314,6 +314,7 @@ mod test {
         let evaluation_domain = fractal_options.evaluation_domain.clone();
         let eval_len = evaluation_domain.len();
         let h_domain = fractal_options.h_domain.clone();
+        let pub_input_bytes = vec![];
 
         // PROVER TASKS
         // Actually generate the f_az, f_bz, f_cz polynomials
@@ -388,9 +389,10 @@ mod test {
             evaluation_domain.clone(),
             fractal_options.num_queries,
             fractal_options.fri_options.clone(),
+            pub_input_bytes.clone(),
         );
 
-        let query_indices = accumulator_verifier.get_query_indices(commit)?;
+        let query_indices = accumulator_verifier.get_query_indices(commit, pub_input_bytes.clone())?;
 
         // Check that the f_Mz decommitted values were appropriately sent by the prover
         println!("About to check accum for f_mz polynomials");
@@ -423,12 +425,12 @@ mod test {
             1,
             2,
             3,
-            1
+            1,
         )?;
 
         // Check correctness of FRI
         println!("About to check fri");
-        accumulator_verifier.verify_fri_proof(commit, fri_proof)?;
+        accumulator_verifier.verify_fri_proof(commit, fri_proof, pub_input_bytes.clone())?;
         /* Proof verification complete */
 
         // Also testing that the get_layer_commitment function is working as expected for the accum

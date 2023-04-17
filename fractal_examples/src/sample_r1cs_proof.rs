@@ -10,7 +10,7 @@ use fractal_indexer::index::get_max_degree;
 use fractal_proofs::FriOptions;
 use fractal_prover::{prover::FractalProver, LayeredSubProver};
 use fractal_prover::{FractalOptions, LayeredProver};
-use fractal_verifier::verifier::verify_layered_fractal_proof;
+use fractal_verifier::verifier::verify_layered_fractal_proof_from_top;
 use structopt::StructOpt;
 
 use fractal_indexer::{
@@ -135,7 +135,9 @@ pub(crate) fn orchestrate_r1cs_example<
         num_queries,
     };
 
-    let pub_inputs_bytes = vec![0u8];
+    // TODO: currently, only vec![] works as a vule for pub_inputs_bytes. Anything else causes a proof failure
+    //let pub_inputs_bytes = vec![0u8];
+    let pub_inputs_bytes = vec![];
     let mut prover = FractalProver::<B, E, H>::new(
         prover_key,
         options.clone(),
@@ -145,7 +147,8 @@ pub(crate) fn orchestrate_r1cs_example<
     );
     let proof = prover.generate_proof(pub_inputs_bytes.clone()).unwrap();
 
-    verify_layered_fractal_proof(verifier_key, proof, pub_inputs_bytes, options, 1).unwrap();
+    verify_layered_fractal_proof_from_top(verifier_key, proof, pub_inputs_bytes, options).unwrap();
+    println!("Success!");
 
     // println!(
     //     "Verified: {:?}",
