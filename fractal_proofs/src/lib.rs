@@ -180,7 +180,7 @@ pub struct LayeredSumcheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
     pub sumcheck_e_vals: Vec<E>,
 }
 
-pub struct LayeredFractalProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
+/*pub struct LayeredFractalProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
     pub preprocessing_decommits_a: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
     pub preprocessing_decommits_b: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
     pub preprocessing_decommits_c: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
@@ -188,12 +188,19 @@ pub struct LayeredFractalProof<B: StarkField, E: FieldElement<BaseField = B>, H:
     pub gammas: [E; 3],
     pub layer_decommits: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
     pub low_degree_proof: LowDegreeBatchProof<B, E, H>,
+}*/
+
+pub struct LayeredFractalProof<B: StarkField, E: FieldElement<BaseField = B>> {
+    pub rowcheck: LayeredRowcheckProof<B,E>,
+    pub lincheck_a: LayeredLincheckProof<B,E>,
+    pub lincheck_b: LayeredLincheckProof<B,E>,
+    pub lincheck_c: LayeredLincheckProof<B,E>
 }
 
-impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> LayeredProof<B, E, H>
+/*impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> LayeredProof<B, E, H>
     for LayeredFractalProof<B, E, H>
 {
-}
+}*/
 
 #[derive(Debug, Clone)]
 pub struct QueriedPositions {
@@ -265,4 +272,23 @@ pub struct LowDegreeBatchProof<B: StarkField, E: FieldElement<BaseField = B>, H:
     pub fri_proof: FriProof,
     pub max_degrees: Vec<usize>,
     pub fri_max_degree: usize,
+}
+
+// identifies structs with only the field elements used in an IOP. No hashes / decommitment proofs
+pub trait IopData<B: StarkField, E: FieldElement<BaseField = B>> {}
+impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E>
+    for LayeredRowcheckProof<B, E>{}
+impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E>
+    for LayeredLincheckProof<B, E>{}
+impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E>
+    for LayeredSumcheckProof<B, E>{}
+impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E>
+    for LayeredFractalProof<B, E>{}
+
+pub struct TopLevelProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher>{
+    pub preprocessing_decommitments: [[(Vec<Vec<E>>, BatchMerkleProof<H>);3];3],
+    pub layer_commitments: Vec<H::Digest>,
+    pub layer_decommitments: Vec<(Vec<Vec<E>>, BatchMerkleProof<H>)>,
+    pub unverified_misc: Vec<E>,
+    pub low_degree_proof: LowDegreeBatchProof<B, E, H>
 }

@@ -163,6 +163,7 @@ impl<
         let val_evals = self.decommit_val_eval(queries)?;
         Ok([row_evals, col_evals, val_evals])
     }
+
     pub fn decommit_proofs(
         &self,
         queries: Vec<usize>,
