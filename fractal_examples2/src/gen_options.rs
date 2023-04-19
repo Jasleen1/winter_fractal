@@ -7,7 +7,7 @@ use core::num;
 use std::cmp::max;
 
 use fractal_indexer::index::get_max_degree;
-use fractal_proofs::FriOptions;
+use winter_fri::FriOptions;
 use fractal_prover::FractalOptions;
 
 use fractal_indexer::{

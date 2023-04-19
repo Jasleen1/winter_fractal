@@ -2,18 +2,22 @@ use std::marker::PhantomData;
 
 use fractal_indexer::{index::IndexParams, snark_keys::*};
 use fractal_proofs::{
-    fft, polynom, DefaultProverChannel, FractalProof, FriOptions, InitialPolyProof,
+    fft, polynom, FractalProof, InitialPolyProof,
     LayeredFractalProof, LincheckProof, LowDegreeBatchProof, MultiEval, MultiPoly, TryInto, LayeredLincheckProof, LayeredRowcheckProof, TopLevelProof, IopData,
 };
 use models::r1cs::Matrix;
+use winter_fri::DefaultProverChannel;
 
 use winter_crypto::{ElementHasher, Hasher, MerkleTree, RandomCoin, BatchMerkleProof};
-use winter_fri::ProverChannel;
+use winter_fri::{ProverChannel, FriOptions};
 use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
+use fractal_accumulator::accumulator::Accumulator;
+use fractal_utils::channel::DefaultFractalProverChannel;
+
 use crate::{
-    accumulator::Accumulator, channel::DefaultFractalProverChannel, errors::ProverError,
+    errors::ProverError,
     lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver, FractalOptions,
     LayeredProver, LayeredSubProver, FRACTAL_LAYERS,
 };
@@ -293,21 +297,7 @@ impl<
 
         let preprocessing_decommitments = [preprocessing_decommits_a, preprocessing_decommits_b, preprocessing_decommits_c];
         let low_degree_proof = acc.create_fri_proof()?;
-        /*let subcomponents = parse_into_subcomponents(
-            preprocessing_decommits_a,
-            preprocessing_decommits_b,
-            preprocessing_decommits_c,
-            layer_commitments,
-            gammas,
-            layer_decommits,
-        );
-        let [lincheck_a, lincheck_b, lincheck_c]  = subcomponents.0;
-        let iop_data = LayeredFractalProof{
-            rowcheck: subcomponents.1,
-            lincheck_a,
-            lincheck_b,
-            lincheck_c
-        };*/
+
         let proof = TopLevelProof {
             preprocessing_decommitments,
             layer_commitments: layer_commitments.to_vec(),
@@ -318,148 +308,3 @@ impl<
         Ok(proof)
     }
 }
-
-/*pub struct LayeredFractalProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
-    pub preprocessing_decommits_a: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
-    pub preprocessing_decommits_b: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
-    pub preprocessing_decommits_c: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
-    pub layer_commitments: [H::Digest; 3],
-    pub gammas: [E; 3],
-    pub layer_decommits: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
-    pub low_degree_proof: LowDegreeBatchProof<B, E, H>,
-}*/
-/* 
-fn parse_into_subcomponents<
-    B: StarkField,
-    E: FieldElement<BaseField = B>,
-    H: ElementHasher<BaseField = B>,
->(
-    preprocessing_decommits_a: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
-    preprocessing_decommits_b: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
-    preprocessing_decommits_c: [(Vec<Vec<E>>, BatchMerkleProof<H>); 3],
-    layer_commitments: [H::Digest; 3],
-    gammas: [E; 3],
-    layer_decommits: Vec<(Vec<Vec<E>>, BatchMerkleProof<H>)>,
-) -> ([LayeredLincheckProof<B, E>; 3], LayeredRowcheckProof<B, E>) {
-    // We also need a new error type for this function that can be passed through to the VerifierError type
-
-    // Matrix A preprocessing
-    let row_a = extract_vec_e(&preprocessing_decommits_a[0].0, 0);
-    let col_a = extract_vec_e(&preprocessing_decommits_a[1].0, 0);
-    let val_a = extract_vec_e(&preprocessing_decommits_a[2].0, 0);
-
-    // Matrix B preprocessing
-    let row_b = extract_vec_e(&preprocessing_decommits_b[0].0, 0);
-    let col_b = extract_vec_e(&preprocessing_decommits_b[1].0, 0);
-    let val_b = extract_vec_e(&preprocessing_decommits_b[2].0, 0);
-
-    // Matrix C preprocessing
-    let row_c = extract_vec_e(&preprocessing_decommits_c[0].0, 0);
-    let col_c = extract_vec_e(&preprocessing_decommits_c[1].0, 0);
-    let val_c = extract_vec_e(&preprocessing_decommits_c[2].0, 0);
-
-    // get values from the first layer
-    let f_z_vals = extract_vec_e(&layer_decommits[0].0, 0);
-    let f_az_vals = extract_vec_e(&layer_decommits[0].0, 1);
-    let f_bz_vals = extract_vec_e(&layer_decommits[0].0, 2);
-    let f_cz_vals = extract_vec_e(&layer_decommits[0].0, 3);
-
-    // get values from the second layer
-    let s_vals = extract_vec_e(&layer_decommits[1].0, 0);
-    let t_alpha_a_vals = extract_vec_e(&layer_decommits[1].0, 1);
-    let product_sumcheck_a_vals = extract_sumcheck_vec_e(&layer_decommits[1].0, 2, 3);
-    let t_alpha_b_vals = extract_vec_e(&layer_decommits[1].0, 4);
-    let product_sumcheck_b_vals = extract_sumcheck_vec_e(&layer_decommits[1].0, 5, 6);
-    let t_alpha_c_vals = extract_vec_e(&layer_decommits[1].0, 7);
-    let product_sumcheck_c_vals = extract_sumcheck_vec_e(&layer_decommits[1].0, 8, 9);
-
-    // get values from the third layer
-    let matrix_sumcheck_a_vals = extract_sumcheck_vec_e(&layer_decommits[2].0, 0, 1);
-    let matrix_sumcheck_b_vals = extract_sumcheck_vec_e(&layer_decommits[2].0, 2, 3);
-    let matrix_sumcheck_c_vals = extract_sumcheck_vec_e(&layer_decommits[2].0, 4, 5);
-
-    // Get the lincheck query values appropriately
-    let mut coin = RandomCoin::<B, H>::new(&vec![]);
-    coin.reseed(layer_commitments[0]);
-    let alpha: E = coin.draw().expect("failed to draw FRI alpha");
-
-    coin.reseed(layer_commitments[1]);
-    let beta: E = coin.draw().expect("failed to draw FRI alpha");
-
-    let lincheck_a_proof = LayeredLincheckProof {
-        row_vals: row_a,
-        col_vals: col_a,
-        val_vals: val_a,
-        f_z_vals: f_z_vals.clone(),
-        f_mz_vals: f_az_vals.clone(),
-        t_alpha_vals: t_alpha_a_vals,
-        product_sumcheck_vals: product_sumcheck_a_vals,
-        matrix_sumcheck_vals: matrix_sumcheck_a_vals,
-        alpha,
-        beta,
-        gamma: gammas[0],
-    };
-
-    let lincheck_b_proof = LayeredLincheckProof {
-        row_vals: row_b,
-        col_vals: col_b,
-        val_vals: val_b,
-        f_z_vals: f_z_vals.clone(),
-        f_mz_vals: f_bz_vals.clone(),
-        t_alpha_vals: t_alpha_b_vals,
-        product_sumcheck_vals: product_sumcheck_b_vals,
-        matrix_sumcheck_vals: matrix_sumcheck_b_vals,
-        alpha,
-        beta,
-        gamma: gammas[1],
-    };
-
-    let lincheck_c_proof = LayeredLincheckProof {
-        row_vals: row_c,
-        col_vals: col_c,
-        val_vals: val_c,
-        f_z_vals: f_z_vals.clone(),
-        f_mz_vals: f_cz_vals.clone(),
-        t_alpha_vals: t_alpha_c_vals,
-        product_sumcheck_vals: product_sumcheck_c_vals,
-        matrix_sumcheck_vals: matrix_sumcheck_c_vals,
-        alpha,
-        beta,
-        gamma: gammas[2],
-    };
-
-    let rowcheck_proof = LayeredRowcheckProof {
-        f_z_vals,
-        f_az_vals,
-        f_bz_vals,
-        f_cz_vals,
-        s_vals,
-    };
-
-    (
-        [lincheck_a_proof, lincheck_b_proof, lincheck_c_proof],
-        rowcheck_proof,
-    )
-}
-
-fn extract_vec_e<B: StarkField, E: FieldElement<BaseField = B>>(
-    vec_of_decommits: &Vec<Vec<E>>,
-    position: usize,
-) -> Vec<E> {
-    vec_of_decommits
-        .iter()
-        .map(|x| x[position])
-        .collect::<Vec<E>>()
-}
-
-fn extract_sumcheck_vec_e<B: StarkField, E: FieldElement<BaseField = B>>(
-    vec_of_decommits: &Vec<Vec<E>>,
-    position_g: usize,
-    position_e: usize,
-) -> Vec<(E, E)> {
-    vec_of_decommits
-        .iter()
-        .map(|x| (x[position_g], x[position_e]))
-        .collect::<Vec<(E, E)>>()
-}
-*/

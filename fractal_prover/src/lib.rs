@@ -1,19 +1,15 @@
 use std::thread::AccessError;
 
-use accumulator::Accumulator;
-use channel::DefaultFractalProverChannel;
-use errors::{AccumulatorProverError, ProverError};
+use fractal_accumulator::{accumulator::Accumulator, errors::AccumulatorProverError};
+use fractal_utils::channel::DefaultFractalProverChannel;
+use errors::ProverError;
 use fractal_proofs::{FieldElement, LayeredProof, LowDegreeBatchProof, IopData, TopLevelProof};
 use log;
 use winter_crypto::ElementHasher;
 use winter_fri::{FriOptions, ProverChannel};
 use winter_math::StarkField;
-pub mod accumulator;
-pub mod channel;
 pub mod errors;
 pub mod lincheck_prover;
-pub mod low_degree_batch_prover;
-pub mod low_degree_prover;
 pub mod prover;
 pub mod rowcheck_prover;
 pub mod sumcheck_prover;

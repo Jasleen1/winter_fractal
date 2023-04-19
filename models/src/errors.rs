@@ -4,7 +4,7 @@ use displaydoc::Display;
 use thiserror::Error;
 
 /// Represents errors in instantiating R1CS types
-#[derive(Debug, Display, Error, PartialEq)]
+#[derive(Debug, Display, Error, PartialEq, Eq)]
 pub enum R1CSError {
     /// Matrix should consist of a vector of equal length vectors. Not the case here.
     InvalidMatrix(String),

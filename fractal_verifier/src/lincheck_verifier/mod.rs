@@ -1,4 +1,4 @@
-use crate::accumulator_verifier::AccumulatorVerifier;
+use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
 use crate::errors::{LincheckVerifierError, SumcheckVerifierError};
 
 use crate::sumcheck_verifier::{verify_layered_sumcheck_proof, verify_sumcheck_proof};
@@ -391,7 +391,7 @@ pub(crate) fn prepare_lincheck_verifier_inputs<E: FieldElement>(
 
 #[cfg(test)]
 mod test {
-    use crate::accumulator_verifier::AccumulatorVerifier;
+    use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
     use crate::errors::TestingError;
     use crate::lincheck_verifier::{add_lincheck_verification, prepare_lincheck_verifier_inputs};
     use crate::rowcheck_verifier::add_rowcheck_verification;
@@ -401,8 +401,8 @@ mod test {
     use fractal_indexer::index::build_index_domains;
     use fractal_proofs::fields::QuadExtension;
     use fractal_proofs::{fft, polynom, FieldElement, SumcheckProof};
-    use fractal_prover::accumulator::Accumulator;
-    use fractal_prover::channel::DefaultFractalProverChannel;
+    use fractal_accumulator::accumulator::Accumulator;
+    use fractal_utils::channel::DefaultFractalProverChannel;
     use fractal_prover::errors::ProverError;
     use fractal_prover::lincheck_prover::LincheckProver;
     use fractal_prover::prover::*;
@@ -473,6 +473,7 @@ mod test {
             evaluation_domain.clone(),
             fractal_options.num_queries,
             fractal_options.fri_options.clone(),
+            vec![],
         );
 
         accumulator.add_unchecked_polynomial(z_coeffs.clone());

@@ -5,7 +5,7 @@ use std::{fmt::Display, marker::PhantomData, usize};
 
 pub use fractal_utils::{errors::MatrixError, matrix_utils::*, polynomial_utils::*, *};
 use winter_crypto::{BatchMerkleProof, Hasher};
-pub use winter_fri::{DefaultProverChannel, FriOptions, FriProof};
+use winter_fri::{DefaultProverChannel, FriOptions, FriProof};
 pub use winter_math::{fft, fields::f128::BaseElement, FieldElement, StarkField, *};
 pub use winter_utils::{
     ByteReader, ByteWriter, Deserializable, DeserializationError, Serializable,

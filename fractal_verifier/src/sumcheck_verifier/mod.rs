@@ -1,10 +1,10 @@
 use crate::errors::SumcheckVerifierError;
 
 use fractal_proofs::{compute_vanishing_poly, FieldElement, LayeredSumcheckProof, SumcheckProof};
-use fractal_prover::accumulator;
+use fractal_accumulator::accumulator;
 
-use crate::low_degree_batch_verifier::verify_low_degree_batch_proof;
-use crate::low_degree_verifier::verify_low_degree_proof;
+use low_degree_verifier::low_degree_batch_verifier::verify_low_degree_batch_proof;
+use low_degree_verifier::low_degree_verifier::verify_low_degree_proof;
 use winter_crypto::{ElementHasher, RandomCoin};
 use winter_fri::{DefaultVerifierChannel, FriVerifier};
 use winter_math::StarkField;

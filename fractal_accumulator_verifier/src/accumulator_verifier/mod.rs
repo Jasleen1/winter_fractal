@@ -4,11 +4,8 @@ use std::{convert::TryInto, marker::PhantomData};
 use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree, RandomCoin};
 use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel, VerifierError};
 use winter_math::{fft, FieldElement, StarkField};
-
-use crate::{
-    errors::{AccumulatorVerifierError, FractalVerifierError},
-    low_degree_batch_verifier::verify_low_degree_batch_proof,
-};
+use low_degree_verifier::low_degree_batch_verifier::verify_low_degree_batch_proof;
+use crate::errors::AccumulatorVerifierError;//, FractalVerifierError};
 
 pub struct AccumulatorVerifier<
     B: StarkField,

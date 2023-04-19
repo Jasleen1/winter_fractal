@@ -1,7 +1,8 @@
-use crate::{channel::DefaultFractalVerifierChannel, errors::LowDegreeVerifierError};
+use crate::{errors::LowDegreeVerifierError};
 
 use fractal_proofs::{polynom, FieldElement, LowDegreeProof};
 use fractal_utils::polynomial_utils::*;
+use fractal_utils::channel::DefaultFractalVerifierChannel;
 use winter_crypto::{ElementHasher, RandomCoin};
 use winter_fri::{DefaultVerifierChannel, FriVerifier};
 use winter_math::StarkField;
@@ -97,8 +98,8 @@ fn verify_lower_degree<
 mod test {
     use super::verify_low_degree_proof;
     use fractal_proofs::{FieldElement, SumcheckProof};
-    use fractal_prover::channel::DefaultFractalProverChannel;
-    use fractal_prover::low_degree_prover::LowDegreeProver;
+    use fractal_utils::channel::DefaultFractalProverChannel;
+    use low_degree_prover::low_degree_prover::LowDegreeProver;
     use std::time::{SystemTime, UNIX_EPOCH};
     use winter_crypto::hashers::Rp64_256;
     use winter_crypto::{ElementHasher, RandomCoin};

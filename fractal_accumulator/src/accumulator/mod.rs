@@ -1,15 +1,12 @@
 use fractal_proofs::{LowDegreeBatchProof, MultiPoly};
+use crate::errors::{AccumulatorProverError};
+use fractal_utils::channel::DefaultFractalProverChannel;
+use low_degree_prover::low_degree_batch_prover::LowDegreeBatchProver;
 use fractal_utils::polynomial_utils::MultiEval;
 use std::{convert::TryInto, marker::PhantomData};
 use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
 use winter_math::{fft, FieldElement, StarkField};
-
-use crate::{
-    channel::DefaultFractalProverChannel,
-    errors::{AccumulatorProverError, ProverError},
-    low_degree_batch_prover::LowDegreeBatchProver,
-};
 
 pub struct Accumulator<
     B: StarkField,

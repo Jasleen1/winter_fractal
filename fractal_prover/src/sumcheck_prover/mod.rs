@@ -1,10 +1,11 @@
 use std::{convert::TryInto, marker::PhantomData};
 
-use crate::accumulator::Accumulator;
+use fractal_accumulator::accumulator::Accumulator;
+use log::debug;
 use crate::errors::ProverError;
-use crate::low_degree_batch_prover::LowDegreeBatchProver;
-use crate::low_degree_prover::LowDegreeProver;
-use crate::{channel::DefaultFractalProverChannel, log::debug};
+use low_degree_prover::low_degree_batch_prover::LowDegreeBatchProver;
+use low_degree_prover::low_degree_prover::LowDegreeProver;
+use fractal_utils::{channel::DefaultFractalProverChannel};
 use crate::{FractalOptions, LayeredSubProver};
 use fractal_utils::polynomial_utils::*;
 use winter_crypto::ElementHasher;

@@ -2,16 +2,17 @@ use std::{convert::TryInto, marker::PhantomData};
 
 use fractal_indexer::hash_values;
 use fractal_proofs::{polynom, RowcheckProof};
-use fractal_utils::polynomial_utils::*;
+use fractal_utils::{polynomial_utils::*, channel::DefaultFractalProverChannel};
 
 use winter_crypto::{ElementHasher, Hasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions};
 use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
+use fractal_accumulator::accumulator::Accumulator;
+use low_degree_prover::low_degree_prover::LowDegreeProver;
 use crate::{
-    accumulator::Accumulator, channel::DefaultFractalProverChannel, errors::ProverError,
-    low_degree_prover::LowDegreeProver, FractalOptions, LayeredSubProver,
+    errors::ProverError, FractalOptions, LayeredSubProver,
 };
 
 pub struct RowcheckProver<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {

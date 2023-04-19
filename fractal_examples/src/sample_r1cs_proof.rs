@@ -7,7 +7,7 @@ use core::num;
 use std::cmp::max;
 
 use fractal_indexer::index::get_max_degree;
-use fractal_proofs::FriOptions;
+use winter_fri::FriOptions;
 use fractal_prover::{prover::FractalProver, LayeredSubProver};
 use fractal_prover::{FractalOptions, LayeredProver};
 use fractal_verifier::verifier::verify_layered_fractal_proof_from_top;

@@ -1,26 +1,23 @@
 [package]
-name = "fractal_verifier"
+name = "fractal_accumulator"
 version = "0.1.0"
 authors = ["harjasleenmalvai <harjasleen_malvai@brown.edu>"]
-edition = "2021"
+edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 displaydoc = "0.1.7"
 log = { version = "0.4", default-features = false }
-low_degree_verifier = { path = "../low_degree_verifier" }
-fractal_accumulator = { path = "../fractal_accumulator" }
-fractal_accumulator_verifier = { path = "../fractal_accumulator_verifier" }
-fractal_utils = { path = "../fractal_utils" }
-fractal_proofs = {path = "../fractal_proofs"}
-fractal_indexer = {path = "../fractal_indexer" }
-fractal_prover = {path = "../fractal_prover" }
-fractal_examples2 = {path = "../fractal_examples2" }
+low_degree_prover = { path = "../low_degree_prover" }
 models = { version = "0.1.0", path = "../models", package = "winter-models", default-features = false }
+fractal_utils = { path = "../fractal_utils" }
+fractal_proofs = {path = "../fractal_proofs" }
+fractal_indexer = {path = "../fractal_indexer" }
 serde = { version = "1.0.117", features = ["derive"] }
 thiserror = "1.0.22"
 winter-crypto = "0.4.0"
 winter-fri = "0.4.0"
 winter-math = "0.4.0"
+winter-rand-utils = "0.4.0"
 winter-utils = "0.4.0"

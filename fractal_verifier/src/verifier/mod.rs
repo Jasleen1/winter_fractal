@@ -1,19 +1,20 @@
 //use core::num::dec2flt::parse;
 
 use crate::{
-    accumulator_verifier::{self, AccumulatorVerifier},
     errors::FractalVerifierError,
     lincheck_verifier::verify_layered_lincheck_proof,
     rowcheck_verifier::verify_layered_rowcheck_proof,
 };
 
+use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
 use fractal_indexer::snark_keys::*;
 use fractal_proofs::{
     FieldElement, FractalProof, LayeredFractalProof, LayeredLincheckProof, LayeredRowcheckProof,
     MultiEval, MultiPoly, StarkField, TopLevelProof, IopData,
 };
 
-use fractal_prover::{channel::DefaultFractalProverChannel, FractalOptions};
+use fractal_prover::{FractalOptions};
+use fractal_utils::channel::DefaultFractalProverChannel;
 use log::debug;
 use winter_crypto::{ElementHasher, RandomCoin};
 

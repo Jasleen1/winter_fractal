@@ -12,7 +12,7 @@ use fractal_proofs::{
     LowDegreeProof, OracleQueries,
 };
 
-use crate::channel::DefaultFractalProverChannel;
+use fractal_utils::channel::DefaultFractalProverChannel;
 
 pub struct LowDegreeProver<
     B: StarkField,

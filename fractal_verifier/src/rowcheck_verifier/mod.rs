@@ -1,7 +1,8 @@
 use crate::{
-    accumulator_verifier::AccumulatorVerifier, channel::DefaultFractalVerifierChannel,
-    errors::RowcheckVerifierError, low_degree_verifier::verify_low_degree_proof,
+    errors::RowcheckVerifierError
 };
+use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
+use low_degree_verifier::low_degree_verifier::verify_low_degree_proof;
 
 use fractal_indexer::snark_keys::VerifierKey;
 use fractal_proofs::{
@@ -250,7 +251,7 @@ pub(crate) fn prepare_rowcheck_verifier_inputs<E: FieldElement>(
 
 #[cfg(test)]
 mod test {
-    use crate::accumulator_verifier::AccumulatorVerifier;
+    use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
     use crate::errors::TestingError;
     use crate::rowcheck_verifier::{add_rowcheck_verification, prepare_rowcheck_verifier_inputs};
 
@@ -259,8 +260,8 @@ mod test {
     use fractal_indexer::index::build_index_domains;
     use fractal_proofs::fields::QuadExtension;
     use fractal_proofs::{polynom, FieldElement, SumcheckProof};
-    use fractal_prover::accumulator::Accumulator;
-    use fractal_prover::channel::DefaultFractalProverChannel;
+    use fractal_accumulator::accumulator::Accumulator;
+    use fractal_utils::channel::DefaultFractalProverChannel;
     use fractal_prover::errors::ProverError;
     use fractal_prover::rowcheck_prover::RowcheckProver;
     use fractal_prover::{FractalOptions, LayeredSubProver};
@@ -348,6 +349,7 @@ mod test {
             evaluation_domain.clone(),
             fractal_options.num_queries,
             fractal_options.fri_options.clone(),
+            vec![],
         );
 
         accumulator.add_unchecked_polynomial(f_az_coeffs.clone());

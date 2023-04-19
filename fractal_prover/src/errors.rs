@@ -7,6 +7,7 @@ use fractal_proofs::errors::FractalUtilError;
 use models::errors::R1CSError;
 use thiserror::Error;
 use winter_crypto::MerkleTreeError;
+use fractal_accumulator::errors::AccumulatorProverError;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ProverError {
@@ -76,34 +77,10 @@ impl fmt::Display for LincheckError {
     }
 }
 
-/// Represents a generic error type
-#[derive(Debug, Display, Error, PartialEq)]
-pub enum AccumulatorProverError {
-    /// If the accumulator's decommit leads to an error
-    DecommitErr(usize, String),
-    /// Merkle tree error within the accumulator
-    MerkleTreeErr(MerkleTreeError),
-    /// Util Error
-    FractalUtilErr(FractalUtilError),
-    /// If the caller tries to operate on an accumulator which doesn't yet have commitments.
-    QueryErr(String),
-}
 
 impl From<MerkleTreeError> for LincheckError {
     fn from(e: MerkleTreeError) -> LincheckError {
         LincheckError::MerkleTreeErr(e)
-    }
-}
-
-impl From<MerkleTreeError> for AccumulatorProverError {
-    fn from(e: MerkleTreeError) -> AccumulatorProverError {
-        AccumulatorProverError::MerkleTreeErr(e)
-    }
-}
-
-impl From<FractalUtilError> for AccumulatorProverError {
-    fn from(e: FractalUtilError) -> AccumulatorProverError {
-        AccumulatorProverError::FractalUtilErr(e)
     }
 }
 

@@ -1,6 +1,6 @@
-use fractal_proofs::{DeserializationError, FieldElement, FriProof};
+use fractal_proofs::{DeserializationError, FieldElement};
 use winter_crypto::{BatchMerkleProof, ElementHasher};
-use winter_fri::VerifierChannel;
+use winter_fri::{FriProof, VerifierChannel};
 
 /// Provides a default implementation of the [VerifierChannel] trait.
 ///

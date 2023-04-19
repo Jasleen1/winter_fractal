@@ -8,7 +8,7 @@ use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
 use winter_math::{fft, FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
-use crate::channel::DefaultFractalProverChannel;
+use fractal_utils::channel::DefaultFractalProverChannel;
 use fractal_proofs::{
     polynom::{self, eval},
     LowDegreeBatchProof, OracleQueries,

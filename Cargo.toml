@@ -1,5 +1,7 @@
 [workspace]
 members = [
+  "fractal_accumulator",
+  "fractal_accumulator_verifier",
   "fractal_examples",
   "fractal_examples2",
   "fractal_indexer",
@@ -8,6 +10,8 @@ members = [
   "fractal_prover",
   "fractal_utils",
   "fractal_verifier",
+  "low_degree_prover",
+  "low_degree_verifier",
   "models"
 ]
 

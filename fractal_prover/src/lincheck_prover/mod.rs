@@ -4,11 +4,13 @@ use fractal_indexer::{hash_values, snark_keys::*};
 use fractal_utils::polynomial_utils::*;
 
 use crate::{
-    accumulator::Accumulator, channel::DefaultFractalProverChannel, errors::ProverError,
+    errors::ProverError,
     sumcheck_prover::*, LayeredSubProver,
 };
+use fractal_accumulator::accumulator::Accumulator;
+use fractal_utils::channel::DefaultFractalProverChannel;
 
-use fractal_proofs::{fft, polynom, DefaultProverChannel, LincheckProof, OracleQueries, TryInto};
+use fractal_proofs::{fft, polynom, LincheckProof, OracleQueries, TryInto};
 
 use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree, MerkleTreeError};
 use winter_fri::ProverChannel;
