@@ -3,11 +3,11 @@
 use core::fmt;
 
 use displaydoc::Display;
+use fractal_accumulator::errors::AccumulatorProverError;
 use fractal_proofs::errors::FractalUtilError;
 use models::errors::R1CSError;
 use thiserror::Error;
 use winter_crypto::MerkleTreeError;
-use fractal_accumulator::errors::AccumulatorProverError;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ProverError {
@@ -76,7 +76,6 @@ impl fmt::Display for LincheckError {
         }
     }
 }
-
 
 impl From<MerkleTreeError> for LincheckError {
     fn from(e: MerkleTreeError) -> LincheckError {

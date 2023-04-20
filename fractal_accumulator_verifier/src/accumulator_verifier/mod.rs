@@ -1,11 +1,11 @@
+use crate::errors::AccumulatorVerifierError;
 use fractal_proofs::{LowDegreeBatchProof, MultiPoly};
 use fractal_utils::polynomial_utils::MultiEval;
+use low_degree_verifier::low_degree_batch_verifier::verify_low_degree_batch_proof;
 use std::{convert::TryInto, marker::PhantomData};
 use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree, RandomCoin};
 use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel, VerifierError};
-use winter_math::{fft, FieldElement, StarkField};
-use low_degree_verifier::low_degree_batch_verifier::verify_low_degree_batch_proof;
-use crate::errors::AccumulatorVerifierError;//, FractalVerifierError};
+use winter_math::{fft, FieldElement, StarkField}; //, FractalVerifierError};
 
 pub struct AccumulatorVerifier<
     B: StarkField,
@@ -22,7 +22,7 @@ pub struct AccumulatorVerifier<
     //pub public_coin: RandomCoin<B, H>,
     pub public_inputs_bytes: Vec<u8>,
     _e: PhantomData<E>,
-    _h: PhantomData<H>
+    _h: PhantomData<H>,
 }
 
 impl<
@@ -38,7 +38,7 @@ impl<
         evaluation_domain: Vec<B>,
         num_queries: usize,
         fri_options: FriOptions,
-        public_inputs_bytes: Vec<u8>
+        public_inputs_bytes: Vec<u8>,
     ) -> Self {
         Self {
             evaluation_domain_len,
@@ -149,7 +149,7 @@ impl<
         &mut self,
         last_layer_commit: H::Digest,
         proof: LowDegreeBatchProof<B, E, H>,
-        pub_inputs_bytes: Vec<u8>
+        pub_inputs_bytes: Vec<u8>,
     ) -> Result<(), AccumulatorVerifierError> {
         let mut coin = RandomCoin::<B, H>::new(&pub_inputs_bytes);
         coin.reseed(last_layer_commit);
@@ -166,7 +166,7 @@ impl<
     pub fn get_query_indices(
         &self,
         query_seed: H::Digest,
-        pub_inputs_bytes: Vec<u8>
+        pub_inputs_bytes: Vec<u8>,
     ) -> Result<Vec<usize>, AccumulatorVerifierError> {
         let mut coin = RandomCoin::<B, H>::new(&pub_inputs_bytes);
         coin.reseed(query_seed);

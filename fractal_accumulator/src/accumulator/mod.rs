@@ -1,8 +1,8 @@
+use crate::errors::AccumulatorProverError;
 use fractal_proofs::{LowDegreeBatchProof, MultiPoly};
-use crate::errors::{AccumulatorProverError};
 use fractal_utils::channel::DefaultFractalProverChannel;
-use low_degree_prover::low_degree_batch_prover::LowDegreeBatchProver;
 use fractal_utils::polynomial_utils::MultiEval;
+use low_degree_prover::low_degree_batch_prover::LowDegreeBatchProver;
 use std::{convert::TryInto, marker::PhantomData};
 use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
@@ -45,7 +45,7 @@ impl<
         evaluation_domain: Vec<B>,
         num_queries: usize,
         fri_options: FriOptions,
-        public_inputs_bytes: Vec<u8>
+        public_inputs_bytes: Vec<u8>,
     ) -> Self {
         Self {
             evaluation_domain_len,

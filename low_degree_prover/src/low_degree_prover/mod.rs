@@ -1,8 +1,8 @@
 use std::{convert::TryInto, marker::PhantomData};
 
-use winter_fri::utils::hash_values;
 use fractal_utils::polynomial_utils::*;
 use winter_crypto::{ElementHasher, Hasher, MerkleTree};
+use winter_fri::utils::hash_values;
 use winter_fri::{DefaultProverChannel, FriOptions, ProverChannel};
 use winter_math::{fft, FieldElement, StarkField};
 use winter_utils::transpose_slice;

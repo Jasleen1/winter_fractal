@@ -1,20 +1,19 @@
 //use core::num::dec2flt::parse;
 
 use crate::{
-    errors::FractalVerifierError,
-    lincheck_verifier::verify_layered_lincheck_proof,
+    errors::FractalVerifierError, lincheck_verifier::verify_layered_lincheck_proof,
     rowcheck_verifier::verify_layered_rowcheck_proof,
 };
 
 use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
 use fractal_indexer::snark_keys::*;
 use fractal_proofs::{
-    FieldElement, FractalProof, LayeredFractalProof, LayeredLincheckProof, LayeredRowcheckProof,
-    MultiEval, MultiPoly, StarkField, TopLevelProof, IopData,
+    FieldElement, FractalProof, IopData, LayeredFractalProof, LayeredLincheckProof,
+    LayeredRowcheckProof, MultiEval, MultiPoly, StarkField, TopLevelProof,
 };
 
-use fractal_utils::FractalOptions;
 use fractal_utils::channel::DefaultFractalProverChannel;
+use fractal_utils::FractalOptions;
 use log::debug;
 use winter_crypto::{ElementHasher, RandomCoin};
 
@@ -112,14 +111,29 @@ pub fn verify_layered_fractal_proof_from_top<
     let query_indices = coin
         .draw_integers(options.num_queries, options.evaluation_domain.len())
         .expect("failed to draw query position");
-    
-    verify_decommitments(&verifier_key, &proof, &query_indices, &mut accumulator_verifier)?;
+
+    verify_decommitments(
+        &verifier_key,
+        &proof,
+        &query_indices,
+        &mut accumulator_verifier,
+    )?;
 
     let fractal_proof = parse_proofs_for_subroutines(&proof, &pub_inputs_bytes);
-    verify_layered_fractal_proof(&verifier_key, fractal_proof, query_indices, 1, &mut accumulator_verifier)?;
-    
-    accumulator_verifier.verify_fri_proof(proof.layer_commitments[2], proof.low_degree_proof, pub_inputs_bytes)?;
-    
+    verify_layered_fractal_proof(
+        &verifier_key,
+        fractal_proof,
+        query_indices,
+        1,
+        &mut accumulator_verifier,
+    )?;
+
+    accumulator_verifier.verify_fri_proof(
+        proof.layer_commitments[2],
+        proof.low_degree_proof,
+        pub_inputs_bytes,
+    )?;
+
     Ok(())
 }
 
@@ -132,8 +146,7 @@ pub fn verify_decommitments<
     proof: &TopLevelProof<B, E, H>,
     query_indices: &Vec<usize>,
     accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
-) -> Result<(), FractalVerifierError>{
-
+) -> Result<(), FractalVerifierError> {
     // Verify that the committed preprocessing was queried correctly
     accumulator_verifier.verify_layer_with_queries(
         verifier_key.commitment,
@@ -141,7 +154,7 @@ pub fn verify_decommitments<
         &proof.preprocessing_decommitment.0,
         &proof.preprocessing_decommitment.1,
     )?;
-    
+
     // Verify that the committed layers were queried correctly
     accumulator_verifier.verify_layer_with_queries(
         proof.layer_commitments[0],
@@ -173,9 +186,8 @@ pub fn verify_layered_fractal_proof<
     proof: LayeredFractalProof<B, E>,
     query_indices: Vec<usize>,
     starting_layer: usize,
-    accumulator_verifier: &mut AccumulatorVerifier<B, E, H>
+    accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
 ) -> Result<(), FractalVerifierError> {
-
     verify_layered_rowcheck_proof(
         accumulator_verifier,
         verifier_key,
@@ -218,8 +230,7 @@ fn parse_proofs_for_subroutines<
 >(
     proof: &TopLevelProof<B, E, H>,
     public_inputs_bytes: &Vec<u8>,
-) -> LayeredFractalProof<B,E> {
-
+) -> LayeredFractalProof<B, E> {
     // Matrix A preprocessing
     let col_a = extract_vec_e(&proof.preprocessing_decommitment.0, 0);
     let row_a = extract_vec_e(&proof.preprocessing_decommitment.0, 1);
@@ -316,11 +327,11 @@ fn parse_proofs_for_subroutines<
         s_vals,
     };
 
-    LayeredFractalProof{
+    LayeredFractalProof {
         rowcheck: rowcheck_proof,
-        lincheck_a:lincheck_a_proof,
-        lincheck_b:lincheck_b_proof,
-        lincheck_c:lincheck_c_proof,
+        lincheck_a: lincheck_a_proof,
+        lincheck_b: lincheck_b_proof,
+        lincheck_c: lincheck_c_proof,
     }
 }
 

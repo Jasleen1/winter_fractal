@@ -54,22 +54,15 @@ impl<
 }
 
 #[derive(Debug, Clone)] // Clone
-pub struct ProverMatrixIndex<
-    B: StarkField,
-    E: FieldElement<BaseField = B>,
-> {
+pub struct ProverMatrixIndex<B: StarkField, E: FieldElement<BaseField = B>> {
     pub matrix: Matrix<B>,
     pub row_poly: Vec<B>,
     pub col_poly: Vec<B>,
     pub val_poly: Vec<B>,
-    _e: PhantomData<E>
+    _e: PhantomData<E>,
 }
 
-impl<
-        B: StarkField,
-        E: FieldElement<BaseField = B>,
-    > ProverMatrixIndex<B,E>
-{
+impl<B: StarkField, E: FieldElement<BaseField = B>> ProverMatrixIndex<B, E> {
     pub fn get_val_eval(&self, point: E) -> E {
         polynom::eval(&self.val_poly, point)
     }
@@ -213,10 +206,10 @@ pub struct ProverKey<
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
     pub params: IndexParams<B>,
-    pub matrix_a_index: ProverMatrixIndex<B,E>,
-    pub matrix_b_index: ProverMatrixIndex<B,E>,
-    pub matrix_c_index: ProverMatrixIndex<B,E>,
-    pub accumulator: Accumulator<B, E, H>
+    pub matrix_a_index: ProverMatrixIndex<B, E>,
+    pub matrix_b_index: ProverMatrixIndex<B, E>,
+    pub matrix_c_index: ProverMatrixIndex<B, E>,
+    pub accumulator: Accumulator<B, E, H>,
 }
 
 impl<
@@ -244,10 +237,7 @@ pub struct VerifierMatrixIndex<
 }*/
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct VerifierKey<
-    B: StarkField,
-    H: ElementHasher + ElementHasher<BaseField = B>,
-> {
+pub struct VerifierKey<B: StarkField, H: ElementHasher + ElementHasher<BaseField = B>> {
     pub params: IndexParams<B>,
     pub commitment: H::Digest,
 }
@@ -373,7 +363,7 @@ pub fn generate_prover_and_verifier_keys<
         options.evaluation_domain.clone(),
         options.num_queries,
         options.fri_options.clone(),
-        vec![]
+        vec![],
     );
     acc.add_unchecked_polynomial(indexed_a.col_poly.clone());
     acc.add_unchecked_polynomial(indexed_a.row_poly.clone());
@@ -391,21 +381,21 @@ pub fn generate_prover_and_verifier_keys<
         row_poly: indexed_a.row_poly,
         col_poly: indexed_a.col_poly,
         val_poly: indexed_a.val_poly,
-        _e: PhantomData
+        _e: PhantomData,
     };
     let matrix_b_index = ProverMatrixIndex {
         matrix: indexed_b.matrix,
         row_poly: indexed_b.row_poly,
         col_poly: indexed_b.col_poly,
         val_poly: indexed_b.val_poly,
-        _e: PhantomData
+        _e: PhantomData,
     };
     let matrix_c_index = ProverMatrixIndex {
         matrix: indexed_c.matrix,
         row_poly: indexed_c.row_poly,
         col_poly: indexed_c.col_poly,
         val_poly: indexed_c.val_poly,
-        _e: PhantomData
+        _e: PhantomData,
     };
     Ok((
         ProverKey {
@@ -413,7 +403,7 @@ pub fn generate_prover_and_verifier_keys<
             matrix_a_index,
             matrix_b_index,
             matrix_c_index,
-            accumulator: acc
+            accumulator: acc,
         },
         VerifierKey {
             params,

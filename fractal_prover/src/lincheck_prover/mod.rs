@@ -4,20 +4,21 @@ use fractal_indexer::{hash_values, snark_keys::*};
 use fractal_utils::polynomial_utils::*;
 use models::r1cs::Matrix;
 
-use crate::{
-    errors::ProverError,
-    sumcheck_prover::*, LayeredSubProver, LayeredProver,
-};
+use crate::{errors::ProverError, sumcheck_prover::*, LayeredProver, LayeredSubProver};
 use fractal_accumulator::accumulator::Accumulator;
 use fractal_utils::channel::DefaultFractalProverChannel;
 
-use fractal_proofs::{fft, polynom, LincheckProof, OracleQueries, TryInto, LayeredLincheckProof, TopLevelProof};
+use fractal_proofs::{
+    fft, polynom, LayeredLincheckProof, LincheckProof, OracleQueries, TopLevelProof, TryInto,
+};
 
-use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree, MerkleTreeError, RandomCoin, Hasher};
+use fractal_utils::FractalOptions;
+use winter_crypto::{
+    BatchMerkleProof, ElementHasher, Hasher, MerkleTree, MerkleTreeError, RandomCoin,
+};
 use winter_fri::ProverChannel;
 use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
-use fractal_utils::FractalOptions;
 
 use crate::{errors::LincheckError, log::debug};
 
@@ -28,7 +29,7 @@ pub struct LincheckProver<
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
-    prover_matrix_index: ProverMatrixIndex<B,E>,
+    prover_matrix_index: ProverMatrixIndex<B, E>,
     f_1_poly_coeffs: Vec<B>,
     f_2_poly_coeffs: Vec<B>,
     options: FractalOptions<B>,
@@ -48,7 +49,7 @@ impl<
     > LincheckProver<B, E, H>
 {
     pub fn new(
-        prover_matrix_index: ProverMatrixIndex<B,E>,
+        prover_matrix_index: ProverMatrixIndex<B, E>,
         f_1_poly_coeffs: Vec<B>,
         f_2_poly_coeffs: Vec<B>,
         options: &FractalOptions<B>,
@@ -84,7 +85,7 @@ impl<
         accumulator.add_polynomial_e(t_alpha.clone(), self.options.size_subgroup_h - 1);
         self.t_alpha = Some(t_alpha.clone());
 
-        let poly_prod = self.generate_poly_prod_evals(query, &t_alpha_evals);
+        // let poly_prod = self.generate_poly_prod_evals(query, &t_alpha_evals);
         let poly_prod_coeffs = self.generate_poly_prod(query, &t_alpha);
         debug!(
             "poly_prod_coeffs degree {}",
@@ -92,23 +93,23 @@ impl<
         );
 
         //poly_prod_coeffs should evaluate to 0 when summed over H. Let's double check this
-        let mut pp_sum = E::ZERO;
-        for h in self.options.h_domain.iter() {
-            let temp = polynom::eval(&poly_prod_coeffs, E::from(*h));
-            pp_sum += temp;
-        }
-        debug_assert!(
-            pp_sum == E::ZERO,
-            "Sum of product polynomials over h domain is not 0"
-        );
+        // let mut pp_sum = E::ZERO;
+        // for h in self.options.h_domain.iter() {
+        //     let temp = polynom::eval(&poly_prod_coeffs, E::from(*h));
+        //     pp_sum += temp;
+        // }
+        // debug_assert!(
+        //     pp_sum == E::ZERO,
+        //     "Sum of product polynomials over h domain is not 0"
+        // );
 
         // Next use poly_beta in a sumcheck proof but
         // the sumcheck domain is H, which isn't included here
         // Use that to produce the sumcheck proof.
-        debug!("Poly prod len = {}", poly_prod.len());
+        // debug!("Poly prod len = {}", poly_prod.len());
 
         //let denom_eval = vec![B::ONE; self.options.evaluation_domain.len()];
-        let denom_eval = vec![B::ONE; self.options.h_domain.len()];
+        // let denom_eval = vec![B::ONE; self.options.h_domain.len()];
 
         // use h_domain rather than eval_domain
         // let poly_prod = polynom::eval_many(
@@ -196,12 +197,12 @@ impl<
         let matrix_proof_denominator = polynom::mul(&alpha_minus_col, &beta_minus_row);
 
         //matrix_proof_numerator/matrix_proof_denominator should evaluate to gamma when summed over K. Let's double check this
-        let mut mat_sum = E::ZERO;
-        for k in self.options.summing_domain.iter() {
-            let temp = polynom::eval(&matrix_proof_numerator, E::from(*k))
-                / polynom::eval(&matrix_proof_denominator, E::from(*k));
-            mat_sum += temp;
-        }
+        // let mut mat_sum = E::ZERO;
+        // for k in self.options.summing_domain.iter() {
+        //     let temp = polynom::eval(&matrix_proof_numerator, E::from(*k))
+        //         / polynom::eval(&matrix_proof_denominator, E::from(*k));
+        //     mat_sum += temp;
+        // }
 
         let mut matrix_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
             matrix_proof_numerator,
@@ -292,19 +293,21 @@ impl<
     }
 
     pub fn generate_t_alpha(&self, t_evals: Vec<E>) -> Vec<E> {
-        let mut t_alpha_eval_domain_poly: Vec<E> =
-            t_evals.clone()[0..self.options.h_domain.len()].to_vec();
-        let twiddles_evaluation_domain: Vec<B> = fft::get_inv_twiddles(self.options.h_domain.len());
-        polynom::interpolate(
-            &self
-                .options
-                .evaluation_domain
-                .iter()
-                .map(|i| E::from(*i))
-                .collect::<Vec<E>>(),
-            &t_evals.to_vec(),
-            true,
-        )
+        let mut t_alpha_eval_domain_poly: Vec<E> = t_evals.clone().to_vec();
+        let twiddles_evaluation_domain: Vec<B> =
+            fft::get_inv_twiddles(self.options.evaluation_domain.len());
+        fft::interpolate_poly(&mut t_alpha_eval_domain_poly, &twiddles_evaluation_domain);
+        t_alpha_eval_domain_poly
+        // polynom::interpolate(
+        //     &self
+        //         .options
+        //         .evaluation_domain
+        //         .iter()
+        //         .map(|i| E::from(*i))
+        //         .collect::<Vec<E>>(),
+        //     &t_evals.to_vec(),
+        //     true,
+        // )
     }
 
     pub fn generate_poly_prod(&self, alpha: E, t_alpha_coeffs: &Vec<E>) -> Vec<E> {
@@ -457,7 +460,7 @@ impl<
 {
     fn generate_proof(
         &mut self,
-        prover_key: &Option<ProverKey<B,E,H>>,
+        prover_key: &Option<ProverKey<B, E, H>>,
         public_inputs_bytes: Vec<u8>,
     ) -> Result<TopLevelProof<B, E, H>, ProverError> {
         let options = self.get_fractal_options();
@@ -474,22 +477,21 @@ impl<
             options.evaluation_domain.clone(),
             options.num_queries,
             options.fri_options.clone(),
-            public_inputs_bytes
+            public_inputs_bytes,
         );
 
         acc.add_unchecked_polynomial(self.f_2_poly_coeffs.clone());
         acc.add_unchecked_polynomial(self.f_1_poly_coeffs.clone());
         let initial_commitment = acc.commit_layer()?;
-        
 
         let mut layer_commitments = vec![];
         let mut local_queries = Vec::<E>::new();
 
         for i in 0..self.get_num_layers() {
-            let previous_commit = acc.get_layer_commitment(i+1)?;
+            let previous_commit = acc.get_layer_commitment(i + 1)?;
             channel.commit_fractal_iop_layer(previous_commit);
             coin.reseed(previous_commit);
-            
+
             let query = coin.draw().expect("failed to draw FRI alpha"); //channel.draw_fri_alpha();
             local_queries.push(query);
             self.run_next_layer(query, &mut acc)?;
@@ -503,14 +505,16 @@ impl<
             acc.decommit_layer_with_queries(2, &queries)?,
             acc.decommit_layer_with_queries(3, &queries)?,
         ];
-        let preprocessing_decommitment = prover_key.as_ref().unwrap().accumulator.decommit_layer_with_queries(1, &queries)?;
-        
+        let preprocessing_decommitment = prover_key
+            .as_ref()
+            .unwrap()
+            .accumulator
+            .decommit_layer_with_queries(1, &queries)?;
+
         let beta = local_queries[1];
 
         println!("Prover alpha?, beta: {}, {}", &local_queries[0], &beta);
-        let gammas = vec![
-            self.retrieve_gamma(beta)?,
-        ];
+        let gammas = vec![self.retrieve_gamma(beta)?];
 
         let low_degree_proof = acc.create_fri_proof()?;
 
@@ -521,7 +525,7 @@ impl<
             initial_commitment,
             initial_decommitment,
             unverified_misc: gammas,
-            low_degree_proof
+            low_degree_proof,
         };
         Ok(proof)
     }

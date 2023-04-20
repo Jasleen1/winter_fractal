@@ -1,11 +1,11 @@
 use std::thread::AccessError;
 
+use errors::ProverError;
 use fractal_accumulator::{accumulator::Accumulator, errors::AccumulatorProverError};
 use fractal_indexer::snark_keys::ProverKey;
+use fractal_proofs::{FieldElement, IopData, LayeredProof, LowDegreeBatchProof, TopLevelProof};
 use fractal_utils::channel::DefaultFractalProverChannel;
 use fractal_utils::FractalOptions;
-use errors::ProverError;
-use fractal_proofs::{FieldElement, LayeredProof, LowDegreeBatchProof, IopData, TopLevelProof};
 use log;
 use winter_crypto::ElementHasher;
 use winter_fri::{FriOptions, ProverChannel};
@@ -108,7 +108,11 @@ pub trait LayeredProver<
     D: IopData<B, E>,
 >: LayeredSubProver<B, E, H>
 {
-    fn generate_proof(&mut self, prover_key: &Option<ProverKey<B,E,H>>, public_input_bytes: Vec<u8>) -> Result<TopLevelProof<B,E,H>, ProverError>;
+    fn generate_proof(
+        &mut self,
+        prover_key: &Option<ProverKey<B, E, H>>,
+        public_input_bytes: Vec<u8>,
+    ) -> Result<TopLevelProof<B, E, H>, ProverError>;
     // {
     //     let options = self.get_fractal_options();
     //     let mut channel = DefaultFractalProverChannel::<B, E, H>::new(

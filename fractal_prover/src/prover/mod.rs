@@ -2,14 +2,15 @@ use std::marker::PhantomData;
 
 use fractal_indexer::{index::IndexParams, snark_keys::*};
 use fractal_proofs::{
-    fft, polynom, FractalProof, InitialPolyProof,
-    LayeredFractalProof, LincheckProof, LowDegreeBatchProof, MultiEval, MultiPoly, TryInto, LayeredLincheckProof, LayeredRowcheckProof, TopLevelProof, IopData,
+    fft, polynom, FractalProof, InitialPolyProof, IopData, LayeredFractalProof,
+    LayeredLincheckProof, LayeredRowcheckProof, LincheckProof, LowDegreeBatchProof, MultiEval,
+    MultiPoly, TopLevelProof, TryInto,
 };
 use models::r1cs::Matrix;
 use winter_fri::DefaultProverChannel;
 
-use winter_crypto::{ElementHasher, Hasher, MerkleTree, RandomCoin, BatchMerkleProof};
-use winter_fri::{ProverChannel, FriOptions};
+use winter_crypto::{BatchMerkleProof, ElementHasher, Hasher, MerkleTree, RandomCoin};
+use winter_fri::{FriOptions, ProverChannel};
 use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
@@ -18,8 +19,7 @@ use fractal_utils::channel::DefaultFractalProverChannel;
 use fractal_utils::FractalOptions;
 
 use crate::{
-    errors::ProverError,
-    lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver,
+    errors::ProverError, lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver,
     LayeredProver, LayeredSubProver, FRACTAL_LAYERS,
 };
 
@@ -72,7 +72,7 @@ impl<
         }
     }
 
-    pub fn get_prover_key_ref(&self) -> &ProverKey<B,E,H>{
+    pub fn get_prover_key_ref(&self) -> &ProverKey<B, E, H> {
         self.prover_key.as_ref().unwrap()
     }
 
@@ -248,7 +248,7 @@ impl<
 {
     fn generate_proof(
         &mut self,
-        prover_key: &Option<ProverKey<B,E,H>>,
+        prover_key: &Option<ProverKey<B, E, H>>,
         public_inputs_bytes: Vec<u8>,
     ) -> Result<TopLevelProof<B, E, H>, ProverError> {
         let options = self.get_fractal_options();
@@ -265,7 +265,7 @@ impl<
             options.evaluation_domain.clone(),
             options.num_queries,
             options.fri_options.clone(),
-            public_inputs_bytes
+            public_inputs_bytes,
         );
         let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 3];
         let mut local_queries = Vec::<E>::new();
@@ -291,7 +291,7 @@ impl<
         //todo: duplicate code. Fractal should be two layers and the initial_* fields should be used to replace what is currently layer 1
         let initial_commitment = layer_commitments[0];
         let initial_decommitment = acc.decommit_layer_with_queries(1, &queries)?;
-        
+
         let layer_decommits = vec![
             acc.decommit_layer_with_queries(1, &queries)?,
             acc.decommit_layer_with_queries(2, &queries)?,
@@ -303,8 +303,13 @@ impl<
             self.lincheck_provers[2].retrieve_gamma(beta)?,
         ];
 
-        let preprocessing_decommitment = self.prover_key.as_ref().unwrap().accumulator.decommit_layer_with_queries(1, &queries)?;
-        
+        let preprocessing_decommitment = self
+            .prover_key
+            .as_ref()
+            .unwrap()
+            .accumulator
+            .decommit_layer_with_queries(1, &queries)?;
+
         let low_degree_proof = acc.create_fri_proof()?;
 
         let proof = TopLevelProof {
@@ -314,7 +319,7 @@ impl<
             initial_commitment,
             initial_decommitment,
             unverified_misc: gammas,
-            low_degree_proof
+            low_degree_proof,
         };
         Ok(proof)
     }

@@ -1,6 +1,4 @@
-use crate::{
-    errors::RowcheckVerifierError
-};
+use crate::errors::RowcheckVerifierError;
 use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
 use low_degree_verifier::low_degree_verifier::verify_low_degree_proof;
 
@@ -251,20 +249,20 @@ pub(crate) fn prepare_rowcheck_verifier_inputs<E: FieldElement>(
 
 #[cfg(test)]
 mod test {
-    use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
-    use fractal_prover::LayeredSubProver;
     use crate::errors::TestingError;
     use crate::rowcheck_verifier::{add_rowcheck_verification, prepare_rowcheck_verifier_inputs};
+    use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
+    use fractal_prover::LayeredSubProver;
 
     use super::verify_rowcheck_proof;
+    use fractal_accumulator::accumulator::Accumulator;
     use fractal_examples2::gen_options::get_example_setup;
     use fractal_indexer::index::build_index_domains;
     use fractal_proofs::fields::QuadExtension;
     use fractal_proofs::{polynom, FieldElement, SumcheckProof};
-    use fractal_accumulator::accumulator::Accumulator;
-    use fractal_utils::channel::DefaultFractalProverChannel;
     use fractal_prover::errors::ProverError;
     use fractal_prover::rowcheck_prover::RowcheckProver;
+    use fractal_utils::channel::DefaultFractalProverChannel;
     use fractal_utils::FractalOptions;
     use std::ops::Add;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -395,7 +393,8 @@ mod test {
             pub_input_bytes.clone(),
         );
 
-        let query_indices = accumulator_verifier.get_query_indices(commit, pub_input_bytes.clone())?;
+        let query_indices =
+            accumulator_verifier.get_query_indices(commit, pub_input_bytes.clone())?;
 
         // Check that the f_Mz decommitted values were appropriately sent by the prover
         println!("About to check accum for f_mz polynomials");

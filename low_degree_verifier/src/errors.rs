@@ -1,6 +1,5 @@
-use winter_utils::DeserializationError;
 use winter_fri::VerifierError;
-
+use winter_utils::DeserializationError;
 
 #[derive(Debug, PartialEq)]
 pub enum LowDegreeVerifierError {

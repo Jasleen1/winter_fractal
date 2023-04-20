@@ -1,6 +1,6 @@
 use displaydoc::Display;
-use thiserror::Error;
 use fractal_utils::errors::FractalUtilError;
+use thiserror::Error;
 use winter_crypto::MerkleTreeError;
 /// Represents a generic error type
 #[derive(Debug, Display, Error, PartialEq)]

@@ -2,7 +2,7 @@ use std::{convert::TryInto, marker::PhantomData};
 
 use fractal_indexer::hash_values;
 use fractal_proofs::{polynom, RowcheckProof};
-use fractal_utils::{polynomial_utils::*, channel::DefaultFractalProverChannel, FractalOptions};
+use fractal_utils::{channel::DefaultFractalProverChannel, polynomial_utils::*, FractalOptions};
 
 use winter_crypto::{ElementHasher, Hasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions};
@@ -12,9 +12,7 @@ use winter_utils::transpose_slice;
 use fractal_accumulator::accumulator::Accumulator;
 use low_degree_prover::low_degree_prover::LowDegreeProver;
 
-use crate::{
-    errors::ProverError, LayeredSubProver,
-};
+use crate::{errors::ProverError, LayeredSubProver};
 
 pub struct RowcheckProver<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
     f_az_coeffs: Vec<B>,
@@ -148,9 +146,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             ),
             &denom_poly,
         );
-
-    
-        println!("len(s_coeffs): {}", s_coeffs.len());
 
         accumulator.add_polynomial(s_coeffs, self.size_subgroup_h - 2);
     }

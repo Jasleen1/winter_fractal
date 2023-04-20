@@ -1,8 +1,8 @@
-use crate::{errors::LowDegreeVerifierError};
+use crate::errors::LowDegreeVerifierError;
 
 use fractal_proofs::{polynom, FieldElement, LowDegreeBatchProof};
-use fractal_utils::polynomial_utils::*;
 use fractal_utils::channel::DefaultFractalVerifierChannel;
+use fractal_utils::polynomial_utils::*;
 use winter_crypto::{ElementHasher, RandomCoin};
 use winter_fri::FriVerifier;
 use winter_math::StarkField;

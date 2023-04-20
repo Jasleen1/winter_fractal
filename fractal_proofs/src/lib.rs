@@ -191,10 +191,10 @@ pub struct LayeredSumcheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
 }*/
 
 pub struct LayeredFractalProof<B: StarkField, E: FieldElement<BaseField = B>> {
-    pub rowcheck: LayeredRowcheckProof<B,E>,
-    pub lincheck_a: LayeredLincheckProof<B,E>,
-    pub lincheck_b: LayeredLincheckProof<B,E>,
-    pub lincheck_c: LayeredLincheckProof<B,E>
+    pub rowcheck: LayeredRowcheckProof<B, E>,
+    pub lincheck_a: LayeredLincheckProof<B, E>,
+    pub lincheck_b: LayeredLincheckProof<B, E>,
+    pub lincheck_c: LayeredLincheckProof<B, E>,
 }
 
 /*impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> LayeredProof<B, E, H>
@@ -276,16 +276,12 @@ pub struct LowDegreeBatchProof<B: StarkField, E: FieldElement<BaseField = B>, H:
 
 // identifies structs with only the field elements used in an IOP. No hashes / decommitment proofs
 pub trait IopData<B: StarkField, E: FieldElement<BaseField = B>> {}
-impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E>
-    for LayeredRowcheckProof<B, E>{}
-impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E>
-    for LayeredLincheckProof<B, E>{}
-impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E>
-    for LayeredSumcheckProof<B, E>{}
-impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E>
-    for LayeredFractalProof<B, E>{}
+impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E> for LayeredRowcheckProof<B, E> {}
+impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E> for LayeredLincheckProof<B, E> {}
+impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E> for LayeredSumcheckProof<B, E> {}
+impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E> for LayeredFractalProof<B, E> {}
 
-pub struct TopLevelProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher>{
+pub struct TopLevelProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
     pub preprocessing_decommitment: (Vec<Vec<E>>, BatchMerkleProof<H>),
     pub layer_commitments: Vec<H::Digest>,
     pub layer_decommitments: Vec<(Vec<Vec<E>>, BatchMerkleProof<H>)>,
@@ -293,5 +289,5 @@ pub struct TopLevelProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hashe
     pub initial_commitment: H::Digest,
     pub initial_decommitment: (Vec<Vec<E>>, BatchMerkleProof<H>),
     pub unverified_misc: Vec<E>,
-    pub low_degree_proof: LowDegreeBatchProof<B, E, H>
+    pub low_degree_proof: LowDegreeBatchProof<B, E, H>,
 }

@@ -1,5 +1,5 @@
-use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
 use crate::errors::{LincheckVerifierError, SumcheckVerifierError};
+use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
 
 use crate::sumcheck_verifier::{verify_layered_sumcheck_proof, verify_sumcheck_proof};
 use fractal_indexer::indexed_matrix::compute_derivative_xx;
@@ -111,14 +111,29 @@ pub fn verify_layered_lincheck_proof_from_top<
     let query_indices = coin
         .draw_integers(options.num_queries, options.evaluation_domain.len())
         .expect("failed to draw query position");
-    
-    verify_decommitments(&verifier_key, &proof, &query_indices, &mut accumulator_verifier)?;
+
+    verify_decommitments(
+        &verifier_key,
+        &proof,
+        &query_indices,
+        &mut accumulator_verifier,
+    )?;
 
     let lincheck_proof = parse_proofs_for_subroutines(&proof, &pub_inputs_bytes);
-    verify_layered_lincheck_proof(&mut accumulator_verifier, &verifier_key, &query_indices, &lincheck_proof, 1)?;
-    
-    accumulator_verifier.verify_fri_proof(proof.layer_commitments[1], proof.low_degree_proof, pub_inputs_bytes)?;
-    
+    verify_layered_lincheck_proof(
+        &mut accumulator_verifier,
+        &verifier_key,
+        &query_indices,
+        &lincheck_proof,
+        1,
+    )?;
+
+    accumulator_verifier.verify_fri_proof(
+        proof.layer_commitments[1],
+        proof.low_degree_proof,
+        pub_inputs_bytes,
+    )?;
+
     Ok(())
 }
 
@@ -131,8 +146,7 @@ pub fn verify_decommitments<
     proof: &TopLevelProof<B, E, H>,
     query_indices: &Vec<usize>,
     accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
-) -> Result<(), LincheckVerifierError>{
-
+) -> Result<(), LincheckVerifierError> {
     // Verify that the committed preprocessing was queried correctly
     accumulator_verifier.verify_layer_with_queries(
         verifier_key.commitment,
@@ -148,7 +162,7 @@ pub fn verify_decommitments<
         &proof.initial_decommitment.0,
         &proof.initial_decommitment.1,
     )?;
-    
+
     // Verify that the committed layers were queried correctly
     accumulator_verifier.verify_layer_with_queries(
         proof.layer_commitments[0],
@@ -162,7 +176,7 @@ pub fn verify_decommitments<
         &proof.layer_decommitments[1].0,
         &proof.layer_decommitments[1].1,
     )?;
-    
+
     Ok(())
 }
 
@@ -173,8 +187,7 @@ fn parse_proofs_for_subroutines<
 >(
     proof: &TopLevelProof<B, E, H>,
     public_inputs_bytes: &Vec<u8>,
-) -> LayeredLincheckProof<B,E> {
-
+) -> LayeredLincheckProof<B, E> {
     // Matrix A preprocessing
     let col_a = extract_vec_e(&proof.preprocessing_decommitment.0, 0);
     let row_a = extract_vec_e(&proof.preprocessing_decommitment.0, 1);
@@ -550,23 +563,25 @@ fn compute_derivative<B: StarkField, E: FieldElement<BaseField = B>>(
 
 #[cfg(test)]
 mod test {
-    use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
     use crate::errors::TestingError;
-    use crate::lincheck_verifier::{add_lincheck_verification, verify_layered_lincheck_proof_from_top};
+    use crate::lincheck_verifier::{
+        add_lincheck_verification, verify_layered_lincheck_proof_from_top,
+    };
     use crate::rowcheck_verifier::add_rowcheck_verification;
+    use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
 
     use super::verify_lincheck_proof;
+    use fractal_accumulator::accumulator::Accumulator;
     use fractal_examples2::gen_options::get_example_setup;
     use fractal_indexer::index::build_index_domains;
     use fractal_proofs::fields::QuadExtension;
     use fractal_proofs::{fft, polynom, FieldElement, SumcheckProof};
-    use fractal_accumulator::accumulator::Accumulator;
-    use fractal_utils::channel::DefaultFractalProverChannel;
     use fractal_prover::errors::ProverError;
     use fractal_prover::lincheck_prover::LincheckProver;
+    use fractal_prover::LayeredSubProver;
     use fractal_prover::{prover::*, LayeredProver};
+    use fractal_utils::channel::DefaultFractalProverChannel;
     use fractal_utils::FractalOptions;
-    use fractal_prover::{LayeredSubProver};
     use models::r1cs::Matrix;
     use std::ops::Add;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -612,7 +627,7 @@ mod test {
         let inv_twiddles_h = fft::get_inv_twiddles(wires.len());
         // Generate lincheck coefficients for one matrix
         let mut z_coeffs = wires.clone(); // evals
-        fft::interpolate_poly_with_offset(&mut z_coeffs, &inv_twiddles_h, prover_key.params.eta); 
+        fft::interpolate_poly_with_offset(&mut z_coeffs, &inv_twiddles_h, prover_key.params.eta);
         let f_az_coeffs = compute_matrix_mul_poly_coeffs::<B, E, H>(
             &prover_key.matrix_a_index.matrix,
             &wires.clone(),
@@ -643,14 +658,22 @@ mod test {
             &fractal_options,
         );
 
-        let proof = lincheck_prover_a.generate_proof(&Some(prover_key), pub_inputs_bytes.clone()).unwrap();
-        
+        let proof = lincheck_prover_a
+            .generate_proof(&Some(prover_key), pub_inputs_bytes.clone())
+            .unwrap();
+
         println!("starting verifier tasks");
-        verify_layered_lincheck_proof_from_top(verifier_key, proof, pub_inputs_bytes, fractal_options).unwrap();
+        verify_layered_lincheck_proof_from_top(
+            verifier_key,
+            proof,
+            pub_inputs_bytes,
+            fractal_options,
+        )
+        .unwrap();
 
         Ok(())
 
-        /* 
+        /*
 
         let alpha = accumulator.draw_queries(Some(1))?[0];
         lincheck_prover_a

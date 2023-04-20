@@ -6,9 +6,9 @@
 // of this source tree.
 
 //! Errors for various data structure operations.
+use fractal_accumulator::errors::AccumulatorProverError;
 use fractal_accumulator_verifier::errors::AccumulatorVerifierError;
 use fractal_proofs::{errors::FractalUtilError, DeserializationError};
-use fractal_accumulator::errors::AccumulatorProverError;
 use fractal_prover::errors::{LincheckError, ProverError};
 use low_degree_verifier::errors::LowDegreeVerifierError;
 use thiserror::Error;
@@ -23,7 +23,7 @@ pub enum LincheckVerifierError {
     /// Error propagation
     UnsoundMatrix(SumcheckVerifierError),
     /// Error propagation
-    AccumulatorVerifierErr(AccumulatorVerifierError)
+    AccumulatorVerifierErr(AccumulatorVerifierError),
 }
 
 impl From<SumcheckVerifierError> for LincheckVerifierError {

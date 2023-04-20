@@ -7,8 +7,8 @@ use core::num;
 use std::cmp::max;
 
 use fractal_indexer::index::get_max_degree;
-use winter_fri::FriOptions;
 use fractal_utils::FractalOptions;
+use winter_fri::FriOptions;
 
 use fractal_indexer::{
     index::{build_index_domains, Index, IndexParams},

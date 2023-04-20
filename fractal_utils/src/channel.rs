@@ -1,11 +1,11 @@
 use std::marker::PhantomData;
 
-use winter_math::{FieldElement, StarkField};
 use winter_crypto::{Hasher, RandomCoin};
 use winter_fri::ProverChannel;
+use winter_math::{FieldElement, StarkField};
 
 use winter_crypto::{BatchMerkleProof, ElementHasher};
-use winter_fri::{VerifierChannel, FriProof};
+use winter_fri::{FriProof, VerifierChannel};
 use winter_utils::DeserializationError;
 
 /// This file basically contains a replica of [winter_fri::DefaultProverChannel] with some extra functions for our purposes.

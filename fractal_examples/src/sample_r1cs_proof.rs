@@ -5,13 +5,14 @@
 
 use core::num;
 use std::cmp::max;
+use std::time::Instant;
 
 use fractal_indexer::index::get_max_degree;
-use winter_fri::FriOptions;
+use fractal_prover::LayeredProver;
 use fractal_prover::{prover::FractalProver, LayeredSubProver};
-use fractal_prover::{LayeredProver};
-use fractal_verifier::verifier::verify_layered_fractal_proof_from_top;
 use fractal_utils::FractalOptions;
+use fractal_verifier::verifier::verify_layered_fractal_proof_from_top;
+use winter_fri::FriOptions;
 
 use structopt::StructOpt;
 
@@ -146,9 +147,21 @@ pub(crate) fn orchestrate_r1cs_example<
         wires,
         pub_inputs_bytes.clone(),
     );
-    let proof = prover.generate_proof(&None, pub_inputs_bytes.clone()).unwrap();
+    let now = Instant::now();
+    let proof = prover
+        .generate_proof(&None, pub_inputs_bytes.clone())
+        .unwrap();
+    println!(
+        "---------------------\nProof generated in {} ms",
+        now.elapsed().as_millis()
+    );
 
+    let now = Instant::now();
     verify_layered_fractal_proof_from_top(verifier_key, proof, pub_inputs_bytes, options).unwrap();
+    println!(
+        "---------------------\nProof verified in {} ms",
+        now.elapsed().as_millis()
+    );
     println!("Success!");
 
     // println!(
