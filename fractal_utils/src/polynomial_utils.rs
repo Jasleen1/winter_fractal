@@ -201,6 +201,7 @@ impl<
         coefficients_b: Vec<Vec<B>>,
         coefficients_e: Vec<Vec<E>>,
         evaluation_domain_len: usize,
+        // TODO: offset is not used. Currently fine as the offset for eval_domain is ONE
         offset: B,
     ) -> Self {
         let eval_twiddles = fft::get_twiddles(evaluation_domain_len);

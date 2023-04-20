@@ -2,22 +2,24 @@ use std::{marker::PhantomData, usize};
 
 use fractal_indexer::{hash_values, snark_keys::*};
 use fractal_utils::polynomial_utils::*;
+use models::r1cs::Matrix;
 
 use crate::{
     errors::ProverError,
-    sumcheck_prover::*, LayeredSubProver,
+    sumcheck_prover::*, LayeredSubProver, LayeredProver,
 };
 use fractal_accumulator::accumulator::Accumulator;
 use fractal_utils::channel::DefaultFractalProverChannel;
 
-use fractal_proofs::{fft, polynom, LincheckProof, OracleQueries, TryInto};
+use fractal_proofs::{fft, polynom, LincheckProof, OracleQueries, TryInto, LayeredLincheckProof, TopLevelProof};
 
-use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree, MerkleTreeError};
+use winter_crypto::{BatchMerkleProof, ElementHasher, MerkleTree, MerkleTreeError, RandomCoin, Hasher};
 use winter_fri::ProverChannel;
 use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
+use fractal_utils::FractalOptions;
 
-use crate::{errors::LincheckError, log::debug, FractalOptions};
+use crate::{errors::LincheckError, log::debug};
 
 const n: usize = 1;
 // TODO: Will need to ask Irakliy whether a channel should be passed in here
@@ -26,7 +28,7 @@ pub struct LincheckProver<
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
-    prover_matrix_index: ProverMatrixIndex<B, E, H>,
+    prover_matrix_index: ProverMatrixIndex<B,E>,
     f_1_poly_coeffs: Vec<B>,
     f_2_poly_coeffs: Vec<B>,
     options: FractalOptions<B>,
@@ -46,7 +48,7 @@ impl<
     > LincheckProver<B, E, H>
 {
     pub fn new(
-        prover_matrix_index: ProverMatrixIndex<B, E, H>,
+        prover_matrix_index: ProverMatrixIndex<B,E>,
         f_1_poly_coeffs: Vec<B>,
         f_2_poly_coeffs: Vec<B>,
         options: &FractalOptions<B>,
@@ -151,7 +153,6 @@ impl<
             &self
                 .prover_matrix_index
                 .val_poly
-                .polynomial
                 .iter()
                 .map(|i| E::from(*i))
                 .collect::<Vec<E>>(),
@@ -166,26 +167,26 @@ impl<
             ),
         );
         let mut alpha_minus_row =
-            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE)
+            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly, -B::ONE)
                 .iter()
                 .map(|i| E::from(*i))
                 .collect::<Vec<E>>();
         alpha_minus_row[0] += alpha;
         let mut beta_minus_col =
-            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE)
+            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly, -B::ONE)
                 .iter()
                 .map(|i| E::from(*i))
                 .collect::<Vec<E>>();
         beta_minus_col[0] += beta;
 
         let mut alpha_minus_col =
-            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly.polynomial, -B::ONE)
+            polynom::mul_by_scalar(&self.prover_matrix_index.col_poly, -B::ONE)
                 .iter()
                 .map(|i| E::from(*i))
                 .collect::<Vec<E>>();
         alpha_minus_col[0] += alpha;
         let mut beta_minus_row =
-            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly.polynomial, -B::ONE)
+            polynom::mul_by_scalar(&self.prover_matrix_index.row_poly, -B::ONE)
                 .iter()
                 .map(|i| E::from(*i))
                 .collect::<Vec<E>>();
@@ -226,12 +227,6 @@ impl<
         Ok(polynom::eval(&t_alpha, beta))
     }
 
-    pub(crate) fn decommit_proprocessing(
-        &self,
-        queries: &Vec<usize>,
-    ) -> Result<[(Vec<Vec<E>>, BatchMerkleProof<H>); 3], MerkleTreeError> {
-        self.prover_matrix_index.decommit_evals(queries)
-    }
     /// The polynomial t_alpha(X) = u_M(X, alpha).
     /// We also know that u_M(X, alpha) = M_star(X, alpha).
     /// Further, M_star(X, Y) =
@@ -446,10 +441,131 @@ impl<
     }
 
     fn get_num_layers(&self) -> usize {
-        1
+        2
     }
 
     fn get_fractal_options(&self) -> FractalOptions<B> {
         self.options.clone()
     }
+}
+
+impl<
+        B: StarkField,
+        E: FieldElement<BaseField = B>,
+        H: ElementHasher + ElementHasher<BaseField = B>,
+    > LayeredProver<B, E, H, LayeredLincheckProof<B, E>> for LincheckProver<B, E, H>
+{
+    fn generate_proof(
+        &mut self,
+        prover_key: &Option<ProverKey<B,E,H>>,
+        public_inputs_bytes: Vec<u8>,
+    ) -> Result<TopLevelProof<B, E, H>, ProverError> {
+        let options = self.get_fractal_options();
+        let mut coin = RandomCoin::<B, H>::new(&public_inputs_bytes);
+
+        let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
+            options.evaluation_domain.len(),
+            options.num_queries,
+            public_inputs_bytes.clone(),
+        );
+        let mut acc = Accumulator::<B, E, H>::new(
+            options.evaluation_domain.len(),
+            B::ONE,
+            options.evaluation_domain.clone(),
+            options.num_queries,
+            options.fri_options.clone(),
+            public_inputs_bytes
+        );
+        //let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 3];
+        let mut layer_commitments = vec![];
+        let mut local_queries = Vec::<E>::new();
+
+        // BEGIN JANK
+        /*let inv_twiddles_h = fft::get_inv_twiddles(self.variable_assignment.len());
+        let mut z_coeffs = &mut self.variable_assignment.clone(); // evals
+        fft::interpolate_poly_with_offset(
+            &mut z_coeffs,
+            &inv_twiddles_h,
+            prover_key.as_ref().unwrap().params.eta,
+        ); // coeffs
+
+        let f_az_coeffs = compute_matrix_mul_poly_coeffs(
+            &prover_key.as_ref().unwrap().matrix_a_index.matrix,
+            &self.variable_assignment.clone(),
+            &inv_twiddles_h,
+            prover_key.as_ref().unwrap().params.eta,
+        )?;
+
+        let f_bz_coeffs = compute_matrix_mul_poly_coeffs(
+            &prover_key.as_ref().unwrap().matrix_b_index.matrix,
+            &self.variable_assignment.clone(),
+            &inv_twiddles_h,
+            prover_key.as_ref().as_ref().unwrap().params.eta,
+        )?;
+
+        let f_cz_coeffs = compute_matrix_mul_poly_coeffs(
+            &prover_key.as_ref().unwrap().matrix_c_index.matrix,
+            &self.variable_assignment.clone(),
+            &inv_twiddles_h,
+            prover_key.as_ref().unwrap().params.eta,
+        )?;
+
+        //TODO: Put in correct degree constraints
+        acc.add_unchecked_polynomial(z_coeffs.to_vec());
+        acc.add_unchecked_polynomial(f_az_coeffs.to_vec());
+        acc.add_unchecked_polynomial(f_bz_coeffs.to_vec());
+        acc.add_unchecked_polynomial(f_cz_coeffs.to_vec());*/
+
+        // END JANK
+
+        for i in 0..self.get_num_layers() {
+            // local_queries.push(query);
+            // Doing this rn to make sure prover and verifier sample identically
+            if i > 0 {
+                let previous_commit = acc.get_layer_commitment(i)?;
+                channel.commit_fractal_iop_layer(previous_commit);
+                coin.reseed(previous_commit);
+            }
+            let query = coin.draw().expect("failed to draw FRI alpha"); //channel.draw_fri_alpha();
+            local_queries.push(query);
+            self.run_next_layer(query, &mut acc)?;
+            layer_commitments.push(acc.commit_layer()?); //todo: do something with this
+        }
+
+        let queries = acc.draw_query_positions()?;
+
+        let beta = local_queries[1];
+
+        let layer_decommits = vec![
+            acc.decommit_layer_with_queries(1, &queries)?,
+            acc.decommit_layer_with_queries(2, &queries)?,
+        ];
+        let gammas = vec![
+            self.retrieve_gamma(beta)?,
+        ];
+
+        let preprocessing_decommitment = prover_key.as_ref().unwrap().accumulator.decommit_layer_with_queries(1, &queries)?;
+        
+        let low_degree_proof = acc.create_fri_proof()?;
+
+        let proof = TopLevelProof {
+            preprocessing_decommitment,
+            layer_commitments: layer_commitments.to_vec(),
+            layer_decommitments: layer_decommits,
+            unverified_misc: gammas,
+            low_degree_proof
+        };
+        Ok(proof)
+    }
+}
+
+fn compute_matrix_mul_poly_coeffs<B: StarkField>(
+    matrix: &Matrix<B>,
+    vec: &Vec<B>,
+    inv_twiddles: &[B],
+    eta: B,
+) -> Result<Vec<B>, ProverError> {
+    let mut product = matrix.dot(vec); // as evals
+    fft::interpolate_poly_with_offset(&mut product, inv_twiddles, eta); // as coeffs
+    Ok(product) // as coeffs
 }

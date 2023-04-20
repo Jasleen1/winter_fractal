@@ -286,7 +286,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E>
     for LayeredFractalProof<B, E>{}
 
 pub struct TopLevelProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher>{
-    pub preprocessing_decommitments: [[(Vec<Vec<E>>, BatchMerkleProof<H>);3];3],
+    pub preprocessing_decommitment: (Vec<Vec<E>>, BatchMerkleProof<H>),
     pub layer_commitments: Vec<H::Digest>,
     pub layer_decommitments: Vec<(Vec<Vec<E>>, BatchMerkleProof<H>)>,
     pub unverified_misc: Vec<E>,

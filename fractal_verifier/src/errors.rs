@@ -22,11 +22,19 @@ pub enum LincheckVerifierError {
     UnsoundProduct(SumcheckVerifierError),
     /// Error propagation
     UnsoundMatrix(SumcheckVerifierError),
+    /// Error propagation
+    AccumulatorVerifierErr(AccumulatorVerifierError)
 }
 
 impl From<SumcheckVerifierError> for LincheckVerifierError {
     fn from(error: SumcheckVerifierError) -> Self {
         Self::UnsoundProduct(error)
+    }
+}
+
+impl From<AccumulatorVerifierError> for LincheckVerifierError {
+    fn from(error: AccumulatorVerifierError) -> Self {
+        Self::AccumulatorVerifierErr(error)
     }
 }
 
@@ -38,6 +46,9 @@ impl std::fmt::Display for LincheckVerifierError {
             }
             LincheckVerifierError::UnsoundMatrix(err) => {
                 writeln!(f, "Lincheck error: unsound matrix: {}", err)
+            }
+            LincheckVerifierError::AccumulatorVerifierErr(err) => {
+                writeln!(f, "Accumulator Verifer error: {}", err)
             }
         }
     }
@@ -159,7 +170,7 @@ impl std::fmt::Display for FractalVerifierError {
                 writeln!(f, "Fractal utils error: {}", err)
             }
             FractalVerifierError::AccumulatorVerifierErr(err) => {
-                writeln!(f, "Fractal utils error: {}", err)
+                writeln!(f, "Accumulator Verifer error: {}", err)
             }
         }
     }

@@ -20,7 +20,7 @@ pub fn verify_rowcheck_proof<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
-    verifier_key: &VerifierKey<B, E, H>,
+    verifier_key: &VerifierKey<B, H>,
     proof: RowcheckProof<B, E, H>,
     public_coin: &mut RandomCoin<B, H>,
     initial_evals: Vec<Vec<B>>,
@@ -56,7 +56,7 @@ pub fn verify_layered_rowcheck_proof<
     H: ElementHasher<BaseField = B>,
 >(
     accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
-    verifier_key: &VerifierKey<B, E, H>,
+    verifier_key: &VerifierKey<B, H>,
     queried_positions: &Vec<usize>,
     proof: &LayeredRowcheckProof<B, E>,
     starting_layer: usize,
@@ -96,7 +96,7 @@ pub fn add_rowcheck_verification<
     H: ElementHasher<BaseField = B>,
 >(
     accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
-    verifier_key: &VerifierKey<B, E, H>,
+    verifier_key: &VerifierKey<B, H>,
     decommit: Vec<Vec<E>>,
     queried_positions: Vec<usize>, //Delete!
     f_az_idx: usize,
@@ -252,6 +252,7 @@ pub(crate) fn prepare_rowcheck_verifier_inputs<E: FieldElement>(
 #[cfg(test)]
 mod test {
     use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
+    use fractal_prover::LayeredSubProver;
     use crate::errors::TestingError;
     use crate::rowcheck_verifier::{add_rowcheck_verification, prepare_rowcheck_verifier_inputs};
 
@@ -264,7 +265,7 @@ mod test {
     use fractal_utils::channel::DefaultFractalProverChannel;
     use fractal_prover::errors::ProverError;
     use fractal_prover::rowcheck_prover::RowcheckProver;
-    use fractal_prover::{FractalOptions, LayeredSubProver};
+    use fractal_utils::FractalOptions;
     use std::ops::Add;
     use std::time::{SystemTime, UNIX_EPOCH};
     use winter_crypto::hashers::{Blake3_256, Rp64_256};

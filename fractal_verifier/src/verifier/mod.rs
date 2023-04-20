@@ -13,7 +13,7 @@ use fractal_proofs::{
     MultiEval, MultiPoly, StarkField, TopLevelProof, IopData,
 };
 
-use fractal_prover::{FractalOptions};
+use fractal_utils::FractalOptions;
 use fractal_utils::channel::DefaultFractalProverChannel;
 use log::debug;
 use winter_crypto::{ElementHasher, RandomCoin};
@@ -89,7 +89,7 @@ pub fn verify_layered_fractal_proof_from_top<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
-    verifier_key: VerifierKey<B, E, H>,
+    verifier_key: VerifierKey<B, H>,
     proof: TopLevelProof<B, E, H>,
     pub_inputs_bytes: Vec<u8>,
     options: FractalOptions<B>,
@@ -128,71 +128,21 @@ pub fn verify_decommitments<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
-    verifier_key: &VerifierKey<B, E, H>,
+    verifier_key: &VerifierKey<B, H>,
     proof: &TopLevelProof<B, E, H>,
     query_indices: &Vec<usize>,
     accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
 ) -> Result<(), FractalVerifierError>{
 
-    // Do everything for matrix A preprocessing
+    // Verify that the committed preprocessing was queried correctly
     accumulator_verifier.verify_layer_with_queries(
-        verifier_key.matrix_a_commitments.row_poly_commitment,
+        verifier_key.commitment,
         query_indices,
-        &proof.preprocessing_decommitments[0][0].0,
-        &proof.preprocessing_decommitments[0][0].1,
+        &proof.preprocessing_decommitment.0,
+        &proof.preprocessing_decommitment.1,
     )?;
-    accumulator_verifier.verify_layer_with_queries(
-        verifier_key.matrix_a_commitments.col_poly_commitment,
-        query_indices,
-        &proof.preprocessing_decommitments[0][1].0,
-        &proof.preprocessing_decommitments[0][1].1,
-    )?;
-    accumulator_verifier.verify_layer_with_queries(
-        verifier_key.matrix_a_commitments.val_poly_commitment,
-        query_indices,
-        &proof.preprocessing_decommitments[0][2].0,
-        &proof.preprocessing_decommitments[0][2].1,
-    )?;
-    // Do everything for matrix B preprocessing
-    accumulator_verifier.verify_layer_with_queries(
-        verifier_key.matrix_b_commitments.row_poly_commitment,
-        query_indices,
-        &proof.preprocessing_decommitments[1][0].0,
-        &proof.preprocessing_decommitments[1][0].1,
-    )?;
-    accumulator_verifier.verify_layer_with_queries(
-        verifier_key.matrix_b_commitments.col_poly_commitment,
-        query_indices,
-        &proof.preprocessing_decommitments[1][1].0,
-        &proof.preprocessing_decommitments[1][1].1,
-    )?;
-    accumulator_verifier.verify_layer_with_queries(
-        verifier_key.matrix_b_commitments.val_poly_commitment,
-        query_indices,
-        &proof.preprocessing_decommitments[1][2].0,
-        &proof.preprocessing_decommitments[1][2].1,
-    )?;
-    // Do everything for matrix C preprocessing
-    accumulator_verifier.verify_layer_with_queries(
-        verifier_key.matrix_c_commitments.row_poly_commitment,
-        query_indices,
-        &proof.preprocessing_decommitments[2][0].0,
-        &proof.preprocessing_decommitments[2][0].1,
-    )?;
-    accumulator_verifier.verify_layer_with_queries(
-        verifier_key.matrix_c_commitments.col_poly_commitment,
-        query_indices,
-        &proof.preprocessing_decommitments[2][1].0,
-        &proof.preprocessing_decommitments[2][1].1,
-    )?;
-    accumulator_verifier.verify_layer_with_queries(
-        verifier_key.matrix_c_commitments.val_poly_commitment,
-        query_indices,
-        &proof.preprocessing_decommitments[2][2].0,
-        &proof.preprocessing_decommitments[2][2].1,
-    )?;
-
-    // Step C: Verify that the committed layers were queried correctly
+    
+    // Verify that the committed layers were queried correctly
     accumulator_verifier.verify_layer_with_queries(
         proof.layer_commitments[0],
         query_indices,
@@ -219,7 +169,7 @@ pub fn verify_layered_fractal_proof<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
-    verifier_key: &VerifierKey<B, E, H>,
+    verifier_key: &VerifierKey<B, H>,
     proof: LayeredFractalProof<B, E>,
     query_indices: Vec<usize>,
     starting_layer: usize,
@@ -271,19 +221,19 @@ fn parse_proofs_for_subroutines<
 ) -> LayeredFractalProof<B,E> {
 
     // Matrix A preprocessing
-    let row_a = extract_vec_e(&proof.preprocessing_decommitments[0][0].0, 0);
-    let col_a = extract_vec_e(&proof.preprocessing_decommitments[0][1].0, 0);
-    let val_a = extract_vec_e(&proof.preprocessing_decommitments[0][2].0, 0);
+    let col_a = extract_vec_e(&proof.preprocessing_decommitment.0, 0);
+    let row_a = extract_vec_e(&proof.preprocessing_decommitment.0, 1);
+    let val_a = extract_vec_e(&proof.preprocessing_decommitment.0, 2);
 
     // Matrix B preprocessing
-    let row_b = extract_vec_e(&proof.preprocessing_decommitments[1][0].0, 0);
-    let col_b = extract_vec_e(&proof.preprocessing_decommitments[1][1].0, 0);
-    let val_b = extract_vec_e(&proof.preprocessing_decommitments[1][2].0, 0);
+    let col_b = extract_vec_e(&proof.preprocessing_decommitment.0, 3);
+    let row_b = extract_vec_e(&proof.preprocessing_decommitment.0, 4);
+    let val_b = extract_vec_e(&proof.preprocessing_decommitment.0, 5);
 
     // Matrix C preprocessing
-    let row_c = extract_vec_e(&proof.preprocessing_decommitments[2][0].0, 0);
-    let col_c = extract_vec_e(&proof.preprocessing_decommitments[2][1].0, 0);
-    let val_c = extract_vec_e(&proof.preprocessing_decommitments[2][2].0, 0);
+    let col_c = extract_vec_e(&proof.preprocessing_decommitment.0, 6);
+    let row_c = extract_vec_e(&proof.preprocessing_decommitment.0, 7);
+    let val_c = extract_vec_e(&proof.preprocessing_decommitment.0, 8);
 
     // get values from the first layer
     let f_z_vals = extract_vec_e(&proof.layer_decommitments[0].0, 0);

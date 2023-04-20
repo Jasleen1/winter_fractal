@@ -9,6 +9,7 @@ bench = false
 
 [dependencies]
 displaydoc = "0.1.7"
+fractal_accumulator = { path = "../fractal_accumulator" }
 fractal-math = { version = "0.1.0", path = "../fractal_math", package = "fractal-math", default-features = false }
 fractal_utils = { path = "../fractal_utils" }
 log = { version = "0.4", default-features = false }

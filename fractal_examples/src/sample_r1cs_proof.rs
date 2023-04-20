@@ -9,8 +9,10 @@ use std::cmp::max;
 use fractal_indexer::index::get_max_degree;
 use winter_fri::FriOptions;
 use fractal_prover::{prover::FractalProver, LayeredSubProver};
-use fractal_prover::{FractalOptions, LayeredProver};
+use fractal_prover::{LayeredProver};
 use fractal_verifier::verifier::verify_layered_fractal_proof_from_top;
+use fractal_utils::FractalOptions;
+
 use structopt::StructOpt;
 
 use fractal_indexer::{
@@ -103,9 +105,6 @@ pub(crate) fn orchestrate_r1cs_example<
     // This is the index i.e. the pre-processed data for this r1cs
     let index = Index::new(index_params.clone(), indexed_a, indexed_b, indexed_c);
 
-    let (prover_key, verifier_key) =
-        generate_prover_and_verifier_keys::<B, E, H, N>(index).unwrap();
-
     // TODO: the IndexDomains should already guarantee powers of two, so why add extraneous bit or use next_power_of_two?
 
     let degree_fs = r1cs.num_cols();
@@ -135,6 +134,9 @@ pub(crate) fn orchestrate_r1cs_example<
         num_queries,
     };
 
+    let (prover_key, verifier_key) =
+        generate_prover_and_verifier_keys::<B, E, H>(index, options.clone()).unwrap();
+
     let pub_inputs_bytes = vec![0u8, 1u8, 2u8];
     //let pub_inputs_bytes = vec![];
     let mut prover = FractalProver::<B, E, H>::new(
@@ -144,7 +146,7 @@ pub(crate) fn orchestrate_r1cs_example<
         wires,
         pub_inputs_bytes.clone(),
     );
-    let proof = prover.generate_proof(pub_inputs_bytes.clone()).unwrap();
+    let proof = prover.generate_proof(&None, pub_inputs_bytes.clone()).unwrap();
 
     verify_layered_fractal_proof_from_top(verifier_key, proof, pub_inputs_bytes, options).unwrap();
     println!("Success!");

@@ -15,10 +15,11 @@ use winter_utils::transpose_slice;
 
 use fractal_accumulator::accumulator::Accumulator;
 use fractal_utils::channel::DefaultFractalProverChannel;
+use fractal_utils::FractalOptions;
 
 use crate::{
     errors::ProverError,
-    lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver, FractalOptions,
+    lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver,
     LayeredProver, LayeredSubProver, FRACTAL_LAYERS,
 };
 
@@ -27,7 +28,7 @@ pub struct FractalProver<
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
-    prover_key: Option<ProverKey<B, E, H>>,
+    pub prover_key: Option<ProverKey<B, E, H>>,
     options: FractalOptions<B>,
     witness: Vec<B>,
     variable_assignment: Vec<B>,
@@ -69,6 +70,10 @@ impl<
             z_coeffs: Vec::new(),
             lincheck_provers: Vec::new(),
         }
+    }
+
+    pub fn get_prover_key_ref(&self) -> &ProverKey<B,E,H>{
+        self.prover_key.as_ref().unwrap()
     }
 
     // Multiply a matrix times a vector of evaluations, then interpolate a poly and return its coeffs.
@@ -145,12 +150,16 @@ impl<
             self.options.clone(),
         );
 
-        //hacky way to avoid lifetimes: move prover_key contents to LincheckProvers in this step
+        /*//hacky way to avoid lifetimes: move prover_key contents to LincheckProvers in this step
         let prover_key = std::mem::replace(&mut self.prover_key, None).unwrap();
         self.prover_key = None;
         let a_index = prover_key.matrix_a_index;
         let b_index = prover_key.matrix_b_index;
-        let c_index = prover_key.matrix_c_index;
+        let c_index = prover_key.matrix_c_index;*/
+
+        let a_index = self.prover_key.as_ref().unwrap().matrix_a_index.clone();
+        let b_index = self.prover_key.as_ref().unwrap().matrix_b_index.clone();
+        let c_index = self.prover_key.as_ref().unwrap().matrix_c_index.clone();
 
         let mut lincheck_prover_a = LincheckProver::<B, E, H>::new(
             a_index,
@@ -239,6 +248,7 @@ impl<
 {
     fn generate_proof(
         &mut self,
+        prover_key: &Option<ProverKey<B,E,H>>,
         public_inputs_bytes: Vec<u8>,
     ) -> Result<TopLevelProof<B, E, H>, ProverError> {
         let options = self.get_fractal_options();
@@ -278,12 +288,6 @@ impl<
 
         let beta = local_queries[2];
 
-        let preprocessing_decommits_a =
-            self.lincheck_provers[0].decommit_proprocessing(&queries)?;
-        let preprocessing_decommits_b =
-            self.lincheck_provers[1].decommit_proprocessing(&queries)?;
-        let preprocessing_decommits_c =
-            self.lincheck_provers[2].decommit_proprocessing(&queries)?;
         let layer_decommits = vec![
             acc.decommit_layer_with_queries(1, &queries)?,
             acc.decommit_layer_with_queries(2, &queries)?,
@@ -295,11 +299,12 @@ impl<
             self.lincheck_provers[2].retrieve_gamma(beta)?,
         ];
 
-        let preprocessing_decommitments = [preprocessing_decommits_a, preprocessing_decommits_b, preprocessing_decommits_c];
+        let preprocessing_decommitment = self.prover_key.as_ref().unwrap().accumulator.decommit_layer_with_queries(1, &queries)?;
+        
         let low_degree_proof = acc.create_fri_proof()?;
 
         let proof = TopLevelProof {
-            preprocessing_decommitments,
+            preprocessing_decommitment,
             layer_commitments: layer_commitments.to_vec(),
             layer_decommitments: layer_decommits,
             unverified_misc: gammas,

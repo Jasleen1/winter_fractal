@@ -6,11 +6,13 @@ use crate::errors::ProverError;
 use low_degree_prover::low_degree_batch_prover::LowDegreeBatchProver;
 use low_degree_prover::low_degree_prover::LowDegreeProver;
 use fractal_utils::{channel::DefaultFractalProverChannel};
-use crate::{FractalOptions, LayeredSubProver};
+use crate::LayeredSubProver;
 use fractal_utils::polynomial_utils::*;
 use winter_crypto::ElementHasher;
 use winter_fri::{DefaultProverChannel, FriOptions};
 use winter_math::{fft, FieldElement, StarkField};
+use fractal_utils::FractalOptions;
+
 
 use fractal_proofs::{polynom, OracleQueries, SumcheckProof};
 #[cfg(test)]
@@ -255,7 +257,7 @@ impl<
     fn get_num_layers(&self) -> usize {
         1
     }
-    fn get_fractal_options(&self) -> crate::FractalOptions<B> {
+    fn get_fractal_options(&self) -> FractalOptions<B> {
         self.fractal_options.clone()
     }
 }

@@ -1,6 +1,6 @@
 use std::{convert::TryInto, marker::PhantomData, ops::Add};
 
-use fractal_indexer::hash_values;
+use winter_fri::utils::hash_values;
 use fractal_utils::polynomial_utils::*;
 use log::debug;
 use winter_crypto::{BatchMerkleProof, ElementHasher, Hasher, MerkleTree};

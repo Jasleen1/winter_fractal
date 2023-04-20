@@ -2,7 +2,7 @@ use std::{convert::TryInto, marker::PhantomData};
 
 use fractal_indexer::hash_values;
 use fractal_proofs::{polynom, RowcheckProof};
-use fractal_utils::{polynomial_utils::*, channel::DefaultFractalProverChannel};
+use fractal_utils::{polynomial_utils::*, channel::DefaultFractalProverChannel, FractalOptions};
 
 use winter_crypto::{ElementHasher, Hasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions};
@@ -11,8 +11,9 @@ use winter_utils::transpose_slice;
 
 use fractal_accumulator::accumulator::Accumulator;
 use low_degree_prover::low_degree_prover::LowDegreeProver;
+
 use crate::{
-    errors::ProverError, FractalOptions, LayeredSubProver,
+    errors::ProverError, LayeredSubProver,
 };
 
 pub struct RowcheckProver<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
@@ -184,7 +185,7 @@ impl<
         self.current_layer
     }
 
-    fn get_fractal_options(&self) -> crate::FractalOptions<B> {
+    fn get_fractal_options(&self) -> FractalOptions<B> {
         self.fractal_options.clone()
     }
 }

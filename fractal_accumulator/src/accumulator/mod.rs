@@ -14,7 +14,7 @@ pub struct Accumulator<
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
     pub evaluation_domain_len: usize,
-    pub offset: B,
+    pub eval_domain_offset: B,
     pub evaluation_domain: Vec<B>,
     pub num_queries: usize,
     pub fri_options: FriOptions,
@@ -41,7 +41,7 @@ impl<
 {
     pub fn new(
         evaluation_domain_len: usize,
-        offset: B,
+        eval_domain_offset: B,
         evaluation_domain: Vec<B>,
         num_queries: usize,
         fri_options: FriOptions,
@@ -49,7 +49,7 @@ impl<
     ) -> Self {
         Self {
             evaluation_domain_len,
-            offset,
+            eval_domain_offset,
             evaluation_domain,
             num_queries,
             fri_options,
@@ -93,7 +93,7 @@ impl<
             coeffs_b,
             self.coefficients_ext.clone(),
             self.evaluation_domain_len,
-            self.offset,
+            self.eval_domain_offset,
         );
         //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
         //self.fri_coefficients.append(&mut self.coefficients.clone());
@@ -200,7 +200,7 @@ impl<
 
     /// This is the same as decommit_layer but with queries.
     pub fn decommit_layer_with_queries(
-        &mut self,
+        &self,
         layer_idx: usize,
         queries: &Vec<usize>,
     ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorProverError> {

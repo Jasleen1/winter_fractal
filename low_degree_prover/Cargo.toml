@@ -10,7 +10,6 @@ edition = "2021"
 displaydoc = "0.1.7"
 log = { version = "0.4", default-features = false }
 models = { version = "0.1.0", path = "../models", package = "winter-models", default-features = false }
-fractal_indexer = {path = "../fractal_indexer" }
 fractal_utils = { path = "../fractal_utils" }
 fractal_proofs = {path = "../fractal_proofs" }
 serde = { version = "1.0.117", features = ["derive"] }

@@ -6,8 +6,9 @@ use fractal_indexer::indexed_matrix::compute_derivative_xx;
 use fractal_indexer::snark_keys::{ProverKey, VerifierKey};
 use fractal_proofs::{
     compute_derivative_on_single_val, FieldElement, LayeredLincheckProof, LayeredSumcheckProof,
-    LincheckProof, QueriedPositions,
+    LincheckProof, QueriedPositions, TopLevelProof,
 };
+use fractal_utils::FractalOptions;
 use log::debug;
 
 use winter_crypto::{ElementHasher, RandomCoin};
@@ -18,7 +19,7 @@ pub fn verify_lincheck_proof<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
-    verifier_key: &VerifierKey<B, E, H>,
+    verifier_key: &VerifierKey<B, H>,
     proof: LincheckProof<B, E, H>,
     _expected_alpha: B,
     public_coin: &mut RandomCoin<B, H>,
@@ -81,13 +82,167 @@ pub fn verify_lincheck_proof<
     Ok(())
 }
 
+pub fn verify_layered_lincheck_proof_from_top<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher<BaseField = B>,
+>(
+    verifier_key: VerifierKey<B, H>,
+    proof: TopLevelProof<B, E, H>,
+    pub_inputs_bytes: Vec<u8>,
+    options: FractalOptions<B>,
+) -> Result<(), LincheckVerifierError> {
+    let mut accumulator_verifier: AccumulatorVerifier<B, E, H> = AccumulatorVerifier::new(
+        options.evaluation_domain.len(),
+        options.eta,
+        options.evaluation_domain.clone(),
+        options.num_queries,
+        options.fri_options.clone(),
+        pub_inputs_bytes.clone(),
+    );
+
+    // draw queries using only the last iop layer commit and the public input.
+    // this helps keep the rngs in sync, but proper chaining of layers needs to be checked elsewhere!
+    println!("layer commitment count: {}", &proof.layer_commitments.len());
+    let query_seed = proof.layer_commitments[1];
+    let mut coin = RandomCoin::<B, H>::new(&pub_inputs_bytes);
+    coin.reseed(query_seed);
+
+    let query_indices = coin
+        .draw_integers(options.num_queries, options.evaluation_domain.len())
+        .expect("failed to draw query position");
+    
+    verify_decommitments(&verifier_key, &proof, &query_indices, &mut accumulator_verifier)?;
+
+    let lincheck_proof = parse_proofs_for_subroutines(&proof, &pub_inputs_bytes);
+    verify_layered_lincheck_proof(&mut accumulator_verifier, &verifier_key, &query_indices, &lincheck_proof, 1)?;
+    
+    accumulator_verifier.verify_fri_proof(proof.layer_commitments[2], proof.low_degree_proof, pub_inputs_bytes)?;
+    
+    Ok(())
+}
+
+pub fn verify_decommitments<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher<BaseField = B>,
+>(
+    verifier_key: &VerifierKey<B, H>,
+    proof: &TopLevelProof<B, E, H>,
+    query_indices: &Vec<usize>,
+    accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
+) -> Result<(), LincheckVerifierError>{
+
+    // Verify that the committed preprocessing was queried correctly
+    accumulator_verifier.verify_layer_with_queries(
+        verifier_key.commitment,
+        query_indices,
+        &proof.preprocessing_decommitment.0,
+        &proof.preprocessing_decommitment.1,
+    )?;
+    
+    // Verify that the committed layers were queried correctly
+    accumulator_verifier.verify_layer_with_queries(
+        proof.layer_commitments[0],
+        query_indices,
+        &proof.layer_decommitments[0].0,
+        &proof.layer_decommitments[0].1,
+    )?;
+    accumulator_verifier.verify_layer_with_queries(
+        proof.layer_commitments[1],
+        query_indices,
+        &proof.layer_decommitments[1].0,
+        &proof.layer_decommitments[1].1,
+    )?;
+    accumulator_verifier.verify_layer_with_queries(
+        proof.layer_commitments[2],
+        query_indices,
+        &proof.layer_decommitments[2].0,
+        &proof.layer_decommitments[2].1,
+    )?;
+    Ok(())
+}
+
+fn parse_proofs_for_subroutines<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher<BaseField = B>,
+>(
+    proof: &TopLevelProof<B, E, H>,
+    public_inputs_bytes: &Vec<u8>,
+) -> LayeredLincheckProof<B,E> {
+
+    // Matrix A preprocessing
+    let col_a = extract_vec_e(&proof.preprocessing_decommitment.0, 0);
+    let row_a = extract_vec_e(&proof.preprocessing_decommitment.0, 1);
+    let val_a = extract_vec_e(&proof.preprocessing_decommitment.0, 2);
+
+    // get values from the first layer
+    let f_z_vals = extract_vec_e(&proof.layer_decommitments[0].0, 0);
+    let f_az_vals = extract_vec_e(&proof.layer_decommitments[0].0, 1);
+
+    // get values from the second layer
+    let s_vals = extract_vec_e(&proof.layer_decommitments[1].0, 0);
+    let t_alpha_a_vals = extract_vec_e(&proof.layer_decommitments[1].0, 1);
+    let product_sumcheck_a_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[1].0, 2, 3);
+
+    // get values from the third layer
+    let matrix_sumcheck_a_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[2].0, 0, 1);
+
+    // Sample our own alpha and beta to check the prover
+    let mut coin = RandomCoin::<B, H>::new(&public_inputs_bytes);
+    coin.reseed(proof.layer_commitments[0]);
+    let alpha: E = coin.draw().expect("failed to draw FRI alpha");
+
+    coin.reseed(proof.layer_commitments[1]);
+    let beta: E = coin.draw().expect("failed to draw FRI alpha");
+
+    let gammas = &proof.unverified_misc;
+
+    LayeredLincheckProof {
+        row_vals: row_a,
+        col_vals: col_a,
+        val_vals: val_a,
+        f_z_vals: f_z_vals.clone(),
+        f_mz_vals: f_az_vals.clone(),
+        t_alpha_vals: t_alpha_a_vals,
+        product_sumcheck_vals: product_sumcheck_a_vals,
+        matrix_sumcheck_vals: matrix_sumcheck_a_vals,
+        alpha,
+        beta,
+        gamma: gammas[0],
+    }
+}
+
+fn extract_vec_e<B: StarkField, E: FieldElement<BaseField = B>>(
+    vec_of_decommits: &Vec<Vec<E>>,
+    position: usize,
+) -> Vec<E> {
+    vec_of_decommits
+        .iter()
+        .map(|x| x[position])
+        .collect::<Vec<E>>()
+}
+
+fn extract_sumcheck_vec_e<B: StarkField, E: FieldElement<BaseField = B>>(
+    vec_of_decommits: &Vec<Vec<E>>,
+    position_g: usize,
+    position_e: usize,
+) -> Vec<(E, E)> {
+    vec_of_decommits
+        .iter()
+        .map(|x| (x[position_g], x[position_e]))
+        .collect::<Vec<(E, E)>>()
+}
+
 pub(crate) fn verify_layered_lincheck_proof<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
+    //todo: these params are ordered inconsistently
     accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
-    verifier_key: &VerifierKey<B, E, H>,
+    verifier_key: &VerifierKey<B, H>,
     queried_positions: &Vec<usize>,
     proof: &LayeredLincheckProof<B, E>,
     starting_layer: usize,
@@ -228,7 +383,7 @@ pub fn add_lincheck_verification<
     H: ElementHasher<BaseField = B>,
 >(
     accumulator_verifier: &mut AccumulatorVerifier<B, E, H>,
-    verifier_key: &VerifierKey<B, E, H>,
+    verifier_key: &VerifierKey<B, H>,
     decommit: Vec<Vec<E>>,
     row_idx: usize,
     col_idx: usize,
@@ -393,7 +548,7 @@ pub(crate) fn prepare_lincheck_verifier_inputs<E: FieldElement>(
 mod test {
     use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
     use crate::errors::TestingError;
-    use crate::lincheck_verifier::{add_lincheck_verification, prepare_lincheck_verifier_inputs};
+    use crate::lincheck_verifier::{add_lincheck_verification, prepare_lincheck_verifier_inputs, verify_layered_lincheck_proof_from_top};
     use crate::rowcheck_verifier::add_rowcheck_verification;
 
     use super::verify_lincheck_proof;
@@ -405,8 +560,9 @@ mod test {
     use fractal_utils::channel::DefaultFractalProverChannel;
     use fractal_prover::errors::ProverError;
     use fractal_prover::lincheck_prover::LincheckProver;
-    use fractal_prover::prover::*;
-    use fractal_prover::{FractalOptions, LayeredSubProver};
+    use fractal_prover::{prover::*, LayeredProver};
+    use fractal_utils::FractalOptions;
+    use fractal_prover::{LayeredSubProver};
     use models::r1cs::Matrix;
     use std::ops::Add;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -446,10 +602,7 @@ mod test {
         let pub_inputs_bytes = vec![];
 
         // PROVER TASKS
-        // Actually generate the f_az, f_bz, f_cz polynomials
-        // For this dummy example, we'll basically generate them randomly.
-        // But remember! To be valid, f_cz must = f_az * f_bz.
-        // random coefficients (todo, make it random)
+        println!("starting prover tasks");
         let num_coeffs = (h_domain.len()) as u128;
 
         let inv_twiddles_h = fft::get_inv_twiddles(wires.len());
@@ -489,6 +642,16 @@ mod test {
             z_coeffs.to_vec(),
             &fractal_options,
         );
+
+        let proof = lincheck_prover_a.generate_proof(&Some(prover_key), pub_inputs_bytes.clone()).unwrap();
+        
+        println!("starting verifier tasks");
+        verify_layered_lincheck_proof_from_top(verifier_key, proof, pub_inputs_bytes, fractal_options).unwrap();
+
+        Ok(())
+
+        /* 
+
         let alpha = accumulator.draw_queries(Some(1))?[0];
         lincheck_prover_a
             .run_next_layer(alpha, &mut accumulator)
@@ -504,9 +667,8 @@ mod test {
         let beta = accumulator.draw_queries(Some(1))?[0];
 
         assert!(verifier_key
-            .matrix_b_commitments
-            .row_poly_commitment
-            .eq(&verifier_key_2.matrix_b_commitments.row_poly_commitment));
+            .commitment
+            .eq(&verifier_key_2.commitment));
 
         lincheck_prover_a
             .run_next_layer(beta, &mut accumulator)
@@ -516,7 +678,11 @@ mod test {
 
         let layer_3_queries = accumulator.draw_query_positions()?;
         // To show correctness, including of linking the two layers, query them at the same points
-        let preprocessed_values = prover_key.matrix_a_index.decommit_evals(&layer_3_queries)?;
+        let preprocessed_values = prover_key.decommit_evals(&layer_3_queries)?;
+        let col_a = extract_vec_e(&preprocessed_values.0, 0);
+        let row_a = extract_vec_e(&preprocessed_values.0, 1);
+        let val_a = extract_vec_e(&preprocessed_values.0, 2);
+
         let decommit_layer_1_polys =
             accumulator.decommit_layer_with_queries(1, &layer_3_queries)?;
         let decommit_layer_2_polys =
@@ -525,15 +691,15 @@ mod test {
             accumulator.decommit_layer_with_queries(3, &layer_3_queries)?;
 
         let pp_0 = &preprocessed_values[0];
-        let preprocessed_inputs_0 = &pp_0.0;
+        let preprocessed_inputs_0 = &row_a;
         // .iter()
         // .map(|val| vec![E::from(*val)])
         // .collect::<Vec<Vec<E>>>();
-        let preprocessed_inputs_1 = &preprocessed_values[1].0;
+        let preprocessed_inputs_1 = &col_a;
         // .iter()
         // .map(|val| vec![E::from(*val)])
         // .collect::<Vec<Vec<E>>>();
-        let preprocessed_inputs_2 = &preprocessed_values[2].0;
+        let preprocessed_inputs_2 = &val_a;
         // .iter()
         // .map(|val| vec![E::from(*val)])
         // .collect::<Vec<Vec<E>>>();
@@ -630,6 +796,7 @@ mod test {
         // how does verifier know which proofs in which layers?
         // needs set of instructions: verify x constraint, move to next layer
         // as a first step, can you give it the full proof, then call functions in order?
+        */
     }
 
     // Multiply a matrix times a vector of evaluations, then interpolate a poly and return its coeffs.
@@ -646,5 +813,15 @@ mod test {
         let mut product = matrix.dot(vec); // as evals
         fft::interpolate_poly_with_offset(&mut product, inv_twiddles, eta); // as coeffs
         Ok(product) // as coeffs
+    }
+
+    fn extract_vec_e<B: StarkField, E: FieldElement<BaseField = B>>(
+        vec_of_decommits: &Vec<Vec<E>>,
+        position: usize,
+    ) -> Vec<E> {
+        vec_of_decommits
+            .iter()
+            .map(|x| x[position])
+            .collect::<Vec<E>>()
     }
 }

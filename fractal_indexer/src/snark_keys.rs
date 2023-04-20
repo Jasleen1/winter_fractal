@@ -5,6 +5,8 @@ use crate::{
     index::{create_index_from_r1cs, Index, IndexParams},
     indexed_matrix::IndexedMatrix,
 };
+use fractal_accumulator::{accumulator::Accumulator, errors::AccumulatorProverError};
+use fractal_utils::FractalOptions;
 //use fri::utils::hash_values;
 use models::r1cs::{Matrix, R1CS};
 use winter_crypto::{BatchMerkleProof, ElementHasher, Hasher, MerkleTree, MerkleTreeError};
@@ -55,14 +57,31 @@ impl<
 pub struct ProverMatrixIndex<
     B: StarkField,
     E: FieldElement<BaseField = B>,
-    H: ElementHasher + ElementHasher<BaseField = B>,
 > {
     pub matrix: Matrix<B>,
-    pub row_poly: ProverIndexPolynomial<B, E, H>,
-    pub col_poly: ProverIndexPolynomial<B, E, H>,
-    pub val_poly: ProverIndexPolynomial<B, E, H>,
+    pub row_poly: Vec<B>,
+    pub col_poly: Vec<B>,
+    pub val_poly: Vec<B>,
+    _e: PhantomData<E>
 }
 
+impl<
+        B: StarkField,
+        E: FieldElement<BaseField = B>,
+    > ProverMatrixIndex<B,E>
+{
+    pub fn get_val_eval(&self, point: E) -> E {
+        polynom::eval(&self.val_poly, point)
+    }
+
+    pub fn get_col_eval(&self, point: E) -> E {
+        polynom::eval(&self.col_poly, point)
+    }
+
+    pub fn get_row_eval(&self, point: E) -> E {
+        polynom::eval(&self.row_poly, point)
+    }
+}
 // impl<H: ElementHasher + ElementHasher<BaseField = B>, B: StarkField> Clone for ProverMatrixIndex<H, B> {
 //     fn clone(&self) -> Self {
 //         ProverMatrixIndex {
@@ -74,7 +93,7 @@ pub struct ProverMatrixIndex<
 //     }
 // }
 
-impl<
+/*impl<
         B: StarkField,
         E: FieldElement<BaseField = B>,
         H: ElementHasher + ElementHasher<BaseField = B>,
@@ -186,47 +205,56 @@ impl<
             _ => Err(MerkleTreeError::InvalidProof),
         }
     }
-}
+}*/
 
-#[derive(Debug, Clone)] // Clone
 pub struct ProverKey<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
     pub params: IndexParams<B>,
-    pub matrix_a_index: ProverMatrixIndex<B, E, H>,
-    pub matrix_b_index: ProverMatrixIndex<B, E, H>,
-    pub matrix_c_index: ProverMatrixIndex<B, E, H>,
+    pub matrix_a_index: ProverMatrixIndex<B,E>,
+    pub matrix_b_index: ProverMatrixIndex<B,E>,
+    pub matrix_c_index: ProverMatrixIndex<B,E>,
+    pub accumulator: Accumulator<B, E, H>
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl<
+        B: StarkField,
+        E: FieldElement<BaseField = B>,
+        H: ElementHasher + ElementHasher<BaseField = B>,
+    > ProverKey<B, E, H>
+{
+    pub fn decommit_evals(
+        &self,
+        queries: &Vec<usize>,
+    ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorProverError> {
+        self.accumulator.decommit_layer_with_queries(1, queries)
+    }
+}
+
+/*#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VerifierMatrixIndex<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
-    pub row_poly_commitment: H::Digest,
-    pub col_poly_commitment: H::Digest,
-    pub val_poly_commitment: H::Digest,
+    pub commitment: H::Digest,
     pub _phantom_e: PhantomData<E>,
-}
+}*/
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VerifierKey<
     B: StarkField,
-    E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
     pub params: IndexParams<B>,
-    pub matrix_a_commitments: VerifierMatrixIndex<B, E, H>,
-    pub matrix_b_commitments: VerifierMatrixIndex<B, E, H>,
-    pub matrix_c_commitments: VerifierMatrixIndex<B, E, H>,
+    pub commitment: H::Digest,
 }
 
 // QUESTION: Currently using the utils hash_values function which uses quartic folding.
 // Is there any drawback to doing this here, where there's no layering?
-pub fn commit_polynomial_evaluations<
+/*pub fn commit_polynomial_evaluations<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
@@ -324,9 +352,77 @@ pub fn generate_prover_and_verifier_keys<
             matrix_c_commitments,
         },
     ))
+}*/
+
+pub fn generate_prover_and_verifier_keys<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher + ElementHasher<BaseField = B>,
+>(
+    Index {
+        params,
+        indexed_a,
+        indexed_b,
+        indexed_c,
+    }: Index<B, E>,
+    options: FractalOptions<B>,
+) -> Result<(ProverKey<B, E, H>, VerifierKey<B, H>), IndexerError> {
+    let mut acc = Accumulator::<B, E, H>::new(
+        options.evaluation_domain.len(),
+        B::ONE,
+        options.evaluation_domain.clone(),
+        options.num_queries,
+        options.fri_options.clone(),
+        vec![]
+    );
+    acc.add_unchecked_polynomial(indexed_a.col_poly.clone());
+    acc.add_unchecked_polynomial(indexed_a.row_poly.clone());
+    acc.add_unchecked_polynomial(indexed_a.val_poly.clone());
+    acc.add_unchecked_polynomial(indexed_b.col_poly.clone());
+    acc.add_unchecked_polynomial(indexed_b.row_poly.clone());
+    acc.add_unchecked_polynomial(indexed_b.val_poly.clone());
+    acc.add_unchecked_polynomial(indexed_c.col_poly.clone());
+    acc.add_unchecked_polynomial(indexed_c.row_poly.clone());
+    acc.add_unchecked_polynomial(indexed_c.val_poly.clone());
+    let layer_commit = acc.commit_layer().unwrap();
+
+    let matrix_a_index = ProverMatrixIndex {
+        matrix: indexed_a.matrix,
+        row_poly: indexed_a.row_poly,
+        col_poly: indexed_a.col_poly,
+        val_poly: indexed_a.val_poly,
+        _e: PhantomData
+    };
+    let matrix_b_index = ProverMatrixIndex {
+        matrix: indexed_b.matrix,
+        row_poly: indexed_b.row_poly,
+        col_poly: indexed_b.col_poly,
+        val_poly: indexed_b.val_poly,
+        _e: PhantomData
+    };
+    let matrix_c_index = ProverMatrixIndex {
+        matrix: indexed_c.matrix,
+        row_poly: indexed_c.row_poly,
+        col_poly: indexed_c.col_poly,
+        val_poly: indexed_c.val_poly,
+        _e: PhantomData
+    };
+    Ok((
+        ProverKey {
+            params: params.clone(),
+            matrix_a_index,
+            matrix_b_index,
+            matrix_c_index,
+            accumulator: acc
+        },
+        VerifierKey {
+            params,
+            commitment: layer_commit,
+        },
+    ))
 }
 
-pub fn generate_basefield_keys<
+/*pub fn generate_basefield_keys<
     B: StarkField,
     H: ElementHasher + ElementHasher<BaseField = B>,
     const N: usize,
@@ -336,4 +432,4 @@ pub fn generate_basefield_keys<
 ) -> Result<(ProverKey<B, B, H>, VerifierKey<B, B, H>), IndexerError> {
     let index = create_index_from_r1cs(params, r1cs_instance);
     generate_prover_and_verifier_keys::<B, B, H, N>(index)
-}
+}*/

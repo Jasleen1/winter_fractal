@@ -1,7 +1,9 @@
 use std::thread::AccessError;
 
 use fractal_accumulator::{accumulator::Accumulator, errors::AccumulatorProverError};
+use fractal_indexer::snark_keys::ProverKey;
 use fractal_utils::channel::DefaultFractalProverChannel;
+use fractal_utils::FractalOptions;
 use errors::ProverError;
 use fractal_proofs::{FieldElement, LayeredProof, LowDegreeBatchProof, IopData, TopLevelProof};
 use log;
@@ -17,23 +19,6 @@ pub mod sumcheck_prover;
 mod tests;
 
 pub const FRACTAL_LAYERS: usize = 3;
-
-#[derive(Clone)]
-pub struct FractalOptions<B: StarkField> {
-    pub degree_fs: usize,
-    pub size_subgroup_h: usize,
-    pub size_subgroup_k: usize,
-    // K domain in paper
-    pub summing_domain: Vec<B>,
-    // L domain in paper
-    pub evaluation_domain: Vec<B>,
-    // H domain in paper
-    pub h_domain: Vec<B>,
-    pub eta: B,
-    pub eta_k: B,
-    pub fri_options: FriOptions,
-    pub num_queries: usize,
-}
 
 //multiple proofs can be run in parallel starting from the same transcript state
 //Lincheck is 2 layers, Rowcheck is 1. Before all this, need to commit to f_az, f_bz, etc
@@ -123,7 +108,7 @@ pub trait LayeredProver<
     D: IopData<B, E>,
 >: LayeredSubProver<B, E, H>
 {
-    fn generate_proof(&mut self, public_input_bytes: Vec<u8>) -> Result<TopLevelProof<B,E,H>, ProverError>;
+    fn generate_proof(&mut self, prover_key: &Option<ProverKey<B,E,H>>, public_input_bytes: Vec<u8>) -> Result<TopLevelProof<B,E,H>, ProverError>;
     // {
     //     let options = self.get_fractal_options();
     //     let mut channel = DefaultFractalProverChannel::<B, E, H>::new(

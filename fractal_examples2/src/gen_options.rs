@@ -8,7 +8,7 @@ use std::cmp::max;
 
 use fractal_indexer::index::get_max_degree;
 use winter_fri::FriOptions;
-use fractal_prover::FractalOptions;
+use fractal_utils::FractalOptions;
 
 use fractal_indexer::{
     index::{build_index_domains, Index, IndexParams},
@@ -35,7 +35,7 @@ pub fn get_example_setup<
 >() -> (
     FractalOptions<B>,
     ProverKey<B, E, H>,
-    VerifierKey<B, E, H>,
+    VerifierKey<B, H>,
     Vec<B>,
 ) {
     let mut options = ExampleOptions::from_args();
@@ -68,7 +68,7 @@ fn files_to_setup_outputs<
 ) -> (
     FractalOptions<B>,
     ProverKey<B, E, H>,
-    VerifierKey<B, E, H>,
+    VerifierKey<B, H>,
     Vec<B>,
 ) {
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
@@ -114,9 +114,6 @@ fn files_to_setup_outputs<
     // This is the index i.e. the pre-processed data for this r1cs
     let index = Index::new(index_params.clone(), indexed_a, indexed_b, indexed_c);
 
-    let (prover_key, verifier_key) =
-        generate_prover_and_verifier_keys::<B, E, H, N>(index).unwrap();
-
     // TODO: the IndexDomains should already guarantee powers of two, so why add extraneous bit or use next_power_of_two?
 
     let degree_fs = r1cs.num_cols();
@@ -145,6 +142,10 @@ fn files_to_setup_outputs<
         fri_options,
         num_queries,
     };
+
+    let (prover_key, verifier_key) =
+        generate_prover_and_verifier_keys::<B, E, H>(index, options.clone()).unwrap();
+
     (options, prover_key, verifier_key, wires)
 }
 
