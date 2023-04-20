@@ -289,6 +289,9 @@ pub struct TopLevelProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hashe
     pub preprocessing_decommitment: (Vec<Vec<E>>, BatchMerkleProof<H>),
     pub layer_commitments: Vec<H::Digest>,
     pub layer_decommitments: Vec<(Vec<Vec<E>>, BatchMerkleProof<H>)>,
+    // commitment to the initial instance-dependent polynomials we're using the IOP to prove things about
+    pub initial_commitment: H::Digest,
+    pub initial_decommitment: (Vec<Vec<E>>, BatchMerkleProof<H>),
     pub unverified_misc: Vec<E>,
     pub low_degree_proof: LowDegreeBatchProof<B, E, H>
 }

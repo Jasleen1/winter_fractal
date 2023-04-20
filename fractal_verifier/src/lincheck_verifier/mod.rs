@@ -117,7 +117,7 @@ pub fn verify_layered_lincheck_proof_from_top<
     let lincheck_proof = parse_proofs_for_subroutines(&proof, &pub_inputs_bytes);
     verify_layered_lincheck_proof(&mut accumulator_verifier, &verifier_key, &query_indices, &lincheck_proof, 1)?;
     
-    accumulator_verifier.verify_fri_proof(proof.layer_commitments[2], proof.low_degree_proof, pub_inputs_bytes)?;
+    accumulator_verifier.verify_fri_proof(proof.layer_commitments[1], proof.low_degree_proof, pub_inputs_bytes)?;
     
     Ok(())
 }
@@ -140,6 +140,14 @@ pub fn verify_decommitments<
         &proof.preprocessing_decommitment.0,
         &proof.preprocessing_decommitment.1,
     )?;
+
+    // Verify that the committed initial polynomials were queried correcly
+    accumulator_verifier.verify_layer_with_queries(
+        proof.initial_commitment,
+        query_indices,
+        &proof.initial_decommitment.0,
+        &proof.initial_decommitment.1,
+    )?;
     
     // Verify that the committed layers were queried correctly
     accumulator_verifier.verify_layer_with_queries(
@@ -154,12 +162,7 @@ pub fn verify_decommitments<
         &proof.layer_decommitments[1].0,
         &proof.layer_decommitments[1].1,
     )?;
-    accumulator_verifier.verify_layer_with_queries(
-        proof.layer_commitments[2],
-        query_indices,
-        &proof.layer_decommitments[2].0,
-        &proof.layer_decommitments[2].1,
-    )?;
+    
     Ok(())
 }
 
@@ -177,25 +180,26 @@ fn parse_proofs_for_subroutines<
     let row_a = extract_vec_e(&proof.preprocessing_decommitment.0, 1);
     let val_a = extract_vec_e(&proof.preprocessing_decommitment.0, 2);
 
+    // get values from the initial polynomials
+    let f_z_vals = extract_vec_e(&proof.initial_decommitment.0, 0);
+    let f_az_vals = extract_vec_e(&proof.initial_decommitment.0, 1);
+
     // get values from the first layer
-    let f_z_vals = extract_vec_e(&proof.layer_decommitments[0].0, 0);
-    let f_az_vals = extract_vec_e(&proof.layer_decommitments[0].0, 1);
+    let t_alpha_a_vals = extract_vec_e(&proof.layer_decommitments[0].0, 0);
+    let product_sumcheck_a_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[0].0, 1, 2);
 
     // get values from the second layer
-    let s_vals = extract_vec_e(&proof.layer_decommitments[1].0, 0);
-    let t_alpha_a_vals = extract_vec_e(&proof.layer_decommitments[1].0, 1);
-    let product_sumcheck_a_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[1].0, 2, 3);
-
-    // get values from the third layer
-    let matrix_sumcheck_a_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[2].0, 0, 1);
+    let matrix_sumcheck_a_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[1].0, 0, 1);
 
     // Sample our own alpha and beta to check the prover
     let mut coin = RandomCoin::<B, H>::new(&public_inputs_bytes);
-    coin.reseed(proof.layer_commitments[0]);
+    coin.reseed(proof.initial_commitment);
     let alpha: E = coin.draw().expect("failed to draw FRI alpha");
 
-    coin.reseed(proof.layer_commitments[1]);
+    coin.reseed(proof.layer_commitments[0]);
     let beta: E = coin.draw().expect("failed to draw FRI alpha");
+
+    println!("Verifer alpha, beta: {}, {}", &alpha, &beta);
 
     let gammas = &proof.unverified_misc;
 
@@ -505,7 +509,7 @@ fn compute_derivative<B: StarkField, E: FieldElement<BaseField = B>>(
 /// This function will change as we extend to also accumulate the lincheck parts
 /// For now it takes in a vector of decommitted values and returns an aptly parsed decommitment.
 /// It implicitly assumes that all the vectors of decommitted values are of the same length
-pub(crate) fn prepare_lincheck_verifier_inputs<E: FieldElement>(
+/*pub(crate) fn prepare_lincheck_verifier_inputs<E: FieldElement>(
     decommits: Vec<Vec<Vec<E>>>,
 ) -> Vec<Vec<E>> {
     let mut return_vec = Vec::new();
@@ -542,13 +546,13 @@ pub(crate) fn prepare_lincheck_verifier_inputs<E: FieldElement>(
     }
 
     return_vec
-}
+}*/
 
 #[cfg(test)]
 mod test {
     use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
     use crate::errors::TestingError;
-    use crate::lincheck_verifier::{add_lincheck_verification, prepare_lincheck_verifier_inputs, verify_layered_lincheck_proof_from_top};
+    use crate::lincheck_verifier::{add_lincheck_verification, verify_layered_lincheck_proof_from_top};
     use crate::rowcheck_verifier::add_rowcheck_verification;
 
     use super::verify_lincheck_proof;
@@ -606,21 +610,17 @@ mod test {
         let num_coeffs = (h_domain.len()) as u128;
 
         let inv_twiddles_h = fft::get_inv_twiddles(wires.len());
-        // 1. Generate lincheck coefficients for one matrix
-        let mut z_coeffs = &mut wires.clone(); // evals
-        fft::interpolate_poly_with_offset(&mut z_coeffs, &inv_twiddles_h, prover_key.params.eta); // coeffs
-                                                                                                  // let matrix_a_index = prover_key.matrix_a_index;
-                                                                                                  // Get the f_az coeffs
-        let f_az_coeffs = &mut compute_matrix_mul_poly_coeffs::<B, E, H>(
+        // Generate lincheck coefficients for one matrix
+        let mut z_coeffs = wires.clone(); // evals
+        fft::interpolate_poly_with_offset(&mut z_coeffs, &inv_twiddles_h, prover_key.params.eta); 
+        let f_az_coeffs = compute_matrix_mul_poly_coeffs::<B, E, H>(
             &prover_key.matrix_a_index.matrix,
             &wires.clone(),
             &inv_twiddles_h,
             prover_key.params.eta,
         )?;
 
-        // Now that we have the f_Mz polynomials, we can commit to them, all in one go,
-        // using the accumulator.
-        let mut accumulator = Accumulator::<B, E, H>::new(
+        /*let mut accumulator = Accumulator::<B, E, H>::new(
             eval_len,
             fractal_options.eta,
             evaluation_domain.clone(),
@@ -633,13 +633,13 @@ mod test {
         accumulator.add_unchecked_polynomial(f_az_coeffs.clone());
 
         // Commit to the f_z and f_az polynomials before you move forward.
-        let init_commit = accumulator.commit_layer()?;
+        let init_commit = accumulator.commit_layer()?;*/
 
         // Now the lincheck prover does its work.
         let mut lincheck_prover_a = LincheckProver::<B, E, H>::new(
             prover_key_2.matrix_a_index,
-            f_az_coeffs.to_vec(),
-            z_coeffs.to_vec(),
+            f_az_coeffs,
+            z_coeffs,
             &fractal_options,
         );
 

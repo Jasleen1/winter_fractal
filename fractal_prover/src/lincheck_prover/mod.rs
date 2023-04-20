@@ -476,56 +476,20 @@ impl<
             options.fri_options.clone(),
             public_inputs_bytes
         );
-        //let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 3];
+
+        acc.add_unchecked_polynomial(self.f_2_poly_coeffs.clone());
+        acc.add_unchecked_polynomial(self.f_1_poly_coeffs.clone());
+        let initial_commitment = acc.commit_layer()?;
+        
+
         let mut layer_commitments = vec![];
         let mut local_queries = Vec::<E>::new();
 
-        // BEGIN JANK
-        /*let inv_twiddles_h = fft::get_inv_twiddles(self.variable_assignment.len());
-        let mut z_coeffs = &mut self.variable_assignment.clone(); // evals
-        fft::interpolate_poly_with_offset(
-            &mut z_coeffs,
-            &inv_twiddles_h,
-            prover_key.as_ref().unwrap().params.eta,
-        ); // coeffs
-
-        let f_az_coeffs = compute_matrix_mul_poly_coeffs(
-            &prover_key.as_ref().unwrap().matrix_a_index.matrix,
-            &self.variable_assignment.clone(),
-            &inv_twiddles_h,
-            prover_key.as_ref().unwrap().params.eta,
-        )?;
-
-        let f_bz_coeffs = compute_matrix_mul_poly_coeffs(
-            &prover_key.as_ref().unwrap().matrix_b_index.matrix,
-            &self.variable_assignment.clone(),
-            &inv_twiddles_h,
-            prover_key.as_ref().as_ref().unwrap().params.eta,
-        )?;
-
-        let f_cz_coeffs = compute_matrix_mul_poly_coeffs(
-            &prover_key.as_ref().unwrap().matrix_c_index.matrix,
-            &self.variable_assignment.clone(),
-            &inv_twiddles_h,
-            prover_key.as_ref().unwrap().params.eta,
-        )?;
-
-        //TODO: Put in correct degree constraints
-        acc.add_unchecked_polynomial(z_coeffs.to_vec());
-        acc.add_unchecked_polynomial(f_az_coeffs.to_vec());
-        acc.add_unchecked_polynomial(f_bz_coeffs.to_vec());
-        acc.add_unchecked_polynomial(f_cz_coeffs.to_vec());*/
-
-        // END JANK
-
         for i in 0..self.get_num_layers() {
-            // local_queries.push(query);
-            // Doing this rn to make sure prover and verifier sample identically
-            if i > 0 {
-                let previous_commit = acc.get_layer_commitment(i)?;
-                channel.commit_fractal_iop_layer(previous_commit);
-                coin.reseed(previous_commit);
-            }
+            let previous_commit = acc.get_layer_commitment(i+1)?;
+            channel.commit_fractal_iop_layer(previous_commit);
+            coin.reseed(previous_commit);
+            
             let query = coin.draw().expect("failed to draw FRI alpha"); //channel.draw_fri_alpha();
             local_queries.push(query);
             self.run_next_layer(query, &mut acc)?;
@@ -534,38 +498,31 @@ impl<
 
         let queries = acc.draw_query_positions()?;
 
+        let initial_decommitment = acc.decommit_layer_with_queries(1, &queries)?;
+        let layer_decommits = vec![
+            acc.decommit_layer_with_queries(2, &queries)?,
+            acc.decommit_layer_with_queries(3, &queries)?,
+        ];
+        let preprocessing_decommitment = prover_key.as_ref().unwrap().accumulator.decommit_layer_with_queries(1, &queries)?;
+        
         let beta = local_queries[1];
 
-        let layer_decommits = vec![
-            acc.decommit_layer_with_queries(1, &queries)?,
-            acc.decommit_layer_with_queries(2, &queries)?,
-        ];
+        println!("Prover alpha?, beta: {}, {}", &local_queries[0], &beta);
         let gammas = vec![
             self.retrieve_gamma(beta)?,
         ];
 
-        let preprocessing_decommitment = prover_key.as_ref().unwrap().accumulator.decommit_layer_with_queries(1, &queries)?;
-        
         let low_degree_proof = acc.create_fri_proof()?;
 
         let proof = TopLevelProof {
             preprocessing_decommitment,
             layer_commitments: layer_commitments.to_vec(),
             layer_decommitments: layer_decommits,
+            initial_commitment,
+            initial_decommitment,
             unverified_misc: gammas,
             low_degree_proof
         };
         Ok(proof)
     }
-}
-
-fn compute_matrix_mul_poly_coeffs<B: StarkField>(
-    matrix: &Matrix<B>,
-    vec: &Vec<B>,
-    inv_twiddles: &[B],
-    eta: B,
-) -> Result<Vec<B>, ProverError> {
-    let mut product = matrix.dot(vec); // as evals
-    fft::interpolate_poly_with_offset(&mut product, inv_twiddles, eta); // as coeffs
-    Ok(product) // as coeffs
 }

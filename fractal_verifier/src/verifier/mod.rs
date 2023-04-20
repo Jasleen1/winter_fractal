@@ -257,6 +257,7 @@ fn parse_proofs_for_subroutines<
 
     // Sample our own alpha and beta to check the prover
     let mut coin = RandomCoin::<B, H>::new(&public_inputs_bytes);
+    //coin.reseed(proof.initial_commitment);
     coin.reseed(proof.layer_commitments[0]);
     let alpha: E = coin.draw().expect("failed to draw FRI alpha");
 

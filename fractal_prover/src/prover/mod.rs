@@ -288,6 +288,10 @@ impl<
 
         let beta = local_queries[2];
 
+        //todo: duplicate code. Fractal should be two layers and the initial_* fields should be used to replace what is currently layer 1
+        let initial_commitment = layer_commitments[0];
+        let initial_decommitment = acc.decommit_layer_with_queries(1, &queries)?;
+        
         let layer_decommits = vec![
             acc.decommit_layer_with_queries(1, &queries)?,
             acc.decommit_layer_with_queries(2, &queries)?,
@@ -307,6 +311,8 @@ impl<
             preprocessing_decommitment,
             layer_commitments: layer_commitments.to_vec(),
             layer_decommitments: layer_decommits,
+            initial_commitment,
+            initial_decommitment,
             unverified_misc: gammas,
             low_degree_proof
         };
