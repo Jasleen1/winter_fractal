@@ -8,6 +8,7 @@ pub enum LowDegreeVerifierError {
     /// Error propagation
     DeserializationErr(DeserializationError),
     PaddingErr,
+    MerkleTreeErr,
 }
 
 impl From<VerifierError> for LowDegreeVerifierError {
@@ -33,6 +34,9 @@ impl std::fmt::Display for LowDegreeVerifierError {
             }
             LowDegreeVerifierError::PaddingErr => {
                 writeln!(f, "Complimentary Polynomial Check Failed")
+            }
+            LowDegreeVerifierError::MerkleTreeErr => {
+                writeln!(f, "Merkle Tree Verification Failed")
             }
         }
     }

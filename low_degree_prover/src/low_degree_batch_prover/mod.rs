@@ -81,6 +81,19 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         self.constituant_polynomials.push(polynomial_coeffs.clone());
     }
 
+    /// Helper function to zip the evaluations so that each element of the output is of the
+    /// form [poly_1(e), ..., poly_n(e)] i.e. evaluations of all the polynomials are included
+    /// in the same array.
+    fn zip_evals(separate_evals: Vec<Vec<E>>, evaluation_domain_len: usize) -> Vec<Vec<E>> {
+        let mut zipped_evals = vec![Vec::<E>::new(); evaluation_domain_len];
+        for (_, eval) in separate_evals.iter().enumerate() {
+            for (loc, &val) in eval.iter().enumerate() {
+                zipped_evals[loc].push(val);
+            }
+        }
+        zipped_evals
+    }
+
     pub fn generate_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
@@ -88,27 +101,31 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     ) -> LowDegreeBatchProof<B, E, H> {
         // variable containing the result of evaluating each consitiuant polynomial on the set of queried eval points
         let mut all_unpadded_queried_evaluations: Vec<Vec<E>> = Vec::new();
-        let mut trees: Vec<MerkleTree<H>> = Vec::new();
-        let mut tree_roots: Vec<<H as Hasher>::Digest> = Vec::new();
+
+        let mut all_unpadded_evaluations = vec![];
         let eval_domain_size = self.evaluation_domain.len();
         let eval_domain_twiddles: Vec<B> = fft::get_twiddles(eval_domain_size);
+
         for poly in self.constituant_polynomials.iter() {
             let mut unpadded_evals = poly.clone();
             pad_with_zeroes(&mut unpadded_evals, eval_domain_size);
             fft::evaluate_poly(&mut unpadded_evals, &eval_domain_twiddles);
-            // let unpadded_evaluations = polynom::eval_many(&poly, &self.evaluation_domain);
-            let transposed_evaluations = transpose_slice(&unpadded_evals);
-            let hashed_evaluations = hash_values::<H, E, 1>(&transposed_evaluations);
-            let tree = MerkleTree::<H>::new(hashed_evaluations).unwrap();
-            tree_roots.push(*tree.root());
-            trees.push(tree);
+            all_unpadded_evaluations.push(unpadded_evals);
         }
 
-        // commit to all evaluations before drawing queries
-        for root in tree_roots.iter() {
-            channel.commit_fri_layer(*root);
-        }
+        let zipped_evals = Self::zip_evals(all_unpadded_evaluations, self.evaluation_domain.len());
+        let eval_hashes = zipped_evals
+            .iter()
+            .map(|evals| H::hash_elements(evals))
+            .collect::<Vec<_>>();
+        println!("len(eval_hashes): {}", &eval_hashes.len());
+        let tree = MerkleTree::<H>::new(eval_hashes).unwrap();
+        let tree_root = *tree.root();
+        channel.commit_fri_layer(tree_root);
+
         let queried_positions = channel.draw_query_positions();
+        let tree_proof = tree.prove_batch(&queried_positions).unwrap();
+
         let commitment_idx = channel.layer_commitments().len();
         let eval_domain_queried = queried_positions
             .iter()
@@ -119,15 +136,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             let unpadded_queried_evaluations = polynom::eval_many(&poly, &eval_domain_queried);
             all_unpadded_queried_evaluations.push(unpadded_queried_evaluations);
         }
-        let tree_proofs = trees
-            .iter()
-            .map(|tree| tree.prove_batch(&queried_positions).unwrap())
-            .collect();
-        // let mut composed_evals = self.randomized_sum.clone();
-        // println!("Size of rand sum pre = {:?}, size of eval domain = {}", composed_evals.len(), eval_domain_size);
-        // pad_with_zeroes(&mut composed_evals, eval_domain_size);
-        // println!("Size of rand sum post = {:?}, size of eval domain = {}", composed_evals.len(), eval_domain_size);
-        // fft::evaluate_poly(&mut composed_evals, &eval_domain_twiddles);
+        
         let composed_evals: Vec<E> =
             polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
         let mut fri_prover =
@@ -150,8 +159,8 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             all_unpadded_queried_evaluations,
             composed_queried_evaluations,
             commitments,
-            tree_roots,
-            tree_proofs,
+            tree_root,
+            tree_proof,
             fri_proof: fri_proof,
             max_degrees: self.max_degrees.clone(),
             fri_max_degree: self.fri_max_degree,

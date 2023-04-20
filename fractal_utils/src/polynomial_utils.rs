@@ -235,7 +235,9 @@ impl<
         }
     }
 
-    pub fn add_polynomial(&mut self, coefficients: Vec<B>, evaluation_domain_len: usize) -> () {
+    // Todo: Bug. This function does not use zip_evals, and so probably pushes values incorrectly
+    // luckily, doesn't seem to be used got anything right now
+    /*pub fn add_polynomial(&mut self, coefficients: Vec<B>, evaluation_domain_len: usize) -> () {
         let eval_twiddles = fft::get_twiddles(evaluation_domain_len);
         let evaluations = eval_on_domain(&coefficients, evaluation_domain_len, &eval_twiddles);
         self.coefficients.push(
@@ -251,7 +253,7 @@ impl<
                 .collect::<Vec<E>>(),
         );
         self.committed_tree = Option::None;
-    }
+    }*/
 
     /// This is mostly a helper function to evaluate the polynomials on a domain of given length
     /// for which twiddles are already computed.

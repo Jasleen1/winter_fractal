@@ -3,7 +3,7 @@ use crate::errors::LowDegreeVerifierError;
 use fractal_proofs::{polynom, FieldElement, LowDegreeBatchProof};
 use fractal_utils::channel::DefaultFractalVerifierChannel;
 use fractal_utils::polynomial_utils::*;
-use winter_crypto::{ElementHasher, RandomCoin};
+use winter_crypto::{ElementHasher, RandomCoin, MerkleTree, Digest};
 use winter_fri::FriVerifier;
 use winter_math::StarkField;
 
@@ -34,10 +34,10 @@ pub fn verify_low_degree_batch_proof<
 
     // rederive the evaluation domain size the same way as in the FRI verifier
     let eval_domain_size = proof.options.blowup_factor() * (proof.fri_max_degree + 1);
-
-    for root in proof.tree_roots.iter() {
-        public_coin.reseed(*root);
-    }
+    public_coin.reseed(proof.tree_root);
+    //for root in proof.tree_roots.iter() {
+    //    public_coin.reseed(*root);
+    //}
     let queried_positions = public_coin
         .draw_integers(num_queries, eval_domain_size)
         .unwrap();
@@ -53,7 +53,24 @@ pub fn verify_low_degree_batch_proof<
         &proof.composed_queried_evaluations,
         &queried_positions,
     )?;
-    //todo: merkle branches are never verified
+
+    // Verify that merkle leaves are correct
+    for i in (0..queried_positions.len()).into_iter() {
+        let evals_at_idx: Vec<E> = proof.all_unpadded_queried_evaluations.iter().map(|poly_evals| poly_evals[i]).collect();
+        if H::hash_elements(&evals_at_idx) != proof.tree_proof.leaves[i] {
+            println!(
+                "Hash_elements applied to input array elts {:?}",
+                proof.all_unpadded_queried_evaluations.iter()
+                    .map(|x| H::hash_elements(x).as_bytes())
+                    .collect::<Vec<[u8; 32]>>()
+            );
+            println!("Leaves {:?}", proof.tree_proof.leaves);
+            return Err(LowDegreeVerifierError::MerkleTreeErr);
+        }
+    }
+    MerkleTree::verify_batch(&proof.tree_root, &queried_positions, &proof.tree_proof).map_err(|_e| {
+        LowDegreeVerifierError::MerkleTreeErr
+    })?;
     verify_lower_degree_batch::<B, E, H>(
         eval_domain_size,
         max_degrees,
