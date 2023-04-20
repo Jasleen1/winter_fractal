@@ -38,11 +38,11 @@ fn main() {
 #[structopt(name = "jsnark-parser", about = "Jsnark file parsing")]
 struct ExampleOptions {
     /// Jsnark .arith file to parse.
-    #[structopt(short = "a", long = "arith_file", default_value = "sample.arith")]
+    #[structopt(short = "a", long = "arith_file", default_value = "fibonacciexample.arith")]
     arith_file: String,
 
     /// Jsnark .in or .wires file to parse.
-    #[structopt(short = "w", long = "wire_file", default_value = "sample.wires")]
+    #[structopt(short = "w", long = "wire_file", default_value = "fibonacciexample.wires")]
     wires_file: String,
 
     /// Verbose logging and reporting.

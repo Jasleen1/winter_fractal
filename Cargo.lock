@@ -330,6 +330,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "fractal_accumulator"
+version = "0.1.0"
+dependencies = [
+ "displaydoc",
+ "fractal_proofs",
+ "fractal_utils",
+ "log",
+ "low_degree_prover",
+ "serde",
+ "thiserror",
+ "winter-crypto",
+ "winter-fri",
+ "winter-math",
+ "winter-models",
+ "winter-rand-utils",
+ "winter-utils",
+]
+
+[[package]]
+name = "fractal_accumulator_verifier"
+version = "0.1.0"
+dependencies = [
+ "displaydoc",
+ "fractal_indexer",
+ "fractal_proofs",
+ "fractal_utils",
+ "log",
+ "low_degree_verifier",
+ "serde",
+ "thiserror",
+ "winter-crypto",
+ "winter-fri",
+ "winter-math",
+ "winter-models",
+ "winter-utils",
+]
+
+[[package]]
 name = "fractal_examples"
 version = "0.1.0"
 dependencies = [
@@ -381,6 +419,7 @@ version = "0.1.0"
 dependencies = [
  "displaydoc",
  "fractal-math",
+ "fractal_accumulator",
  "fractal_utils",
  "lazy_static",
  "log",
@@ -416,10 +455,12 @@ name = "fractal_prover"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "fractal_accumulator",
  "fractal_indexer",
  "fractal_proofs",
  "fractal_utils",
  "log",
+ "low_degree_prover",
  "serde",
  "thiserror",
  "winter-crypto",
@@ -450,12 +491,15 @@ name = "fractal_verifier"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "fractal_accumulator",
+ "fractal_accumulator_verifier",
  "fractal_examples2",
  "fractal_indexer",
  "fractal_proofs",
  "fractal_prover",
  "fractal_utils",
  "log",
+ "low_degree_verifier",
  "serde",
  "thiserror",
  "winter-crypto",
@@ -574,6 +618,43 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "low_degree_prover"
+version = "0.1.0"
+dependencies = [
+ "displaydoc",
+ "fractal_proofs",
+ "fractal_utils",
+ "log",
+ "serde",
+ "thiserror",
+ "winter-crypto",
+ "winter-fri",
+ "winter-math",
+ "winter-models",
+ "winter-rand-utils",
+ "winter-utils",
+]
+
+[[package]]
+name = "low_degree_verifier"
+version = "0.1.0"
+dependencies = [
+ "displaydoc",
+ "fractal_examples2",
+ "fractal_proofs",
+ "fractal_utils",
+ "log",
+ "low_degree_prover",
+ "serde",
+ "thiserror",
+ "winter-crypto",
+ "winter-fri",
+ "winter-math",
+ "winter-models",
+ "winter-utils",
 ]
 
 [[package]]
