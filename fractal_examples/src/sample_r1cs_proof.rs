@@ -35,12 +35,19 @@ use winter_math::utils;
 use winter_math::FieldElement;
 use winter_math::StarkField;
 
+#[cfg(feature = "flame_it")]
+extern crate flame;
+#[cfg(feature = "flame_it")]
+#[macro_use]
+extern crate flamer;
+
+#[cfg_attr(feature = "flame_it", flame("main"))]
 fn main() {
     let mut options = ExampleOptions::from_args();
     options.verbose = false;
     if options.verbose {
         println!(
-            "Arith file {}, wire value file {}",
+            "Arith file {}, wire value  file {}",
             options.arith_file, options.wires_file
         );
     }
@@ -52,8 +59,12 @@ fn main() {
         &options.wires_file,
         options.verbose,
     );
+
+    #[cfg(feature = "flame_it")]
+    flame::dump_html(&mut std::fs::File::create("stats/flame-graph.html").unwrap()).unwrap();
 }
 
+#[cfg_attr(feature = "flame_it", flame)]
 pub(crate) fn orchestrate_r1cs_example<
     B: StarkField,
     E: FieldElement<BaseField = B>,

@@ -14,6 +14,14 @@ pub mod lincheck_prover;
 pub mod prover;
 pub mod rowcheck_prover;
 pub mod sumcheck_prover;
+
+#[cfg(feature = "flame_it")]
+extern crate flame;
+#[cfg(feature = "flame_it")]
+#[macro_use]
+extern crate flamer;
+
+
 #[cfg(test)]
 mod tests;
 

@@ -90,7 +90,7 @@ version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba3569f383e8f1598449f1a423e72e99569137b47740b1da11ef19af3d5c3223"
 dependencies = [
- "lazy_static",
+ "lazy_static 1.4.0",
  "memchr",
  "regex-automata",
  "serde",
@@ -152,9 +152,9 @@ version = "0.2.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d897f47bf7270cf70d370f8f98c1abb6d2d4cf60a6845d30e05bfb90c6568650"
 dependencies = [
- "proc-macro2",
- "quote",
- "unicode-xid",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "unicode-xid 0.2.4",
 ]
 
 [[package]]
@@ -175,7 +175,7 @@ dependencies = [
  "criterion-plot",
  "csv",
  "itertools",
- "lazy_static",
+ "lazy_static 1.4.0",
  "num-traits",
  "oorandom",
  "plotters",
@@ -291,9 +291,9 @@ version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adc2ab4d5a16117f9029e9a6b5e4e79f4c67f6519bc134210d4d4a04ba31f41b"
 dependencies = [
- "proc-macro2",
- "quote",
- "syn",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.103",
 ]
 
 [[package]]
@@ -312,6 +312,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "flame"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fc2706461e1ee94f55cab2ed2e3d34ae9536cfa830358ef80acff1a3dacab30"
+dependencies = [
+ "lazy_static 0.2.11",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "thread-id",
+]
+
+[[package]]
+name = "flamer"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2add1a5e84b1ed7b5d00cdc21789a28e0a8f4e427b677313c773880ba3c4dac"
+dependencies = [
+ "flame",
+ "quote 0.6.13",
+ "syn 0.15.44",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -322,6 +346,8 @@ name = "fractal-math"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "flame",
+ "flamer",
  "num-bigint",
  "proptest",
  "winter-math",
@@ -334,6 +360,8 @@ name = "fractal_accumulator"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal_proofs",
  "fractal_utils",
  "log",
@@ -353,6 +381,8 @@ name = "fractal_accumulator_verifier"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal_indexer",
  "fractal_proofs",
  "fractal_utils",
@@ -372,12 +402,14 @@ name = "fractal_examples"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal_indexer",
  "fractal_proofs",
  "fractal_prover",
  "fractal_utils",
  "fractal_verifier",
- "lazy_static",
+ "lazy_static 1.4.0",
  "log",
  "regex",
  "serde",
@@ -396,11 +428,13 @@ name = "fractal_examples2"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal_indexer",
  "fractal_proofs",
  "fractal_prover",
  "fractal_utils",
- "lazy_static",
+ "lazy_static 1.4.0",
  "log",
  "regex",
  "serde",
@@ -418,10 +452,12 @@ name = "fractal_indexer"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal-math",
  "fractal_accumulator",
  "fractal_utils",
- "lazy_static",
+ "lazy_static 1.4.0",
  "log",
  "regex",
  "serde",
@@ -455,6 +491,8 @@ name = "fractal_prover"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal_accumulator",
  "fractal_indexer",
  "fractal_proofs",
@@ -476,6 +514,8 @@ name = "fractal_utils"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal-math",
  "log",
  "serde",
@@ -491,6 +531,8 @@ name = "fractal_verifier"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal_accumulator",
  "fractal_accumulator_verifier",
  "fractal_examples2",
@@ -601,6 +643,12 @@ checksum = "f9b7d56ba4a8344d6be9729995e6b06f928af29998cdf79fe390cbf6b1fee838"
 
 [[package]]
 name = "lazy_static"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76f033c7ad61445c5b347c7382dd1237847eb1bce590fe50365dcb33d546be73"
+
+[[package]]
+name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
@@ -625,6 +673,8 @@ name = "low_degree_prover"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal_proofs",
  "fractal_utils",
  "log",
@@ -643,6 +693,8 @@ name = "low_degree_verifier"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal_examples2",
  "fractal_proofs",
  "fractal_utils",
@@ -765,9 +817,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
 dependencies = [
  "proc-macro-error-attr",
- "proc-macro2",
- "quote",
- "syn",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.103",
  "version_check",
 ]
 
@@ -777,9 +829,18 @@ version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
 dependencies = [
- "proc-macro2",
- "quote",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
  "version_check",
+]
+
+[[package]]
+name = "proc-macro2"
+version = "0.4.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf3d2011ab5c909338f7887f4fc896d35932e29146c12c8d01da6b22a80ba759"
+dependencies = [
+ "unicode-xid 0.1.0",
 ]
 
 [[package]]
@@ -800,7 +861,7 @@ dependencies = [
  "bit-set",
  "bitflags",
  "byteorder",
- "lazy_static",
+ "lazy_static 1.4.0",
  "num-traits",
  "quick-error 2.0.1",
  "rand",
@@ -825,11 +886,20 @@ checksum = "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3"
 
 [[package]]
 name = "quote"
+version = "0.6.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ce23b6b870e8f94f81fb0a363d65d86675884b34a09043c81e5562f11c1f8e1"
+dependencies = [
+ "proc-macro2 0.4.30",
+]
+
+[[package]]
+name = "quote"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbe448f377a7d6961e30f5955f9b8d106c3f5e449d493ee1b125c1d43c2b5179"
 dependencies = [
- "proc-macro2",
+ "proc-macro2 1.0.47",
 ]
 
 [[package]]
@@ -894,6 +964,12 @@ dependencies = [
  "crossbeam-utils",
  "num_cpus",
 ]
+
+[[package]]
+name = "redox_syscall"
+version = "0.1.57"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41cc0f7e4d5d4544e8861606a285bb08d3e70712ccc7d2b84d7c0ccfaf4b05ce"
 
 [[package]]
 name = "redox_syscall"
@@ -994,9 +1070,9 @@ version = "1.0.147"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4f1d362ca8fc9c3e3a7484440752472d68a6caa98f1ab81d99b5dfe517cec852"
 dependencies = [
- "proc-macro2",
- "quote",
- "syn",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.103",
 ]
 
 [[package]]
@@ -1027,7 +1103,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "513162b19ce2aa5347d36a1d9cbc8ba2b20c63e0e82080b52d2cade9fb3a8cb7"
 dependencies = [
  "const_format",
- "lazy_static",
+ "lazy_static 1.4.0",
  "regex",
  "sscanf_macro",
 ]
@@ -1038,10 +1114,10 @@ version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d697834866afffd34330ee55f6dbb2cf1eedd44b33cc63b8fdfd87bc3268eeac"
 dependencies = [
- "proc-macro2",
- "quote",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
  "regex-syntax",
- "syn",
+ "syn 1.0.103",
 ]
 
 [[package]]
@@ -1051,7 +1127,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c6b5c64445ba8094a6ab0c3cd2ad323e07171012d9c98b0b15651daf1787a10"
 dependencies = [
  "clap",
- "lazy_static",
+ "lazy_static 1.4.0",
  "structopt-derive",
 ]
 
@@ -1063,9 +1139,9 @@ checksum = "dcb5ae327f9cc13b68763b5749770cb9e048a99bd9dfdfa58d0cf05d5f64afe0"
 dependencies = [
  "heck",
  "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.103",
 ]
 
 [[package]]
@@ -1076,12 +1152,23 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"
+version = "0.15.44"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ca4b3b69a77cbe1ffc9e198781b7acb0c7365a883670e8f1c1bc66fba79a5c5"
+dependencies = [
+ "proc-macro2 0.4.30",
+ "quote 0.6.13",
+ "unicode-xid 0.1.0",
+]
+
+[[package]]
+name = "syn"
 version = "1.0.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a864042229133ada95abf3b54fdc62ef5ccabe9515b64717bcb9a1919e59445d"
 dependencies = [
- "proc-macro2",
- "quote",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
  "unicode-ident",
 ]
 
@@ -1094,7 +1181,7 @@ dependencies = [
  "cfg-if",
  "fastrand",
  "libc",
- "redox_syscall",
+ "redox_syscall 0.2.16",
  "remove_dir_all",
  "winapi",
 ]
@@ -1123,9 +1210,20 @@ version = "1.0.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "982d17546b47146b28f7c22e3d08465f6b8903d0ea13c1660d9d84a6e7adcdbb"
 dependencies = [
- "proc-macro2",
- "quote",
- "syn",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.103",
+]
+
+[[package]]
+name = "thread-id"
+version = "3.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7fbf4c9d56b320106cd64fd024dadfa0be7cb4706725fc44a7d7ce952d820c1"
+dependencies = [
+ "libc",
+ "redox_syscall 0.1.57",
+ "winapi",
 ]
 
 [[package]]
@@ -1161,6 +1259,12 @@ name = "unicode-width"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0edd1e5b14653f783770bce4a4dabb4a5108a5370a5f5d8cfe8710c361f6c8b"
+
+[[package]]
+name = "unicode-xid"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
 
 [[package]]
 name = "unicode-xid"
@@ -1219,9 +1323,9 @@ dependencies = [
  "bumpalo",
  "log",
  "once_cell",
- "proc-macro2",
- "quote",
- "syn",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.103",
  "wasm-bindgen-shared",
 ]
 
@@ -1231,7 +1335,7 @@ version = "0.2.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "052be0f94026e6cbc75cdefc9bae13fd6052cdcaf532fa6c45e7ae33a1e6c810"
 dependencies = [
- "quote",
+ "quote 1.0.21",
  "wasm-bindgen-macro-support",
 ]
 
@@ -1241,9 +1345,9 @@ version = "0.2.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07bc0c051dc5f23e307b13285f9d75df86bfdf816c5721e573dec1f9b8aa193c"
 dependencies = [
- "proc-macro2",
- "quote",
- "syn",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.103",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -1333,7 +1437,7 @@ version = "0.1.0"
 dependencies = [
  "displaydoc",
  "fractal-math",
- "lazy_static",
+ "lazy_static 1.4.0",
  "log",
  "regex",
  "serde",

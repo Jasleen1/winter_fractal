@@ -73,6 +73,7 @@ pub struct IndexDomains<B: StarkField, E: FieldElement<BaseField = B>> {
 /// getting generators of a certain order. I think this would require some re-structuring.
 /// Perhaps we can add a function "get_subgroup_of_size" or "get_generator_of_order"
 /// Generators are needed here since we'll need those for FFT-friendly subgroups anyway.
+#[cfg_attr(feature = "flame_it", flame)]
 pub fn build_index_domains<B: StarkField, E: FieldElement<BaseField = B>>(
     params: IndexParams<B>,
 ) -> IndexDomains<B, E> {

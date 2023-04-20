@@ -12,8 +12,14 @@ bench = false
 doc = false
 debug = 1
 
+[features]
+default = []
+flame_it = ["flame", "flamer"]
+
 [dependencies]
 displaydoc = "0.1.7"
+flame = { version = "0.2", optional = true }
+flamer = { version = "0.3", optional = true }
 fractal_utils = { path = "../fractal_utils" }
 fractal_proofs = {path = "../fractal_proofs" }
 fractal_indexer = {path = "../fractal_indexer" }

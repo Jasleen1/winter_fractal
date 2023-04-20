@@ -290,6 +290,7 @@ impl<
         H: ElementHasher + ElementHasher<BaseField = B>,
     > MultiPoly<B, E, H> for MultiEval<B, E, H>
 {
+    #[cfg_attr(feature = "flame_it", flame("MultiEval"))]
     fn commit_polynomial_evaluations(&mut self) -> Result<(), FractalUtilError> {
         // todo!()
         let eval_hashes = self
@@ -306,6 +307,7 @@ impl<
         Ok(())
     }
 
+    #[cfg_attr(feature = "flame_it", flame("MultiEval"))]
     fn get_commitment(&self) -> Result<&<H as winter_crypto::Hasher>::Digest, FractalUtilError> {
         match &self.committed_tree {
             Some(merkle_tree) => Ok(merkle_tree.root()),
@@ -315,10 +317,12 @@ impl<
         }
     }
 
+    #[cfg_attr(feature = "flame_it", flame("MultiEval"))]
     fn get_values_at(&self, index: usize) -> Result<Vec<E>, FractalUtilError> {
         Ok(self.evaluations[index].clone())
     }
 
+    #[cfg_attr(feature = "flame_it", flame("MultiEval"))]
     fn batch_get_values_at(&self, indices: &Vec<usize>) -> Result<Vec<Vec<E>>, FractalUtilError> {
         let mut output_vals = Vec::<Vec<E>>::new();
         for (_, &index) in indices.iter().enumerate() {
@@ -327,6 +331,7 @@ impl<
         Ok(output_vals)
     }
 
+    #[cfg_attr(feature = "flame_it", flame("MultiEval"))]
     fn get_values_and_proof_at(
         &self,
         index: usize,
@@ -345,6 +350,7 @@ impl<
         Ok((value, proof))
     }
 
+    #[cfg_attr(feature = "flame_it", flame("MultiEval"))]
     fn batch_get_values_and_proofs_at(
         &self,
         indices: &Vec<usize>,
@@ -363,6 +369,7 @@ impl<
         Ok((values, proof))
     }
 
+    #[cfg_attr(feature = "flame_it", flame("MultiEval"))]
     fn verify_values_and_proof_at(
         vals: Vec<B>,
         root: &<H>::Digest,
@@ -381,7 +388,8 @@ impl<
             ))
         })
     }
-    //todo: check vals
+    
+    #[cfg_attr(feature = "flame_it", flame("MultiEval"))]
     fn batch_verify_values_and_proofs_at(
         vals: &Vec<Vec<E>>,
         root: &<H>::Digest,
@@ -410,7 +418,7 @@ impl<
         })
     }
 
-    //todo: check vals
+    #[cfg_attr(feature = "flame_it", flame("MultiEval"))]
     fn batch_verify_transposed_values_and_proofs_at(
         vals: Vec<[E; 1]>,
         root: &<H>::Digest,
@@ -440,6 +448,7 @@ impl<
     }
 }
 
+#[cfg_attr(feature = "flame_it", flame("polynomial_utils"))]
 pub fn eval_on_domain<B, E>(
     coefficients: &[E],
     evaluation_domain_len: usize,

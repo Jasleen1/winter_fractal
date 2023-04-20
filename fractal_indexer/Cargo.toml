@@ -7,8 +7,14 @@ edition = "2018"
 [lib]
 bench = false
 
+[features]
+default = []
+flame_it = ["flame", "flamer"]
+
 [dependencies]
 displaydoc = "0.1.7"
+flame = { version = "0.2", optional = true }
+flamer = { version = "0.3", optional = true }
 fractal_accumulator = { path = "../fractal_accumulator" }
 fractal-math = { version = "0.1.0", path = "../fractal_math", package = "fractal-math", default-features = false }
 fractal_utils = { path = "../fractal_utils" }

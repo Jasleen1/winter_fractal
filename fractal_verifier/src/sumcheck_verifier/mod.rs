@@ -14,6 +14,7 @@ use winter_math::StarkField;
 //     proof: SumcheckProof,
 // }
 
+#[cfg_attr(feature = "flame_it", flame("sumcheck_verifier"))]
 pub fn verify_sumcheck_proof<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -38,6 +39,7 @@ pub fn verify_sumcheck_proof<
     Ok(())
 }
 
+#[cfg_attr(feature = "flame_it", flame("sumcheck_verifier"))]
 pub fn verify_layered_sumcheck_proof<
     B: StarkField,
     E: FieldElement<BaseField = B>,

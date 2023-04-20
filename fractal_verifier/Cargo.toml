@@ -6,8 +6,14 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+flame_it = ["flame", "flamer", "low_degree_verifier/flame_it", "fractal_accumulator/flame_it", "fractal_accumulator_verifier/flame_it", "fractal_utils/flame_it", "fractal_indexer/flame_it", "fractal_prover/flame_it"]
+
 [dependencies]
 displaydoc = "0.1.7"
+flame = { version = "0.2", optional = true }
+flamer = { version = "0.3", optional = true }
 log = { version = "0.4", default-features = false }
 low_degree_verifier = { path = "../low_degree_verifier" }
 fractal_accumulator = { path = "../fractal_accumulator" }
@@ -15,7 +21,7 @@ fractal_accumulator_verifier = { path = "../fractal_accumulator_verifier" }
 fractal_utils = { path = "../fractal_utils" }
 fractal_proofs = {path = "../fractal_proofs"}
 fractal_indexer = {path = "../fractal_indexer" }
-fractal_prover = {path = "../fractal_prover" }
+fractal_prover = {path = "../fractal_prover"}
 fractal_examples2 = {path = "../fractal_examples2" }
 models = { version = "0.1.0", path = "../models", package = "winter-models", default-features = false }
 serde = { version = "1.0.117", features = ["derive"] }

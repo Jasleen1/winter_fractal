@@ -6,8 +6,14 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+flame_it = ["flame", "flamer"]
+
 [dependencies]
 displaydoc = "0.1.7"
+flame = { version = "0.2", optional = true }
+flamer = { version = "0.3", optional = true }
 log = { version = "0.4", default-features = false }
 fractal_utils = { path = "../fractal_utils" }
 fractal_proofs = {path = "../fractal_proofs"}

@@ -82,6 +82,7 @@ pub fn verify_lincheck_proof<
     Ok(())
 }
 
+#[cfg_attr(feature = "flame_it", flame("lincheck_verifier"))]
 pub fn verify_layered_lincheck_proof_from_top<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -137,6 +138,7 @@ pub fn verify_layered_lincheck_proof_from_top<
     Ok(())
 }
 
+#[cfg_attr(feature = "flame_it", flame("lincheck_verifier"))]
 pub fn verify_decommitments<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -180,6 +182,7 @@ pub fn verify_decommitments<
     Ok(())
 }
 
+#[cfg_attr(feature = "flame_it", flame("lincheck_verifier"))]
 fn parse_proofs_for_subroutines<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -252,6 +255,7 @@ fn extract_sumcheck_vec_e<B: StarkField, E: FieldElement<BaseField = B>>(
         .collect::<Vec<(E, E)>>()
 }
 
+#[cfg_attr(feature = "flame_it", flame("lincheck_verifier"))]
 pub(crate) fn verify_layered_lincheck_proof<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -353,6 +357,7 @@ pub(crate) fn verify_layered_lincheck_proof<
     Ok(())
 }
 
+#[cfg_attr(feature = "flame_it", flame("lincheck_verifier"))]
 pub fn add_rational_sumcheck_verification<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -394,6 +399,7 @@ pub fn add_rational_sumcheck_verification<
 
 // should verify s was computed correctly and pass along the correct degree constraint
 // just needs evals at queried positions?
+#[cfg_attr(feature = "flame_it", flame("lincheck_verifier"))]
 pub fn add_lincheck_verification<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -563,6 +569,7 @@ fn compute_derivative<B: StarkField, E: FieldElement<BaseField = B>>(
 
 #[cfg(test)]
 mod test {
+
     use crate::errors::TestingError;
     use crate::lincheck_verifier::{
         add_lincheck_verification, verify_layered_lincheck_proof_from_top,
@@ -592,13 +599,17 @@ mod test {
     use winter_math::utils;
     use winter_math::StarkField;
 
+    #[cfg_attr(feature = "flame_it", flame)]
     #[test]
     fn run_test_lincheck_proof() -> Result<(), TestingError> {
         test_lincheck_proof::<BaseElement, BaseElement, Rp64_256>()?;
         test_lincheck_proof::<BaseElement, QuadExtension<BaseElement>, Blake3_256<BaseElement>>()?;
+        #[cfg(feature = "flame_it")]
+        flame::dump_html(&mut std::fs::File::create("stats/flame-graph.html").unwrap()).unwrap();
         Ok(())
     }
 
+    #[cfg_attr(feature = "flame_it", flame)]
     fn test_lincheck_proof<
         B: StarkField,
         E: FieldElement<BaseField = B>,
@@ -658,10 +669,11 @@ mod test {
             // &fractal_options,
         );
 
+        //flame::start("generate proof");
         let proof = lincheck_prover_a
             .generate_proof(&Some(prover_key), pub_inputs_bytes.clone(), &prover_options)
             .unwrap();
-
+        //flame::end("generate proof");
         println!("starting verifier tasks");
         verify_layered_lincheck_proof_from_top(
             verifier_key,

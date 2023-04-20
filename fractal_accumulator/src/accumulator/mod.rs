@@ -85,6 +85,7 @@ impl<
         self.unchecked_coefficients.push(coefficients);
     }
 
+    #[cfg_attr(feature = "flame_it", flame("accumulator"))]
     pub fn commit_layer(&mut self) -> Result<<H>::Digest, AccumulatorProverError> {
         let mut coeffs_b = self.unchecked_coefficients.clone();
         let mut coeffs_b2 = self.coefficients.clone();
@@ -164,6 +165,7 @@ impl<
     /// numbered the layers that way.
     /// We'll subtract 1 from layer_idx to retrieve the actual index of the polynomial
     /// evals we are looking for.
+    #[cfg_attr(feature = "flame_it", flame("accumulator"))]
     pub fn decommit_layer(
         &mut self,
         layer_idx: usize,
@@ -199,6 +201,7 @@ impl<
     }
 
     /// This is the same as decommit_layer but with queries.
+    #[cfg_attr(feature = "flame_it", flame("accumulator"))]
     pub fn decommit_layer_with_queries(
         &self,
         layer_idx: usize,
@@ -227,6 +230,7 @@ impl<
     }
 
     /// This is the same as decommit_layer but with queries.
+    #[cfg_attr(feature = "flame_it", flame("accumulator"))]
     pub fn decommit_layer_with_pub_input(
         &mut self,
         layer_idx: usize,
@@ -262,6 +266,7 @@ impl<
     }
 
     // could be named something like "finish"
+    #[cfg_attr(feature = "flame_it", flame("accumulator"))]
     pub fn create_fri_proof(
         &mut self,
     ) -> Result<LowDegreeBatchProof<B, E, H>, AccumulatorProverError> {

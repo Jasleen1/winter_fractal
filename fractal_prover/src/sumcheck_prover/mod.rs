@@ -73,6 +73,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         }
     }
 
+    #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
     pub fn sumcheck_layer_one(
         &self,
         //query: E,
@@ -153,6 +154,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     // SIGMA(g, sigma)(x) = f(x) = p(x)/q(x)
     // SIGMA(g, sigma) = x*g(x) + sigma*|summing_domain|^-1
     // g(x) = x^-1*(f(x) - sigma*|summing_domain|^-1)
+    #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
     pub fn compute_g_poly_on_val(&self, x_val: E, f_x_val: E, summing_domain_len: usize) -> E {
         let dividing_factor_for_sigma: u64 = summing_domain_len.try_into().unwrap();
         let subtracting_factor = self.sigma * E::from(dividing_factor_for_sigma).inv();
@@ -160,11 +162,13 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         dividing_factor * (f_x_val - E::from(subtracting_factor))
     }
 
+    #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
     pub fn compute_sigma_function_on_val(&self, x_val: E, g_val: E, summing_domain_len: usize) -> E {
         let dividing_factor: u64 = summing_domain_len.try_into().unwrap();
         (x_val * g_val) + (E::from(self.sigma) * E::from(dividing_factor).inv())
     }
 
+    #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
     pub fn compute_e_poly_on_val(
         &self,
         x_val: E,
@@ -181,6 +185,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         sigma_minus_f * vanishing_on_x.inv()
     }
 
+    #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
     pub fn compute_e_poly(
         &self,
         g_hat_coeffs: &Vec<E>,

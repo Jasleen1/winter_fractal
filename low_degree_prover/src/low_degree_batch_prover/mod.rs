@@ -53,6 +53,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     }
 
     //the channel is updated each time a polynomial is added so that this composes with other proofs
+    #[cfg_attr(feature = "flame_it", flame("low_degree_prover"))]
     pub fn add_polynomial(
         &mut self,
         polynomial_coeffs: &Vec<B>,
@@ -63,6 +64,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         self.add_polynomial_e(&polynomial_coeffs_e, max_degree, channel);
     }
 
+    #[cfg_attr(feature = "flame_it", flame("low_degree_prover"))]
     pub fn add_polynomial_e(
         &mut self,
         polynomial_coeffs: &Vec<E>,
@@ -84,6 +86,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     /// Helper function to zip the evaluations so that each element of the output is of the
     /// form [poly_1(e), ..., poly_n(e)] i.e. evaluations of all the polynomials are included
     /// in the same array.
+    #[cfg_attr(feature = "flame_it", flame("low_degree_prover"))]
     fn zip_evals(separate_evals: Vec<Vec<E>>, evaluation_domain_len: usize) -> Vec<Vec<E>> {
         let mut zipped_evals = vec![Vec::<E>::new(); evaluation_domain_len];
         for (_, eval) in separate_evals.iter().enumerate() {
@@ -94,6 +97,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         zipped_evals
     }
 
+    #[cfg_attr(feature = "flame_it", flame("low_degree_prover"))]
     pub fn generate_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,

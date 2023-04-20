@@ -47,6 +47,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     }
 
     /// The rowcheck proof generation function. Takes as input a channel and returns either an error or a rowcheck proof.
+    #[cfg_attr(feature = "flame_it", flame("rowcheck_prover"))]
     pub fn generate_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
@@ -129,6 +130,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             s_max_degree: options.size_subgroup_h - 1,
         })
     }
+    #[cfg_attr(feature = "flame_it", flame("rowcheck_prover"))]
     fn rowcheck_layer_one(&self, accumulator: &mut Accumulator<B, E, H>, options: &FractalProverOptions<B>) {
         // The rowcheck is supposed to prove whether f_az * f_bz - f_cz = 0 on all of H.
         // Which means that the polynomial f_az * f_bz - f_cz must be divisible by the

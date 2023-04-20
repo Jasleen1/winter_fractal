@@ -73,6 +73,7 @@ impl<
         }
     }
 
+    #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
     fn lincheck_layer_one(
         &mut self,
         query: E,
@@ -141,6 +142,7 @@ impl<
         Ok(())
     }
 
+    #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
     fn lincheck_layer_two(&self, query: E, accumulator: &mut Accumulator<B, E, H>, options: &FractalProverOptions<B>) {
         let beta = query;
         let alpha = self.alpha.unwrap();
@@ -235,6 +237,7 @@ impl<
     /// sum_{k in summing domain} (v_H(X)/ (X - row(k))) * (v_H(Y)/ (Y - col(k))) * val(k).
     /// Fixing Y = alpha, this gives us t_alpha(X) = sum_k (v_H(X)/ (X - row(k))) * (v_H(alpha)/ (alpha - col(k))) * val(k).
     /// = v_H(alpha) * sum_k (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
+    #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
     pub fn generate_t_alpha_evals(&self, alpha: E, options: &FractalProverOptions<B>) -> Vec<E> {
         // Lets get the coefficients (val(k)/ (alpha - col(k))
         // for all values of k, since these don't change with X.
@@ -293,6 +296,7 @@ impl<
     //     t_alpha_h_domain_poly
     // }
 
+    #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
     pub fn generate_t_alpha(&self, t_evals: Vec<E>, options: &FractalProverOptions<B>) -> Vec<E> {
         let mut t_alpha_eval_domain_poly: Vec<E> = t_evals.clone().to_vec();
         // let twiddles_evaluation_domain: Vec<B> =
@@ -311,6 +315,7 @@ impl<
         // )
     }
 
+    #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
     pub fn generate_poly_prod(&self, alpha: E, t_alpha_coeffs: &Vec<E>, options: &FractalProverOptions<B>) -> Vec<E> {
         // This function needs to compute the polynomial
         // u_H(X, alpha)*f_1 - t_alpha*f_2
@@ -460,6 +465,7 @@ impl<
         H: ElementHasher + ElementHasher<BaseField = B>,
     > LayeredProver<B, E, H, LayeredLincheckProof<B, E>> for LincheckProver<B, E, H>
 {
+    #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
     fn generate_proof(
         &mut self,
         prover_key: &Option<ProverKey<B, E, H>>,

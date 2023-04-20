@@ -14,6 +14,12 @@ pub type SmallFieldElement13 = fractal_math::smallprimefield::BaseElement<13, 2,
 pub static BLOWUP_FACTOR: usize = 4;
 pub static FOLDING_FACTOR: usize = 4;
 
+#[cfg(feature = "flame_it")]
+extern crate flame;
+#[cfg(feature = "flame_it")]
+#[macro_use]
+extern crate flamer;
+
 #[derive(Clone)]
 pub struct FractalOptions<B: StarkField> {
     pub degree_fs: usize,

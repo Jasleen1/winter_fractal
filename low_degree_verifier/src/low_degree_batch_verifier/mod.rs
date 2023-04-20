@@ -7,6 +7,7 @@ use winter_crypto::{ElementHasher, RandomCoin, MerkleTree, Digest};
 use winter_fri::FriVerifier;
 use winter_math::StarkField;
 
+#[cfg_attr(feature = "flame_it", flame("low_degree_verifier"))]
 pub fn verify_low_degree_batch_proof<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -84,6 +85,7 @@ pub fn verify_low_degree_batch_proof<
     Ok(())
 }
 
+#[cfg_attr(feature = "flame_it", flame("low_degree_verifier"))]
 fn verify_lower_degree_batch<
     B: StarkField,
     E: FieldElement<BaseField = B>,

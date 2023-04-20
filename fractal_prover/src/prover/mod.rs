@@ -76,6 +76,7 @@ impl<
     }
 
     // Multiply a matrix times a vector of evaluations, then interpolate a poly and return its coeffs.
+    #[cfg_attr(feature = "flame_it", flame("fractal_prover"))]
     fn compute_matrix_mul_poly_coeffs(
         &self,
         matrix: &Matrix<B>,
@@ -88,6 +89,7 @@ impl<
         Ok(product) // as coeffs
     }
 
+    #[cfg_attr(feature = "flame_it", flame("fractal_prover"))]
     fn fractal_layer_one(
         &mut self,
         accumulator: &mut Accumulator<B, E, H>,
@@ -135,6 +137,7 @@ impl<
         Ok(())
     }
 
+    #[cfg_attr(feature = "flame_it", flame("fractal_prover"))]
     fn fractal_layer_two(
         &mut self,
         query: E,
@@ -189,6 +192,7 @@ impl<
         Ok(())
     }
 
+    #[cfg_attr(feature = "flame_it", flame("fractal_prover"))]
     fn fractal_layer_three(
         &mut self,
         query: E,
@@ -248,6 +252,7 @@ impl<
         H: ElementHasher + ElementHasher<BaseField = B>,
     > LayeredProver<B, E, H, LayeredFractalProof<B, E>> for FractalProver<B, E, H>
 {
+    #[cfg_attr(feature = "flame_it", flame("fractal_prover"))]
     fn generate_proof(
         &mut self,
         prover_key: &Option<ProverKey<B, E, H>>,

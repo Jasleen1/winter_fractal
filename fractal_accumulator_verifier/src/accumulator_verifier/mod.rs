@@ -55,6 +55,7 @@ impl<
         }
     }
 
+    #[cfg_attr(feature = "flame_it", flame("accumulator_verifier"))]
     pub fn add_constraint(&mut self, max_degree: usize, current_layer: usize) {
         self.max_degrees.push(max_degree);
         while self.max_degrees_by_layer.len() <= current_layer {
@@ -64,6 +65,7 @@ impl<
     }
 
     // verify batch incluion proof, update channel state
+    #[cfg_attr(feature = "flame_it", flame("accumulator_verifier"))]
     pub fn verify_layer(
         &mut self,
         layer_commit: H::Digest,
@@ -93,6 +95,7 @@ impl<
     }
 
     // verify batch incluion proof, update channel state
+    #[cfg_attr(feature = "flame_it", flame("accumulator_verifier"))]
     pub fn verify_layer_with_queries(
         &mut self,
         layer_commit: H::Digest,
@@ -119,6 +122,7 @@ impl<
     }
 
     // verify batch incluion proof, update channel state
+    #[cfg_attr(feature = "flame_it", flame("accumulator_verifier"))]
     pub fn verify_transposed_layer_with_queries(
         &mut self,
         layer_commit: H::Digest,
@@ -145,6 +149,7 @@ impl<
     }
 
     // run at the end
+    #[cfg_attr(feature = "flame_it", flame("accumulator_verifier"))]
     pub fn verify_fri_proof(
         &mut self,
         last_layer_commit: H::Digest,
@@ -163,6 +168,7 @@ impl<
         Ok(res?)
     }
 
+    #[cfg_attr(feature = "flame_it", flame("accumulator_verifier"))]
     pub fn get_query_indices(
         &self,
         query_seed: H::Digest,

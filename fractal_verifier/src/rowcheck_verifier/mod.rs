@@ -48,6 +48,7 @@ pub fn verify_rowcheck_proof<
 
 // should verify s was computed correctly and pass along the correct degree constraint
 // just needs evals at queried positions?
+#[cfg_attr(feature = "flame_it", flame("rowcheck_verifier"))]
 pub fn verify_layered_rowcheck_proof<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -88,6 +89,7 @@ pub fn verify_layered_rowcheck_proof<
 
 // should verify s was computed correctly and pass along the correct degree constraint
 // just needs evals at queried positions?
+#[cfg_attr(feature = "flame_it", flame("rowcheck_verifier"))]
 pub fn add_rowcheck_verification<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -164,6 +166,7 @@ pub fn add_rowcheck_verification<
     Ok(())
 }
 
+#[cfg_attr(feature = "flame_it", flame("rowcheck_verifier"))]
 fn verify_s_computation<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -230,6 +233,7 @@ fn verify_s_computation<
 /// This function will change as we extend to also accumulate the lincheck parts
 /// For now it takes in a vector of decommitted values and returns an aptly parsed decommitment.
 /// It implicitly assumes that all the vectors of decommitted values are of the same length
+#[cfg_attr(feature = "flame_it", flame("rowcheck_verifier"))]
 pub(crate) fn prepare_rowcheck_verifier_inputs<E: FieldElement>(
     decommits: Vec<Vec<Vec<E>>>,
 ) -> Vec<Vec<E>> {

@@ -9,3 +9,9 @@ pub mod verifier;
 pub use fractal_indexer;
 use fractal_indexer::{index::IndexParams, snark_keys::*};
 use models::*;
+
+#[cfg(feature = "flame_it")]
+extern crate flame;
+#[cfg(feature = "flame_it")]
+#[macro_use]
+extern crate flamer;

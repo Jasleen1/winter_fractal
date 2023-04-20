@@ -19,8 +19,11 @@ bench = false
 concurrent = ["winter-utils/concurrent", "std"]
 default = ["std"]
 std = ["winter-utils/std"]
+flame_it = ["flame", "flamer"]
 
 [dependencies]
+flame = { version = "0.2", optional = true }
+flamer = { version = "0.3", optional = true }
 winter-math = "0.4.0"
 winter-utils = "0.4.0"
 winter-rand-utils = "0.4.0"

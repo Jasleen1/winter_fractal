@@ -93,6 +93,12 @@
 #[macro_use]
 extern crate alloc;
 
+#[cfg(feature = "flame_it")]
+extern crate flame;
+#[cfg(feature = "flame_it")]
+#[macro_use]
+extern crate flamer;
+
 extern crate winter_math;
 pub use winter_math::{fft, polynom};
 

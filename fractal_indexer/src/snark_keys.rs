@@ -344,6 +344,7 @@ pub fn generate_prover_and_verifier_keys<
     ))
 }*/
 
+#[cfg_attr(feature = "flame_it", flame)]
 pub fn generate_prover_and_verifier_keys<
     B: StarkField,
     E: FieldElement<BaseField = B>,
