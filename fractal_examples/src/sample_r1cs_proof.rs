@@ -79,7 +79,7 @@ pub(crate) fn orchestrate_r1cs_example<
     let num_input_variables = r1cs.num_cols().next_power_of_two();
     let num_non_zero = r1cs.max_num_nonzero().next_power_of_two();
     let num_constraints =
-        max(max(r1cs.A.l0_norm(), r1cs.B.l0_norm()), r1cs.C.l0_norm()).next_power_of_two();
+        max(max(r1cs.A.num_rows(), r1cs.B.num_rows()), r1cs.C.num_rows()).next_power_of_two();
     let max_degree = get_max_degree(num_input_variables, num_non_zero, num_constraints);
     // TODO: make the calculation of eta automated
     let eta = B::GENERATOR.exp(B::PositiveInteger::from(2 * B::TWO_ADICITY));
