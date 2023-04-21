@@ -107,7 +107,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             .collect::<Vec<_>>();
 
         let comp_coeffs = get_complementary_poly::<E>(self.max_degree, self.fri_max_degree);
-        let padded_coeffs = fft_mul(&self.polynomial_coeffs, &comp_coeffs);
+        let padded_coeffs = polynom::mul(&self.polynomial_coeffs, &comp_coeffs);
         let padded_evals: Vec<E> = polynom::eval_many(&padded_coeffs, &self.evaluation_domain);
 
         let mut fri_prover =
