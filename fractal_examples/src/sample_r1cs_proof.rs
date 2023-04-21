@@ -9,11 +9,11 @@ use std::time::Instant;
 
 use fractal_indexer::index::get_max_degree;
 use fractal_proofs::{fft, FractalProverOptions, Serializable};
-use models::r1cs::Matrix;
 use fractal_prover::LayeredProver;
 use fractal_prover::{prover::FractalProver, LayeredSubProver};
 use fractal_utils::FractalOptions;
 use fractal_verifier::verifier::verify_layered_fractal_proof_from_top;
+use models::r1cs::Matrix;
 use winter_fri::FriOptions;
 
 use structopt::StructOpt;
@@ -54,8 +54,8 @@ fn main() {
     }
 
     // call orchestrate_r1cs_example
-    orchestrate_r1cs_example::<BaseElement, QuadExtension<BaseElement>, Rp64_256, 1>(
-        //orchestrate_r1cs_example::<BaseElement, BaseElement, Blake3_256<BaseElement>, 1>(
+    // orchestrate_r1cs_example::<BaseElement, QuadExtension<BaseElement>, Rp64_256, 1>(
+    orchestrate_r1cs_example::<BaseElement, BaseElement, Blake3_256<BaseElement>, 1>(
         &options.arith_file,
         &options.wires_file,
         options.verbose,
@@ -130,7 +130,6 @@ pub(crate) fn orchestrate_r1cs_example<
 
     // TODO: the IndexDomains should already guarantee powers of two, so why add extraneous bit or use next_power_of_two?
 
-    
     let size_subgroup_h = index_domains.h_field.len().next_power_of_two();
     let size_subgroup_k = index_domains.k_field.len().next_power_of_two();
 
@@ -229,7 +228,7 @@ struct ExampleOptions {
     #[structopt(
         short = "a",
         long = "arith_file",
-        default_value = "fractal_examples/jsnark_outputs/fibonacciexample_10.arith"
+        default_value = "fractal_examples/jsnark_outputs/fftexample.arith"
     )]
     arith_file: String,
 
@@ -237,7 +236,7 @@ struct ExampleOptions {
     #[structopt(
         short = "w",
         long = "wire_file",
-        default_value = "fractal_examples/jsnark_outputs/fibonacciexample_10.wires"
+        default_value = "fractal_examples/jsnark_outputs/fftexample.wires"
     )]
     wires_file: String,
 

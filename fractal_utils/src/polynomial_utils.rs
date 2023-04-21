@@ -11,7 +11,7 @@ use winter_utils::batch_iter_mut;
  * Note that v_H(X) = X^dom_size - eta^dom_size. If eta = 1 we're
  * in a multiplicative subgroup itself.
  **/
- #[cfg_attr(feature = "flame_it", flame("utils"))]
+#[cfg_attr(feature = "flame_it", flame("utils"))]
 pub fn compute_vanishing_poly<E: FieldElement>(x: E, eta: E, dom_size: usize) -> E {
     let power_u64: u64 = dom_size.try_into().unwrap();
     let power = E::PositiveInteger::from(power_u64);
@@ -400,7 +400,7 @@ impl<
             ))
         })
     }
-    
+
     #[cfg_attr(feature = "flame_it", flame("MultiEval"))]
     fn batch_verify_values_and_proofs_at(
         vals: &Vec<Vec<E>>,

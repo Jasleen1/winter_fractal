@@ -37,7 +37,6 @@ pub struct FractalOptions<B: StarkField> {
     pub num_queries: usize,
 }
 
-
 #[derive(Clone)]
 pub struct FractalProverOptions<B: StarkField> {
     pub degree_fs: usize,

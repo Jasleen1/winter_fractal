@@ -120,7 +120,10 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         flame::end("loop1");
 
         flame::start("make tree");
-        let zipped_evals = Self::zip_evals(all_unpadded_evaluations.clone(), self.evaluation_domain.len());
+        let zipped_evals = Self::zip_evals(
+            all_unpadded_evaluations.clone(),
+            self.evaluation_domain.len(),
+        );
         let eval_hashes = zipped_evals
             .iter()
             .map(|evals| H::hash_elements(evals))

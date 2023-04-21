@@ -3,7 +3,9 @@ use std::thread::AccessError;
 use errors::ProverError;
 use fractal_accumulator::{accumulator::Accumulator, errors::AccumulatorProverError};
 use fractal_indexer::snark_keys::ProverKey;
-use fractal_proofs::{FieldElement, IopData, LayeredProof, LowDegreeBatchProof, TopLevelProof, FractalProverOptions};
+use fractal_proofs::{
+    FieldElement, FractalProverOptions, IopData, LayeredProof, LowDegreeBatchProof, TopLevelProof,
+};
 use fractal_utils::channel::DefaultFractalProverChannel;
 use log;
 use winter_crypto::ElementHasher;
@@ -20,7 +22,6 @@ extern crate flame;
 #[cfg(feature = "flame_it")]
 #[macro_use]
 extern crate flamer;
-
 
 #[cfg(test)]
 mod tests;

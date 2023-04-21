@@ -85,7 +85,6 @@ impl<
         self.unchecked_coefficients.push(coefficients);
     }
 
-    #[cfg_attr(feature = "flame_it", flame("accumulator"))]
     pub fn commit_layer(&mut self) -> Result<<H>::Digest, AccumulatorProverError> {
         let mut coeffs_b = self.unchecked_coefficients.clone();
         let mut coeffs_b2 = self.coefficients.clone();
@@ -99,17 +98,15 @@ impl<
         //let mut multi_eval = MultiEval::<B,E,H>::new(self.coefficients.clone(), self.coefficients_ext.clone(), self.evaluation_domain_len, self.offset);
         //self.fri_coefficients.append(&mut self.coefficients.clone());
         //self.fri_max_degrees.append(&mut self.max_degrees.clone());
-        self.fri_coefficients_ext
-            .append(&mut self.coefficients_ext.clone());
-        self.fri_max_degrees_ext
-            .append(&mut self.max_degrees_ext.clone());
+        self.fri_coefficients_ext.append(&mut self.coefficients_ext);
+        self.fri_max_degrees_ext.append(&mut self.max_degrees_ext);
         self.coefficients = Vec::new();
         self.coefficients_ext = Vec::new();
         self.unchecked_coefficients = Vec::new();
         //self.max_degrees = Vec::new();
         self.max_degrees_ext = Vec::new();
         multi_eval.commit_polynomial_evaluations()?;
-        let com = multi_eval.get_commitment()?.clone();
+        let com = *multi_eval.get_commitment()?;
         self.layer_evals.push(multi_eval);
         Ok(com)
     }
@@ -165,7 +162,6 @@ impl<
     /// numbered the layers that way.
     /// We'll subtract 1 from layer_idx to retrieve the actual index of the polynomial
     /// evals we are looking for.
-    #[cfg_attr(feature = "flame_it", flame("accumulator"))]
     pub fn decommit_layer(
         &mut self,
         layer_idx: usize,
@@ -201,7 +197,6 @@ impl<
     }
 
     /// This is the same as decommit_layer but with queries.
-    #[cfg_attr(feature = "flame_it", flame("accumulator"))]
     pub fn decommit_layer_with_queries(
         &self,
         layer_idx: usize,
@@ -230,22 +225,11 @@ impl<
     }
 
     /// This is the same as decommit_layer but with queries.
-    #[cfg_attr(feature = "flame_it", flame("accumulator"))]
     pub fn decommit_layer_with_pub_input(
         &mut self,
         layer_idx: usize,
         pub_input: H::Digest,
     ) -> Result<(Vec<Vec<E>>, BatchMerkleProof<H>), AccumulatorProverError> {
-        // let mut coeffs_b = self.unchecked_coefficients.clone();
-        // let mut coeffs_b2 = self.coefficients.clone();
-        // coeffs_b.append(&mut coeffs_b2);
-        // let mut multi_eval = MultiEval::<B, E, H>::new(
-        //     coeffs_b,
-        //     self.coefficients_ext.clone(),
-        //     self.evaluation_domain_len,
-        //     self.offset,
-        // );
-        // multi_eval.commit_polynomial_evaluations()?;
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,
@@ -266,7 +250,6 @@ impl<
     }
 
     // could be named something like "finish"
-    #[cfg_attr(feature = "flame_it", flame("accumulator"))]
     pub fn create_fri_proof(
         &mut self,
     ) -> Result<LowDegreeBatchProof<B, E, H>, AccumulatorProverError> {
@@ -278,7 +261,7 @@ impl<
             .ok_or(AccumulatorProverError::QueryErr(
                 "You tried to query the accumulator before anything was committed".to_string(),
             ))?;
-        let channel_state = multi_eval.get_commitment()?.clone();
+        let channel_state = *multi_eval.get_commitment()?;
         let mut channel = &mut DefaultFractalProverChannel::<B, E, H>::new(
             self.evaluation_domain_len,
             self.num_queries,

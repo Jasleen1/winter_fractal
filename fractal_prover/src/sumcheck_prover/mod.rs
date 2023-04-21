@@ -123,7 +123,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             &self.numerator_coeffs,
             &self.denominator_coeffs,
             self.eta,
-            summing_domain_len
+            summing_domain_len,
         );
         accumulator.add_polynomial_e(g_hat_coeffs, self.g_degree);
         accumulator.add_polynomial_e(e_hat_coeffs, self.e_degree);
@@ -141,7 +141,12 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     }
 
     #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
-    pub fn compute_sigma_function_on_val(&self, x_val: E, g_val: E, summing_domain_len: usize) -> E {
+    pub fn compute_sigma_function_on_val(
+        &self,
+        x_val: E,
+        g_val: E,
+        summing_domain_len: usize,
+    ) -> E {
         let dividing_factor: u64 = summing_domain_len.try_into().unwrap();
         (x_val * g_val) + (E::from(self.sigma) * E::from(dividing_factor).inv())
     }
@@ -154,7 +159,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         summing_poly_numerator_val: E,
         summing_poly_denominator_val: E,
         eta: B,
-        summing_domain_len: usize
+        summing_domain_len: usize,
     ) -> E {
         let sigma_function = self.compute_sigma_function_on_val(x_val, g_val, summing_domain_len);
         let sigma_minus_f =
