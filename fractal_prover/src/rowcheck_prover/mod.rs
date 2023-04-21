@@ -30,7 +30,7 @@ pub struct RowcheckProver<B: StarkField, E: FieldElement<BaseField = B>, H: Hash
 impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField = B>>
     RowcheckProver<B, E, H>
 {
-    // Generates a new prover for Fractal's Rowcheck operation.
+    /// Generates a new prover for Fractal's Rowcheck operation.
     pub fn new(f_az_coeffs: Vec<B>, f_bz_coeffs: Vec<B>, f_cz_coeffs: Vec<B>) -> Self {
         RowcheckProver {
             f_az_coeffs,

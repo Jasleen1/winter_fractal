@@ -224,7 +224,7 @@ impl<
     /// Fixing Y = alpha, this gives us t_alpha(X) = sum_k (v_H(X)/ (X - row(k))) * (v_H(alpha)/ (alpha - col(k))) * val(k).
     /// = v_H(alpha) * sum_k (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
     #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
-    pub fn generate_t_alpha(&self, alpha: E, options: &FractalProverOptions<B>) -> Vec<E> {
+    fn generate_t_alpha(&self, alpha: E, options: &FractalProverOptions<B>) -> Vec<E> {
         let v_h_alpha =
             compute_vanishing_poly(alpha.clone(), E::from(options.eta), options.size_subgroup_h);
         let v_h_x = get_vanishing_poly(options.eta, options.size_subgroup_h);
@@ -315,7 +315,7 @@ impl<
     /// This function needs to compute the polynomial
     /// u_H(X, alpha)*f_1 - t_alpha*f_2
     #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
-    pub fn generate_poly_prod(
+    fn generate_poly_prod(
         &self,
         alpha: E,
         t_alpha_coeffs: &Vec<E>,

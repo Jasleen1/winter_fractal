@@ -9,15 +9,26 @@ use models::errors::R1CSError;
 use thiserror::Error;
 use winter_crypto::MerkleTreeError;
 
+
+/// The errors for a Fractal Prover
 #[derive(Debug, Error, PartialEq)]
 pub enum ProverError {
+    /// Error handling for errors in a [`crate::lincheck_prover::LincheckProver`]
     LincheckErr(LincheckError),
+    /// Error handling for R1CS data structure related errors
     R1CSErr(R1CSError),
+    /// Used in testing sometimes, if the matrix name provided is not valid.
     InvalidMatrixName(String),
+    /// Error related to Merkle Tree operations
     MerkleTreeErr(MerkleTreeError),
+    /// Error related to the [`fractal_utils::polynomial_utils::MultiEval`] structs
     MultiPolyErr(String),
+    /// Other errors related to [`fractal_utils`]
     FractalUtilErr(FractalUtilError),
+    /// Errors related to the [`fractal_accumulator`] crate.
     AccumulatorErr(AccumulatorProverError),
+    /// In some cases, a prover key for a struct my be an option and may not be set. 
+    /// Logically speaking it shouldn't be accessed in such a situation. 
     ProverKeyNoneErr(),
 }
 
@@ -51,7 +62,7 @@ impl From<AccumulatorProverError> for ProverError {
     }
 }
 
-/// Represents a generic error type
+/// Represents a generic error type for lincheck-related operations.
 #[derive(Debug, PartialEq, Error)]
 pub enum LincheckError {
     /// If the Merkle Tree leads to an error
