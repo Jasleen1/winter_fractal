@@ -166,12 +166,14 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let mut sigma_function = polynom::mul(&x_func, &g_hat_coeffs);
         sigma_function[0] =
             sigma_function[0] + (E::from(self.sigma) * E::from(dividing_factor).inv());
-        let sigma_minus_f = polynom::sub(
+        let mut sigma_minus_f = polynom::sub(
             &polynom::mul(&sigma_function, &summing_poly_denominator),
             &summing_poly_numerator,
         );
-        let vanishing_on_x = get_vanishing_poly(E::from(eta), summing_domain_len);
-        polynom::div(&sigma_minus_f, &vanishing_on_x)
+        divide_by_vanishing_in_place(&mut sigma_minus_f, E::from(eta), summing_domain_len);
+        sigma_minus_f
+        //let vanishing_on_x = get_vanishing_poly(E::from(eta), summing_domain_len);
+        //polynom::div(&sigma_minus_f, &vanishing_on_x)
     }
 
     fn get_current_layer(&self) -> usize {

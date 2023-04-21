@@ -55,17 +55,12 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         // Since the degree of f_az and f_bz is each |H| - 1, the degree of the polynomial
         // s = (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
 
-        // Generate coefficients for vanishing_polynomial(H)
-        let denom_poly = get_vanishing_poly(options.eta, options.h_domain.len());
-
         // Generate the polynomial s = (f_az * f_bz - f_cz) / vanishing_H
-        let s_coeffs = polynom::div(
-            &polynom::sub(
-                &polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs),
-                &self.f_cz_coeffs,
-            ),
-            &denom_poly,
+        let mut s_coeffs = polynom::sub(
+            &polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs),
+            &self.f_cz_coeffs,
         );
+        divide_by_vanishing_in_place(&mut s_coeffs, options.eta, options.h_domain.len());
 
         // Build proofs for the polynomial s
         let s_prover = LowDegreeProver::<B, E, H>::from_polynomial(
@@ -96,17 +91,12 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         // Since the degree of f_az and f_bz is each |H| - 1, the degree of the polynomial
         // s = (f_az * f_bz - f_cz) / vanishing_H is upper bounded by |H| - 2.
 
-        // Generate coefficients for vanishing_polynomial(H)
-        let denom_poly = get_vanishing_poly(options.eta, options.size_subgroup_h);
-
         // Generate the polynomial s = (f_az * f_bz - f_cz) / vanishing_H
-        let s_coeffs = polynom::div(
-            &polynom::sub(
-                &polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs),
-                &self.f_cz_coeffs,
-            ),
-            &denom_poly,
+        let mut s_coeffs = polynom::sub(
+            &polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs),
+            &self.f_cz_coeffs,
         );
+        divide_by_vanishing_in_place(&mut s_coeffs, options.eta, options.h_domain.len());
 
         accumulator.add_polynomial(s_coeffs, options.size_subgroup_h - 2);
     }

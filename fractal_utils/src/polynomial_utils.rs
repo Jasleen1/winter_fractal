@@ -1,5 +1,5 @@
 use crate::{errors::FractalUtilError, matrix_utils::*};
-use fractal_math::{fft, FieldElement, StarkField};
+use fractal_math::{fft, FieldElement, StarkField, polynom};
 use std::{convert::TryInto, marker::PhantomData};
 use winter_crypto::{BatchMerkleProof, Digest, ElementHasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions};
@@ -28,6 +28,24 @@ pub fn get_vanishing_poly<E: FieldElement>(eta: E, dom_size: usize) -> Vec<E> {
     let eta_pow = E::PositiveInteger::from(dom_size_32);
     vanishing_poly[0] = eta.exp(eta_pow).neg();
     vanishing_poly
+}
+
+/// Efficient function for dividing a polynomial by the vanshing polynomial for a multiplicative
+/// subgroup of size dom_size and with multiplicative factor eta 
+#[cfg_attr(feature = "flame_it", flame("utils"))]
+pub fn divide_by_vanishing<E: FieldElement>(p: &[E], eta: E, dom_size: usize) -> Vec<E> {
+    let dom_size_32: u32 = dom_size.try_into().unwrap();
+    let eta_pow = E::PositiveInteger::from(dom_size_32);
+    polynom::syn_div(p, dom_size, eta.exp(eta_pow))
+}
+
+/// Efficient function for dividing a polynomial by the vanshing polynomial for a multiplicative
+/// subgroup of size dom_size and with multiplicative factor eta 
+#[cfg_attr(feature = "flame_it", flame("utils"))]
+pub fn divide_by_vanishing_in_place<E: FieldElement>(p: &mut [E], eta: E, dom_size: usize) {
+    let dom_size_32: u32 = dom_size.try_into().unwrap();
+    let eta_pow = E::PositiveInteger::from(dom_size_32);
+    polynom::syn_div_in_place(p, dom_size, eta.exp(eta_pow));
 }
 
 /**
