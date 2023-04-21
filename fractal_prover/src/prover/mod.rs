@@ -48,9 +48,9 @@ impl<
         H: ElementHasher + ElementHasher<BaseField = B>,
     > FractalProver<B, E, H>
 {
+    /// Creates a new fractal prover
     pub fn new(
         prover_key: ProverKey<B, E, H>,
-        options: FractalProverOptions<B>,
         witness: Vec<B>,
         variable_assignment: Vec<B>,
         pub_input_bytes: Vec<u8>,
@@ -71,6 +71,7 @@ impl<
         }
     }
 
+    /// Returns the prover key for this prover.
     pub fn get_prover_key_ref(&self) -> &ProverKey<B, E, H> {
         self.prover_key.as_ref().unwrap()
     }

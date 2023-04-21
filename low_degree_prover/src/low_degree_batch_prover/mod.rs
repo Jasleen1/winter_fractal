@@ -38,6 +38,7 @@ pub struct LowDegreeBatchProver<
 impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField = B>>
     LowDegreeBatchProver<B, E, H>
 {
+    /// Creates a new low degree batch prover
     pub fn new(evaluation_domain: &Vec<B>, fri_options: FriOptions) -> Self {
         let evaluation_domain_e = evaluation_domain.iter().map(|y| E::from(*y)).collect();
         let fri_max_degree = evaluation_domain.len() / fri_options.blowup_factor() - 1;
@@ -52,7 +53,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         }
     }
 
-    //the channel is updated each time a polynomial is added so that this composes with other proofs
+    /// Adds a polynomial to the low degree batch prover.
     #[cfg_attr(feature = "flame_it", flame("low_degree_prover"))]
     pub fn add_polynomial(
         &mut self,
@@ -60,10 +61,13 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         max_degree: usize,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
     ) {
+        //the channel is updated each time a polynomial is added so that this composes with other proofs
+
         let polynomial_coeffs_e: Vec<E> = polynomial_coeffs.iter().map(|y| E::from(*y)).collect();
         self.add_polynomial_e(&polynomial_coeffs_e, max_degree, channel);
     }
 
+    /// Adds a polynomial with coefficients in the extension field.
     #[cfg_attr(feature = "flame_it", flame("low_degree_prover"))]
     pub fn add_polynomial_e(
         &mut self,
@@ -98,10 +102,10 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     }
 
     #[cfg_attr(feature = "flame_it", flame("low_degree_prover"))]
+    /// Generates a low degree proof for a batch of values.
     pub fn generate_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
-        //queried_positions: Vec<usize>,
     ) -> LowDegreeBatchProof<B, E, H> {
         // variable containing the result of evaluating each consitiuant polynomial on the set of queried eval points
         let mut all_unpadded_queried_evaluations: Vec<Vec<E>> = Vec::new();

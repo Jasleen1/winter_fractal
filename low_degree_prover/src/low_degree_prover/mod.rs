@@ -37,6 +37,7 @@ pub struct LowDegreeProver<
 impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField = B>>
     LowDegreeProver<B, E, H>
 {
+    /// Generates a low degree prover for a given polynomial
     pub fn from_polynomial(
         polynomial: &Vec<B>,
         evaluation_domain: &Vec<B>,
@@ -62,6 +63,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         }
     }
 
+    /// Generates a low degree proof from the evaluations of a polynomial
     pub fn from_evals(
         polynomial_evals: Vec<E>,
         evaluation_domain: &Vec<E>,
@@ -83,6 +85,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         }
     }
 
+    /// Runs a proof for a polynomial being low degree.
     pub fn generate_proof(
         &self,
         channel: &mut DefaultFractalProverChannel<B, E, H>,
