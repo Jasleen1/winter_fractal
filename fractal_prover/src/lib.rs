@@ -26,6 +26,7 @@ extern crate flamer;
 #[cfg(test)]
 mod tests;
 
+/// This constant stores the number of layers in the Fractal IOP
 pub const FRACTAL_LAYERS: usize = 3;
 
 //multiple proofs can be run in parallel starting from the same transcript state
@@ -56,18 +57,17 @@ pub const FRACTAL_LAYERS: usize = 3;
 //-you probably need to pass it around to get all the polynomials and degrees you need for the end part
 //maybe pass a cloned channel into each then smoosh them together
 
+/// This trait is meant to be _like_ a layered IOP prover but we don't want it to do any commitments.
+/// This is why we called it the LayeredSubProver, since we will be implementing it in subroutines of an actual IOP
+/// prover to maintain a semblance of modularity. 
+/// This trait includes subroutines associated with a layered IOP.
 pub trait LayeredSubProver<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 >
 {
-    //pub type LayeredProof;
-    //pub type LayeredProverState;
-    //pub type DeferredAccumulator; //multipoly
-    //pub fn run_next_layer(self, query: E, accumulator: DeferredAccumulator, proof: &mut LayeredProof, state: &mut LayeredProverState) -> Result<(), E>;
-    // just one proof at the end, no need for multiple
-    // You already need to keep track of each prover state, might as well have provers be stateful
+    /// Run the next layer of this IOP prover
     fn run_next_layer(
         &mut self,
         query: E,
@@ -81,35 +81,12 @@ pub trait LayeredSubProver<
     /// Gets the total number of layers for this layered prover
     fn get_num_layers(&self) -> usize;
 
-    // Gets options for fractal proofs
-    // fn get_fractal_options(&self) -> FractalProverOptions<B>;
-
-    // fn generate_proof(
-    //     &mut self,
-    //     public_input_bytes: Vec<u8>,
-    // ) -> Result<LowDegreeBatchProof<B, E, H>, ProverError> {
-    //     let options = self.get_fractal_options();
-    //     let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
-    //         options.evaluation_domain.len(),
-    //         options.num_queries,
-    //         public_input_bytes,
-    //     );
-    //     let mut acc = Accumulator::<B, E, H>::new(
-    //         options.evaluation_domain.len(),
-    //         B::ONE,
-    //         options.evaluation_domain.clone(),
-    //         options.num_queries,
-    //         options.fri_options.clone(),
-    //     );
-    //     for i in 0..self.get_num_layers() {
-    //         let query = channel.draw_fri_alpha();
-    //         self.run_next_layer(query, &mut acc);
-    //         acc.commit_layer(); //todo: do something with this
-    //     }
-    //     Ok(acc.create_fri_proof()?)
-    // }
 }
 
+/// This is a trait for a layered IOP prover which also implements the trait
+/// [`LayeredSubProver`]. The main additional function is the actual proof generation, 
+/// which takes place in the [`LayeredProver::generate_proof`] function and returns a
+/// proof of type [`TopLevelProof`].
 pub trait LayeredProver<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -117,12 +94,16 @@ pub trait LayeredProver<
     D: IopData<B, E>,
 >: LayeredSubProver<B, E, H>
 {
+    /// Generate proof for a [`LayeredProver`]
     fn generate_proof(
         &mut self,
         prover_key: &Option<ProverKey<B, E, H>>,
         public_input_bytes: Vec<u8>,
         options: &FractalProverOptions<B>,
     ) -> Result<TopLevelProof<B, E, H>, ProverError>;
+    // BELOW IS A SAMPLE IMPLEMENTATION OF THIS FUNCTION
+    // This function, however, needs a special-purpose implementation, 
+    // depending on the specific IOP. 
     // {
     //     let options = self.get_fractal_options();
     //     let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
@@ -146,37 +127,3 @@ pub trait LayeredProver<
     // }
 }
 
-/*
-let lincheck_prover_a = LincheckProver::<B, E, H>::new(
-    //alpha,
-    &matrix_index,
-    prod_m_z_coeffs.to_vec(),
-    z_coeffs.to_vec(),
-    &self.options,
-);
-// ditto for b and c
-
-let mut commitment_vec: Vec<H> = vec![];
-let mut deferred_batch_low_degree_prover = LowDegreeBatchProver::new();
-// make a data type to handle both low_degree_batch_prover and the mult_poly,
-// pass this in mutably into run_next_layer instead
-//multipoly commits to eval_domain evals
-for i in 0..lincheck.layers.len(){
-    let layer_i_multi_eval = MultiEval::new();
-    let query = channel.draw_value_depending_on_lincheck_layer(i);
-    // could input query into the ProverState
-    // proving function decides if the query is valid. If not, use it to seed another channel and draw until good
-    let (proof_state_a: LincheckProver::ProverState, proof_option: Option<LincheckProof>) = lincheck_prover_a.run_next_layer(query, layer_i_multi_eval, deferred_batch_low_degree_prover);
-    // same for b and c
-    // some kind of evaluate and commit function needed below VVV
-    let next_com = layer_i_multi_eval.commit_polynomial_evaluations();
-    commitment_vec.push(next_com);
-    channel.reseed(next_com);
-}
-
-
-impl LayeredProver for LincheckProver{
-    type LayeredProverState = LincheckProverState;
-}
-
-*/
