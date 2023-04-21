@@ -646,21 +646,6 @@ mod test {
             prover_key.params.eta,
         )?;
 
-        /*let mut accumulator = Accumulator::<B, E, H>::new(
-            eval_len,
-            fractal_options.eta,
-            evaluation_domain.clone(),
-            fractal_options.num_queries,
-            fractal_options.fri_options.clone(),
-            vec![],
-        );
-
-        accumulator.add_unchecked_polynomial(z_coeffs.clone());
-        accumulator.add_unchecked_polynomial(f_az_coeffs.clone());
-
-        // Commit to the f_z and f_az polynomials before you move forward.
-        let init_commit = accumulator.commit_layer()?;*/
-
         // Now the lincheck prover does its work.
         let mut lincheck_prover_a = LincheckProver::<B, E, H>::new(
             prover_key_2.matrix_a_index,

@@ -328,7 +328,6 @@ impl<
         let mut u_numerator = vec![E::ZERO; (options.size_subgroup_h).try_into().unwrap()];
         u_numerator[0] = alpha_to_h_size.neg();
         u_numerator.push(E::ONE);
-        let u_denominator = vec![alpha.neg(), E::ONE];
         /*let u_alpha_evals: Vec<E> = self
         .options
         .evaluation_domain
@@ -337,9 +336,13 @@ impl<
         .collect();*/
         //let u_alpha_coeffs2 =
         //polynom::interpolate(&self.options.evaluation_domain, &u_alpha_evals, true);
-        let u_alpha_coeffs = polynom::div(&u_numerator, &u_denominator);
+        //let u_alpha_coeffs = polynom::div(&u_numerator, &u_denominator);
+
+        // equivalent to polynom::div(&u_numerator, &vec![alpha.neg(), E::ONE]), but faster
+        let u_alpha_coeffs = polynom::syn_div(&u_numerator, 1, alpha);
         //let reconstituted = polynom::mul(&u_alpha_coeffs, &u_denominator);
 
+        flame::start("submul");
         let mut poly = polynom::sub(
             &polynom::mul(
                 &u_alpha_coeffs,
@@ -358,6 +361,7 @@ impl<
                     .collect::<Vec<E>>(),
             ),
         );
+        flame::end("submul");
 
         fractal_utils::polynomial_utils::get_to_degree_size(&mut poly);
 
@@ -434,7 +438,7 @@ impl<
     ) -> Result<(), ProverError> {
         match self.get_current_layer() {
             0 => {
-                self.lincheck_layer_one(query, accumulator, options);
+                self.lincheck_layer_one(query, accumulator, options)?;
             }
             1 => {
                 self.lincheck_layer_two(query, accumulator, options);
