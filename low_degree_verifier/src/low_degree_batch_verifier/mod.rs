@@ -7,6 +7,8 @@ use winter_crypto::{ElementHasher, RandomCoin, MerkleTree, Digest};
 use winter_fri::FriVerifier;
 use winter_math::StarkField;
 
+/// Verifies that all the values that are decomitted in the LowDegreeBatchProof correspond
+/// to polynomials with the specified maximum degrees
 #[cfg_attr(feature = "flame_it", flame("low_degree_verifier"))]
 pub fn verify_low_degree_batch_proof<
     B: StarkField,
@@ -26,8 +28,8 @@ pub fn verify_low_degree_batch_proof<
     )?;
 
     //todo: need to be able to sample these throughout the protocol like for the batch verifier
-    let mut alphas: Vec<E> = Vec::new();
-    let mut betas: Vec<E> = Vec::new();
+    let mut alphas: Vec<E> = Vec::with_capacity(max_degrees.len());
+    let mut betas: Vec<E> = Vec::with_capacity(max_degrees.len());
     for _ in 0..max_degrees.len() {
         alphas.push(public_coin.draw::<E>().unwrap());
         betas.push(public_coin.draw::<E>().unwrap());
@@ -43,6 +45,7 @@ pub fn verify_low_degree_batch_proof<
         .draw_integers(num_queries, eval_domain_size)
         .unwrap();
 
+    flame::start("verify fri");
     let fri_verifier = FriVerifier::<B, E, DefaultFractalVerifierChannel<E, H>, H>::new(
         &mut channel,
         public_coin,
@@ -54,8 +57,10 @@ pub fn verify_low_degree_batch_proof<
         &proof.composed_queried_evaluations,
         &queried_positions,
     )?;
+    flame::end("verify fri");
 
     // Verify that merkle leaves are correct
+    flame::start("verify merkle leaves");
     for i in (0..queried_positions.len()).into_iter() {
         let evals_at_idx: Vec<E> = proof.all_unpadded_queried_evaluations.iter().map(|poly_evals| poly_evals[i]).collect();
         if H::hash_elements(&evals_at_idx) != proof.tree_proof.leaves[i] {
@@ -69,9 +74,14 @@ pub fn verify_low_degree_batch_proof<
             return Err(LowDegreeVerifierError::MerkleTreeErr);
         }
     }
+    flame::end("verify merkle leaves");
+
+    flame::start("verify merkle batch");
     MerkleTree::verify_batch(&proof.tree_root, &queried_positions, &proof.tree_proof).map_err(|_e| {
         LowDegreeVerifierError::MerkleTreeErr
     })?;
+    flame::end("verify merkle batch");
+
     verify_lower_degree_batch::<B, E, H>(
         eval_domain_size,
         max_degrees,

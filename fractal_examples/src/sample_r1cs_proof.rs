@@ -53,8 +53,8 @@ fn main() {
     }
 
     // call orchestrate_r1cs_example
-    orchestrate_r1cs_example::<BaseElement, QuadExtension<BaseElement>, Rp64_256, 1>(
-        //orchestrate_r1cs_example::<BaseElement, BaseElement, Blake3_256<BaseElement>, 1>(
+    //orchestrate_r1cs_example::<BaseElement, QuadExtension<BaseElement>, Rp64_256, 1>(
+    orchestrate_r1cs_example::<BaseElement, BaseElement, Blake3_256<BaseElement>, 1>(
         &options.arith_file,
         &options.wires_file,
         options.verbose,
