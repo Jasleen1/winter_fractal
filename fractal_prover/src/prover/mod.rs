@@ -279,6 +279,7 @@ impl<
         let mut local_queries = Vec::<E>::new();
 
         for i in 0..self.get_num_layers() {
+            // println!("Running layer {}", i + 1);
             // local_queries.push(query);
             // Doing this rn to make sure prover and verifier sample identically
             if i > 0 {

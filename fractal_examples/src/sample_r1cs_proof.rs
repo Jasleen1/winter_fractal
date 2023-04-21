@@ -8,7 +8,8 @@ use std::cmp::max;
 use std::time::Instant;
 
 use fractal_indexer::index::get_max_degree;
-use fractal_proofs::{fft, FractalProverOptions};
+use fractal_proofs::{fft, FractalProverOptions, Serializable};
+use models::r1cs::Matrix;
 use fractal_prover::LayeredProver;
 use fractal_prover::{prover::FractalProver, LayeredSubProver};
 use fractal_utils::FractalOptions;
@@ -78,7 +79,7 @@ pub(crate) fn orchestrate_r1cs_example<
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
     arith_parser.parse_arith_file(&arith_file, verbose);
     println!("Parsed the arith file");
-    let r1cs = arith_parser.r1cs_instance;
+    let mut r1cs = arith_parser.r1cs_instance;
 
     let mut wires_parser = JsnarkWireReaderParser::<B>::new().unwrap();
     println!("Got the wire parser");
@@ -116,10 +117,13 @@ pub(crate) fn orchestrate_r1cs_example<
     let index_domains = build_index_domains::<B, E>(index_params.clone());
     println!("built index domains");
     let indexed_a = index_matrix::<B, E>(&r1cs.A, &index_domains);
+    r1cs.A = Matrix::new("dummy A", Vec::<Vec<B>>::new()).unwrap();
     println!("indexed matrix a");
     let indexed_b = index_matrix::<B, E>(&r1cs.B, &index_domains);
+    r1cs.B = Matrix::new("dummy B", Vec::<Vec<B>>::new()).unwrap();
     println!("indexed matrix b");
     let indexed_c = index_matrix::<B, E>(&r1cs.C, &index_domains);
+    r1cs.C = Matrix::new("dummy C", Vec::<Vec<B>>::new()).unwrap();
     println!("indexed matrices");
     // This is the index i.e. the pre-processed data for this r1cs
     let index = Index::new(index_params.clone(), indexed_a, indexed_b, indexed_c);
@@ -225,7 +229,7 @@ struct ExampleOptions {
     #[structopt(
         short = "a",
         long = "arith_file",
-        default_value = "fractal_examples/jsnark_outputs/fibonacciexample.arith"
+        default_value = "fractal_examples/jsnark_outputs/fibonacciexample_10.arith"
     )]
     arith_file: String,
 
@@ -233,7 +237,7 @@ struct ExampleOptions {
     #[structopt(
         short = "w",
         long = "wire_file",
-        default_value = "fractal_examples/jsnark_outputs/fibonacciexample.wires"
+        default_value = "fractal_examples/jsnark_outputs/fibonacciexample_10.wires"
     )]
     wires_file: String,
 
