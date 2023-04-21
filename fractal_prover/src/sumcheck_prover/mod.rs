@@ -3,6 +3,7 @@ use std::{convert::TryInto, marker::PhantomData};
 use crate::errors::ProverError;
 use crate::LayeredSubProver;
 use fractal_accumulator::accumulator::Accumulator;
+use fractal_proofs::batch_inversion;
 use fractal_utils::channel::DefaultFractalProverChannel;
 use fractal_utils::polynomial_utils::*;
 use fractal_utils::FractalProverOptions;
@@ -89,43 +90,20 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
 
         let _sigma_inv = self.sigma.inv();
         let summing_domain_len = summing_domain.len();
-        // let mut numerator_vals = self.numerator_coeffs.clone();
-        // let mut denominator_vals = self.denominator_coeffs.clone();
-        // get_to_degree_size(&mut numerator_vals);
-        // println!("Num vals len = {}", numerator_vals.len());
-        // println!("Denom vals len = {}", denominator_vals.len());
+        let summing_domain_e: Vec<E> = summing_domain.iter().map(|x| E::from(*x)).collect();
+        //let mut numerator_vals = self.numerator_coeffs.clone();
+        //let mut denominator_vals = self.denominator_coeffs.clone();
 
-        // pad_with_zeroes(&mut numerator_vals, summing_domain_len);
-        // pad_with_zeroes(&mut denominator_vals, summing_domain_len);
-        // println!("Num vals end len = {}", numerator_vals.len());
-        // println!("Denom vals end len = {}", denominator_vals.len());
-        // fft::evaluate_poly_with_offset(&mut numerator_vals, &self.summing_domain_twiddles, self.eta, 1);
-        // fft::evaluate_poly_with_offset(&mut denominator_vals, &self.summing_domain_twiddles, self.eta, 1);
-        // let mut numerator_vals = polynom::eval_many(&self.numerator_coeffs.clone(), &self.summing_domain);
-        // let mut denominator_vals = polynom::eval_many(&self.denominator_coeffs, &self.summing_domain);
-        // let mut f_hat_evals: Vec<E> = Vec::new();
-        // for i in 0..self.summing_domain.len() {
-        //     f_hat_evals.push(numerator_vals[i] / denominator_vals[i]);
-        // }
-        // might be faster to eval_many
-        let f_hat_evals: Vec<E> = summing_domain
-            .iter()
-            .map(|x| {
-                polynom::eval(&self.numerator_coeffs, E::from(*x))
-                    / polynom::eval(&self.denominator_coeffs, E::from(*x))
-            })
+        // fft::evaluate_poly_with_offset(&mut numerator_vals, &summing_domain_twiddles, self.eta, 1);
+        // fft::evaluate_poly_with_offset(&mut denominator_vals, &summing_domain_twiddles, self.eta, 1);
+        let numerator_vals = polynom::eval_many(&self.numerator_coeffs, &summing_domain_e);
+        let mut denominator_vals = polynom::eval_many(&self.denominator_coeffs, &summing_domain_e);
+        denominator_vals = batch_inversion(&denominator_vals);
+        let f_hat_evals: Vec<E> = (0..summing_domain_len)
+            .into_iter()
+            .map(|i| numerator_vals[i] * denominator_vals[i])
             .collect();
 
-        // let summing_domain_e: Vec<E> = self.summing_domain.iter().map(|f| E::from(*f)).collect();
-        // let f_hat_coeffs = polynom::interpolate(
-        //     &self
-        //         .summing_domain
-        //         .iter()
-        //         .map(|i| E::from(*i))
-        //         .collect::<Vec<E>>(),
-        //     &f_hat_evals,
-        //     true,
-        // );
         let mut f_hat_coeffs = f_hat_evals;
         pad_with_zeroes(&mut f_hat_coeffs, summing_domain.len());
         fft::interpolate_poly_with_offset(
