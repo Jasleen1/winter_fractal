@@ -157,7 +157,7 @@ impl<
         beta_minus_row[0] += beta;
 
         //let matrix_proof_denominator = polynom::mul(&alpha_minus_row, &beta_minus_col);
-        let matrix_proof_denominator = polynom::mul(&alpha_minus_col, &beta_minus_row);
+        let matrix_proof_denominator = fft_mul(&alpha_minus_col, &beta_minus_row);
 
         //matrix_proof_numerator/matrix_proof_denominator should evaluate to gamma when summed over K. Let's double check this
         // let mut mat_sum = E::ZERO;
@@ -346,7 +346,7 @@ impl<
 
         flame::start("submul");
         let mut poly = polynom::sub(
-            &polynom::mul(
+            &fft_mul(
                 &u_alpha_coeffs,
                 &self
                     .f_1_poly_coeffs
@@ -354,7 +354,7 @@ impl<
                     .map(|i| E::from(*i))
                     .collect::<Vec<E>>(),
             ),
-            &polynom::mul(
+            &fft_mul(
                 t_alpha_coeffs,
                 &self
                     .f_2_poly_coeffs

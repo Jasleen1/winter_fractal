@@ -163,13 +163,18 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     ) -> Vec<E> {
         let dividing_factor: u64 = summing_domain_len.try_into().unwrap();
         let x_func = [E::ZERO, E::ONE];
+        flame::start("mul");
         let mut sigma_function = polynom::mul(&x_func, &g_hat_coeffs);
-        sigma_function[0] =
-            sigma_function[0] + (E::from(self.sigma) * E::from(dividing_factor).inv());
+        flame::end("mul");
+        flame::start("inv");
+        sigma_function[0] += E::from(self.sigma) * E::from(dividing_factor).inv();
+        flame::end("inv");
+        flame::start("submul");
         let mut sigma_minus_f = polynom::sub(
-            &polynom::mul(&sigma_function, &summing_poly_denominator),
+            &fft_mul(&sigma_function, &summing_poly_denominator),
             &summing_poly_numerator,
         );
+        flame::end("submul");
         divide_by_vanishing_in_place(&mut sigma_minus_f, E::from(eta), summing_domain_len);
         sigma_minus_f
         //let vanishing_on_x = get_vanishing_poly(E::from(eta), summing_domain_len);

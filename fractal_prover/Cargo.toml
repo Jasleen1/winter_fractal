@@ -8,7 +8,7 @@ edition = "2018"
 
 [features]
 default = []
-flame_it = ["flame", "flamer"]
+flame_it = ["flame", "flamer", "fractal_utils/flame_it"]
 
 [dependencies]
 displaydoc = "0.1.7"

@@ -149,6 +149,26 @@ pub fn get_randomized_complementary_poly<E: FieldElement>(
     out_poly
 }
 
+/// Perform a (hopefully) quicker polynomial multiplication using ffts
+#[cfg_attr(feature = "flame_it", flame("utils"))]
+pub fn fft_mul<E>(a: &[E], b: &[E]) -> Vec<E>
+where
+    E: FieldElement,
+{
+    let domain_len = (a.len() + b.len()).next_power_of_two();
+    let twiddles = fft::get_twiddles(domain_len);
+    let inv_twiddles = fft::get_inv_twiddles(domain_len);
+
+    let (mut a_evals, mut b_evals) = (a.to_vec(), b.to_vec());
+    pad_with_zeroes(&mut a_evals, domain_len);
+    pad_with_zeroes(&mut b_evals, domain_len);
+    fft::evaluate_poly(&mut a_evals, &twiddles);
+    fft::evaluate_poly(&mut b_evals, &twiddles);
+    let mut c_coeffs: Vec<E> = (0..domain_len).into_iter().map(|i| a_evals[i] * b_evals[i]).collect();
+    fft::interpolate_poly(&mut c_coeffs, &inv_twiddles);
+    c_coeffs
+}
+
 pub trait MultiPoly<
     B: StarkField,
     E: FieldElement<BaseField = B>,

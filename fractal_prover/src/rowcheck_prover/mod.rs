@@ -57,7 +57,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
 
         // Generate the polynomial s = (f_az * f_bz - f_cz) / vanishing_H
         let mut s_coeffs = polynom::sub(
-            &polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs),
+            &fft_mul(&self.f_az_coeffs, &self.f_bz_coeffs),
             &self.f_cz_coeffs,
         );
         divide_by_vanishing_in_place(&mut s_coeffs, options.eta, options.h_domain.len());
@@ -93,7 +93,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
 
         // Generate the polynomial s = (f_az * f_bz - f_cz) / vanishing_H
         let mut s_coeffs = polynom::sub(
-            &polynom::mul(&self.f_az_coeffs, &self.f_bz_coeffs),
+            &fft_mul(&self.f_az_coeffs, &self.f_bz_coeffs),
             &self.f_cz_coeffs,
         );
         divide_by_vanishing_in_place(&mut s_coeffs, options.eta, options.h_domain.len());

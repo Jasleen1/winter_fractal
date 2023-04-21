@@ -81,7 +81,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let comp_coeffs =
             get_randomized_complementary_poly::<E>(max_degree, self.fri_max_degree, alpha, beta);
 
-        let randomized_padded_coeffs = polynom::mul(&polynomial_coeffs, &comp_coeffs);
+        let randomized_padded_coeffs = fft_mul(&polynomial_coeffs, &comp_coeffs);
         self.randomized_sum = polynom::add(&self.randomized_sum, &randomized_padded_coeffs);
         self.max_degrees.push(max_degree);
         self.constituant_polynomials.push(polynomial_coeffs.clone());
