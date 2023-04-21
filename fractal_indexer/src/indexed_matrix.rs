@@ -38,6 +38,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>> IndexedMatrix<B, E> {
 // Also, should the new indexed matrix be generated using something here or in the new
 // function for Indexed Matrix?
 // QUESTION: Should the IndexDomain struct also depend on E?
+/// This function takes as input a set of domains and a matrix and indexes it according to Fractal's indexing algorithm
 pub fn index_matrix<B: StarkField, E: FieldElement<BaseField = B>>(
     mat: &Matrix<B>,
     index_domains: &IndexDomains<B, E>,

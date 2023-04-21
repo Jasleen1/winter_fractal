@@ -30,18 +30,12 @@ pub struct RowcheckProver<B: StarkField, E: FieldElement<BaseField = B>, H: Hash
 impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField = B>>
     RowcheckProver<B, E, H>
 {
-    pub fn new(
-        f_az_coeffs: Vec<B>,
-        f_bz_coeffs: Vec<B>,
-        f_cz_coeffs: Vec<B>,
-        // fractal_options: &FractalProverOptions<B>,
-    ) -> Self {
+    // Generates a new prover for Fractal's Rowcheck operation.
+    pub fn new(f_az_coeffs: Vec<B>, f_bz_coeffs: Vec<B>, f_cz_coeffs: Vec<B>) -> Self {
         RowcheckProver {
             f_az_coeffs,
             f_bz_coeffs,
             f_cz_coeffs,
-            // size_subgroup_h: fractal_options.h_domain.len(),
-            // fractal_options,
             _h: PhantomData,
             _e: PhantomData,
             current_layer: 0,
@@ -82,49 +76,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         );
 
         let s_proof = s_prover.generate_proof(channel);
-        // let old_s_evals_b: Vec<B> = polynom::eval_many(
-        //     s_coeffs.clone().as_slice(),
-        //     self.evaluation_domain.clone().as_slice(),
-        // );
-        // let old_s_evals: Vec<E> = old_s_evals_b.into_iter().map(|x: B| E::from(x)).collect();
-        // let transposed_evaluations = transpose_slice(&old_s_evals);
-        // let hashed_evaluations = hash_values::<H, E, 1>(&transposed_evaluations);
-        // let s_tree = MerkleTree::<H>::new(hashed_evaluations)?;
 
-        // let s_comp_coeffs =
-        //     get_complementary_poly::<B>(polynom::degree_of(&s_coeffs), self.max_degree - 1);
-        // let new_s = polynom::mul(&s_coeffs, &s_comp_coeffs);
-
-        // let s_evals_b: Vec<B> = polynom::eval_many(
-        //     new_s.clone().as_slice(),
-        //     self.evaluation_domain.clone().as_slice(),
-        // );
-        // let s_evals: Vec<E> = s_evals_b.into_iter().map(|x: B| E::from(x)).collect();
-
-        // let mut fri_prover =
-        //     winter_fri::FriProver::<B, E, DefaultFractalProverChannel<B, E, H>, H>::new(
-        //         self.fri_options.clone(),
-        //     );
-
-        // let query_positions = channel.draw_query_positions();
-        // let queried_positions = query_positions.clone();
-
-        // let s_eval_root = *s_tree.root();
-        // let s_original_evals = query_positions
-        //     .iter()
-        //     .map(|&p| old_s_evals[p])
-        //     .collect::<Vec<_>>();
-
-        // let s_original_proof = s_tree.prove_batch(&queried_positions)?;
-        // let commitment_idx = channel.layer_commitments().len();
-        // // Build proofs for the polynomial g
-        // fri_prover.build_layers(channel, s_evals.clone());
-        // let s_proof = fri_prover.build_proof(&query_positions);
-        // let s_queried_evals = query_positions
-        //     .iter()
-        //     .map(|&p| s_evals[p])
-        //     .collect::<Vec<_>>();
-        // let s_commitments = channel.layer_commitments()[commitment_idx..].to_vec(); //channel.layer_commitments().to_vec();
         Ok(RowcheckProof {
             options: options.fri_options.clone(),
             num_evaluations: options.evaluation_domain.len(),

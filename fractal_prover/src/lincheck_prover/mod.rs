@@ -24,7 +24,7 @@ use winter_utils::transpose_slice;
 use crate::{errors::LincheckError, log::debug};
 
 const n: usize = 1;
-// TODO: Will need to ask Irakliy whether a channel should be passed in here
+/// This is the modular prover for Fractal's Lincheck.
 pub struct LincheckProver<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -33,12 +33,9 @@ pub struct LincheckProver<
     prover_matrix_index: ProverMatrixIndex<B, E>,
     f_1_poly_coeffs: Vec<B>,
     f_2_poly_coeffs: Vec<B>,
-    // options: FractalProverOptions<B>,
-    // evaluation_domain_e: Vec<E>,
     _h: PhantomData<H>,
     _e: PhantomData<E>,
     current_layer: usize,
-    // layered prover state
     t_alpha: Option<Vec<E>>,
     alpha: Option<E>,
 }
@@ -49,23 +46,16 @@ impl<
         H: ElementHasher + ElementHasher<BaseField = B>,
     > LincheckProver<B, E, H>
 {
+    /// Create a new fractal lincheck prover
     pub fn new(
         prover_matrix_index: ProverMatrixIndex<B, E>,
         f_1_poly_coeffs: Vec<B>,
         f_2_poly_coeffs: Vec<B>,
-        // options: &FractalProverOptions<B>,
     ) -> Self {
-        // let evaluation_domain_e = options
-        //     .evaluation_domain
-        //     .iter()
-        //     .map(|i| E::from(*i))
-        //     .collect();
         LincheckProver {
             prover_matrix_index: prover_matrix_index,
             f_1_poly_coeffs,
             f_2_poly_coeffs,
-            // options: options.clone(),
-            // evaluation_domain_e,
             _h: PhantomData,
             _e: PhantomData,
             current_layer: 0,
@@ -87,42 +77,11 @@ impl<
         accumulator.add_polynomial_e(t_alpha.clone(), options.size_subgroup_h - 1);
         self.t_alpha = Some(t_alpha.clone());
 
-        // let poly_prod = self.generate_poly_prod_evals(query, &t_alpha_evals);
         let poly_prod_coeffs = self.generate_poly_prod(query, &t_alpha, options);
         debug!(
             "poly_prod_coeffs degree {}",
             polynom::degree_of(&poly_prod_coeffs)
         );
-
-        //poly_prod_coeffs should evaluate to 0 when summed over H. Let's double check this
-        // let mut pp_sum = E::ZERO;
-        // for h in self.options.h_domain.iter() {
-        //     let temp = polynom::eval(&poly_prod_coeffs, E::from(*h));
-        //     pp_sum += temp;
-        // }
-        // debug_assert!(
-        //     pp_sum == E::ZERO,
-        //     "Sum of product polynomials over h domain is not 0"
-        // );
-
-        // Next use poly_beta in a sumcheck proof but
-        // the sumcheck domain is H, which isn't included here
-        // Use that to produce the sumcheck proof.
-        // debug!("Poly prod len = {}", poly_prod.len());
-
-        //let denom_eval = vec![B::ONE; self.options.evaluation_domain.len()];
-        // let denom_eval = vec![B::ONE; self.options.h_domain.len()];
-
-        // use h_domain rather than eval_domain
-        // let poly_prod = polynom::eval_many(
-        //     &poly_prod_coeffs,
-        //     &self
-        //         .options
-        //         .h_domain
-        //         .iter()
-        //         .map(|i| E::from(*i))
-        //         .collect::<Vec<E>>(),
-        // );
 
         let g_degree = options.h_domain.len() - 2;
         let e_degree = options.h_domain.len() - 1;
@@ -131,13 +90,11 @@ impl<
             poly_prod_coeffs.clone(),
             vec![E::ONE],
             E::ZERO,
-            // options.h_domain.clone(),
             options.eta,
             g_degree,
             e_degree,
-            // self.options.clone(),
         );
-        //if this needs a channel... problem
+
         product_sumcheck_prover.run_next_layer(
             query,
             accumulator,
@@ -214,11 +171,9 @@ impl<
             matrix_proof_numerator,
             matrix_proof_denominator,
             gamma,
-            // options.summing_domain.clone(),
             options.eta_k,
             options.summing_domain.len() - 2,
             2 * options.summing_domain.len() - 3,
-            // self.options.clone(),
         );
 
         matrix_sumcheck_prover
@@ -231,7 +186,7 @@ impl<
             .unwrap();
     }
 
-    pub fn retrieve_gamma(&self, beta: E) -> Result<E, LincheckError> {
+    pub(crate) fn retrieve_gamma(&self, beta: E) -> Result<E, LincheckError> {
         let t_alpha = self
             .t_alpha
             .clone()
@@ -357,16 +312,8 @@ impl<
         t_evals
     }*/
 
-    // pub fn generate_t_alpha_on_h(&self, t_evals: Vec<B>) -> Vec<B> {
-    //     let mut t_alpha_h_domain_poly: Vec<B> = t_evals.clone();
-
-    //     let twiddles_h_domain: Vec<B> = fft::get_inv_twiddles(self.options.h_domain.len());
-
-    //     fft::interpolate_poly(&mut t_alpha_h_domain_poly, &twiddles_h_domain);
-
-    //     t_alpha_h_domain_poly
-    // }
-
+    /// This function needs to compute the polynomial
+    /// u_H(X, alpha)*f_1 - t_alpha*f_2
     #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
     pub fn generate_poly_prod(
         &self,
@@ -374,8 +321,6 @@ impl<
         t_alpha_coeffs: &Vec<E>,
         options: &FractalProverOptions<B>,
     ) -> Vec<E> {
-        // This function needs to compute the polynomial
-        // u_H(X, alpha)*f_1 - t_alpha*f_2
         // here are the steps to this:
         // 1. find out how polynomials are represented and get u_H(X, alpha) = (X^|H| - alpha)/(X - alpha)
         // 2. Polynom includes a mul and a sub function, use these to do the respective ops
@@ -424,61 +369,6 @@ impl<
 
         poly
     }
-
-    // pub fn generate_poly_prod_evals(&self, alpha: E, t_alpha: &Vec<E>) -> Vec<E> {
-    //     // This function needs to compute the polynomial
-    //     // u_H(X, alpha)*f_1 - t_alpha*f_2
-    //     // here are the steps to this:
-    //     // 1. find out how polynomials are represented and get u_H(X, alpha) = (X^|H| - alpha)/(X - alpha)
-    //     // 2. Polynom includes a mul and a sub function, use these to do the respective ops
-    //     // botttom of page 29
-    //     let alpha_to_h_size = alpha.exp(E::PositiveInteger::from(
-    //         self.options.size_subgroup_h as u64,
-    //     ));
-    //     let mut u_numerator = vec![E::ZERO; (self.options.size_subgroup_h).try_into().unwrap()];
-    //     u_numerator[0] = alpha_to_h_size.neg();
-    //     u_numerator.push(E::ONE);
-    //     let u_denominator = vec![alpha.neg(), E::ONE];
-    //     let mut u_alpha = polynom::div(&u_numerator, &u_denominator);
-
-    //     let mut prod = Vec::<E>::new();
-    //     let eval_twiddles = fft::get_twiddles(self.options.evaluation_domain.len());
-    //     let mut f_1_eval = self
-    //         .f_1_poly_coeffs
-    //         .iter()
-    //         .map(|i| E::from(*i))
-    //         .collect::<Vec<E>>();
-    //     fractal_utils::polynomial_utils::pad_with_zeroes(
-    //         &mut f_1_eval,
-    //         self.options.evaluation_domain.len(),
-    //     );
-
-    //     fft::evaluate_poly(&mut f_1_eval, &mut eval_twiddles.clone());
-    //     let mut f_2_eval = self
-    //         .f_2_poly_coeffs
-    //         .iter()
-    //         .map(|i| E::from(*i))
-    //         .collect::<Vec<E>>();
-    //     fractal_utils::polynomial_utils::pad_with_zeroes(
-    //         &mut f_2_eval,
-    //         self.options.evaluation_domain.len(),
-    //     );
-    //     fft::evaluate_poly(&mut f_2_eval, &mut eval_twiddles.clone());
-    //     fractal_utils::polynomial_utils::pad_with_zeroes(
-    //         &mut u_alpha,
-    //         self.options.evaluation_domain.len(),
-    //     );
-    //     fft::evaluate_poly(&mut u_alpha, &mut eval_twiddles.clone());
-    //     //none of that fft nonsense, let's do this the lagrange way
-    //     //f_1_eval = polynom::eval_many(&self.f_1_poly_coeffs, &self.options.evaluation_domain).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
-    //     //f_2_eval = polynom::eval_many(&self.f_2_poly_coeffs, &self.options.evaluation_domain).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
-    //     // u_alpha = polynom::eval_many(&u_alpha, &self.evaluation_domain_e);
-    //     for pos in 0..self.options.evaluation_domain.len() {
-    //         let next = (u_alpha[pos] * f_1_eval[pos]) - (t_alpha[pos] * f_2_eval[pos]);
-    //         prod.push(next);
-    //     }
-    //     prod
-    // }
 }
 
 impl<

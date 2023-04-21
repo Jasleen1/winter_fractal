@@ -29,16 +29,10 @@ pub struct RationalSumcheckProver<
     denominator_coeffs: Vec<E>,
     // this is \sigma as in the sumcheck i.e. the desired sum
     sigma: E,
-    // For lincheck this domain is K
-    // summing_domain: Vec<E::BaseField>,
     eta: B,
     #[allow(dead_code)]
-    // summing_domain_twiddles: Vec<B>,
-    // summing_domain_inv_twiddles: Vec<B>,
-    // Eval domain is always L
     g_degree: usize,
     e_degree: usize,
-    // fractal_options: FractalProverOptions<B>,
     _h: PhantomData<H>,
     current_layer: usize,
 }
@@ -46,6 +40,7 @@ pub struct RationalSumcheckProver<
 impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField = B>>
     RationalSumcheckProver<B, E, H>
 {
+    /// Generate a new rational sumcheck prover for fractal
     pub fn new(
         numerator_coeffs: Vec<E>,
         denominator_coeffs: Vec<E>,
@@ -74,15 +69,13 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         }
     }
 
+    /// This function computes the first layer of the fractal sumcheck
     #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
     pub fn sumcheck_layer_one(
         &self,
-        //query: E,
         accumulator: &mut Accumulator<B, E, H>,
         summing_domain: &Vec<B>,
         summing_domain_inv_twiddles: &Vec<B>,
-        //channel: &mut DefaultFractalProverChannel<B, E, H>,
-        //initial_queries: Vec<usize>,
     ) {
         // compute the polynomial g such that Sigma(g, sigma) = summing_poly
         // compute the polynomial e such that e = (Sigma(g, sigma) - summing_poly)/v_H over the summing domain H.
@@ -91,11 +84,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let _sigma_inv = self.sigma.inv();
         let summing_domain_len = summing_domain.len();
         let summing_domain_e: Vec<E> = summing_domain.iter().map(|x| E::from(*x)).collect();
-        //let mut numerator_vals = self.numerator_coeffs.clone();
-        //let mut denominator_vals = self.denominator_coeffs.clone();
 
-        // fft::evaluate_poly_with_offset(&mut numerator_vals, &summing_domain_twiddles, self.eta, 1);
-        // fft::evaluate_poly_with_offset(&mut denominator_vals, &summing_domain_twiddles, self.eta, 1);
         let numerator_vals = polynom::eval_many(&self.numerator_coeffs, &summing_domain_e);
         let mut denominator_vals = polynom::eval_many(&self.denominator_coeffs, &summing_domain_e);
         denominator_vals = batch_inversion(&denominator_vals);
@@ -133,7 +122,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     // SIGMA(g, sigma) = x*g(x) + sigma*|summing_domain|^-1
     // g(x) = x^-1*(f(x) - sigma*|summing_domain|^-1)
     #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
-    pub fn compute_g_poly_on_val(&self, x_val: E, f_x_val: E, summing_domain_len: usize) -> E {
+    fn compute_g_poly_on_val(&self, x_val: E, f_x_val: E, summing_domain_len: usize) -> E {
         let dividing_factor_for_sigma: u64 = summing_domain_len.try_into().unwrap();
         let subtracting_factor = self.sigma * E::from(dividing_factor_for_sigma).inv();
         let dividing_factor = x_val.inv();
@@ -141,18 +130,13 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     }
 
     #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
-    pub fn compute_sigma_function_on_val(
-        &self,
-        x_val: E,
-        g_val: E,
-        summing_domain_len: usize,
-    ) -> E {
+    fn compute_sigma_function_on_val(&self, x_val: E, g_val: E, summing_domain_len: usize) -> E {
         let dividing_factor: u64 = summing_domain_len.try_into().unwrap();
         (x_val * g_val) + (E::from(self.sigma) * E::from(dividing_factor).inv())
     }
 
     #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
-    pub fn compute_e_poly_on_val(
+    fn compute_e_poly_on_val(
         &self,
         x_val: E,
         g_val: E,
@@ -169,7 +153,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     }
 
     #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
-    pub fn compute_e_poly(
+    fn compute_e_poly(
         &self,
         g_hat_coeffs: &Vec<E>,
         summing_poly_numerator: &Vec<E>,
@@ -197,6 +181,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         1
     }
 
+    /// Run the sumcheck next layer
     pub fn run_next_layer(
         &mut self,
         _query: E,
