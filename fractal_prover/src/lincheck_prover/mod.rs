@@ -82,8 +82,7 @@ impl<
         options: &FractalProverOptions<B>,
     ) -> Result<(), ProverError> {
         self.alpha = Some(query);
-        let t_alpha_evals = self.generate_t_alpha_evals(query, options);
-        let t_alpha = self.generate_t_alpha(t_alpha_evals.clone(), options);
+        let t_alpha = self.generate_t_alpha(query, options);
         debug!("t_alpha degree: {}", &t_alpha.len() - 1);
         accumulator.add_polynomial_e(t_alpha.clone(), options.size_subgroup_h - 1);
         self.t_alpha = Some(t_alpha.clone());
@@ -240,6 +239,29 @@ impl<
         Ok(polynom::eval(&t_alpha, beta))
     }
 
+    /*#[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
+    pub fn generate_t_alpha(&self, t_evals: Vec<E>, options: &FractalProverOptions<B>) -> Vec<E> {
+        let mut t_alpha_eval_domain_poly: Vec<E> = t_evals.clone().to_vec();
+        // let twiddles_evaluation_domain: Vec<B> =
+        //     fft::get_inv_twiddles(options.evaluation_domain.len());
+        fft::interpolate_poly(
+            &mut t_alpha_eval_domain_poly,
+            &options.l_domain_inv_twiddles,
+        );
+        t_alpha_eval_domain_poly
+    }*/
+
+    /*#[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
+    pub fn generate_t_alpha_evals(&self, alpha: E, options: &FractalProverOptions<B>) -> Vec<E> {
+        let poly = self.generate_t_alpha2(alpha, options);
+        let evaluation_domain_e: Vec<E> = options
+             .evaluation_domain
+             .iter()
+             .map(|i| E::from(*i))
+             .collect();
+        polynom::eval_many(&poly, &evaluation_domain_e)
+    }*/
+
     /// The polynomial t_alpha(X) = u_M(X, alpha).
     /// We also know that u_M(X, alpha) = M_star(X, alpha).
     /// Further, M_star(X, Y) =
@@ -247,6 +269,42 @@ impl<
     /// Fixing Y = alpha, this gives us t_alpha(X) = sum_k (v_H(X)/ (X - row(k))) * (v_H(alpha)/ (alpha - col(k))) * val(k).
     /// = v_H(alpha) * sum_k (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
     #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
+    pub fn generate_t_alpha(&self, alpha: E, options: &FractalProverOptions<B>) -> Vec<E> {
+        let v_h_alpha =
+            compute_vanishing_poly(alpha.clone(), E::from(options.eta), options.size_subgroup_h);
+        let v_h_x = get_vanishing_poly(options.eta, options.size_subgroup_h);
+
+        let col_evals =
+            polynom::eval_many(&self.prover_matrix_index.col_poly, &options.summing_domain);
+        let val_evals =
+            polynom::eval_many(&self.prover_matrix_index.val_poly, &options.summing_domain);
+        let mut denom_terms: Vec<E> = col_evals
+            .iter()
+            .map(|col_eval| alpha - E::from(*col_eval))
+            .collect();
+        denom_terms = batch_inversion(&denom_terms);
+        // This computes the term val(k) / (alpha - col(k))
+        let coefficient_values: Vec<E> = (0..options.summing_domain.len())
+            .into_iter()
+            .map(|id| E::from(val_evals[id]) * denom_terms[id])
+            .collect();
+
+        let mut sum_without_v_h_alpha = vec![];
+        let row_evals =
+            polynom::eval_many(&self.prover_matrix_index.row_poly, &options.summing_domain);
+
+        for x_val_id in 0..options.summing_domain.len(){
+            // this division calculates (v_H(X)/ (X - row(k)))
+            let div_res_b = polynom::syn_div(&v_h_x, 1, row_evals[x_val_id]);
+            let div_res: Vec<E> = div_res_b.iter().map(|c| E::from(*c)).collect();
+            // term = (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
+            let term = polynom::mul_by_scalar(&div_res, coefficient_values[x_val_id]);
+            sum_without_v_h_alpha = polynom::add(&sum_without_v_h_alpha, &term);
+        }
+        polynom::mul_by_scalar(&sum_without_v_h_alpha, v_h_alpha)
+    }
+     
+    /*#[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
     pub fn generate_t_alpha_evals(&self, alpha: E, options: &FractalProverOptions<B>) -> Vec<E> {
         // Lets get the coefficients (val(k)/ (alpha - col(k))
         // for all values of k, since these don't change with X.
@@ -297,7 +355,7 @@ impl<
         }
         flame::end("double loop");
         t_evals
-    }
+    }*/
 
     // pub fn generate_t_alpha_on_h(&self, t_evals: Vec<B>) -> Vec<B> {
     //     let mut t_alpha_h_domain_poly: Vec<B> = t_evals.clone();
@@ -308,28 +366,6 @@ impl<
 
     //     t_alpha_h_domain_poly
     // }
-
-    #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
-    pub fn generate_t_alpha(&self, t_evals: Vec<E>, options: &FractalProverOptions<B>) -> Vec<E> {
-        let mut t_alpha_eval_domain_poly: Vec<E> = t_evals.clone().to_vec();
-        // let twiddles_evaluation_domain: Vec<B> =
-        //     fft::get_inv_twiddles(options.evaluation_domain.len());
-        fft::interpolate_poly(
-            &mut t_alpha_eval_domain_poly,
-            &options.l_domain_inv_twiddles,
-        );
-        t_alpha_eval_domain_poly
-        // polynom::interpolate(
-        //     &self
-        //         .options
-        //         .evaluation_domain
-        //         .iter()
-        //         .map(|i| E::from(*i))
-        //         .collect::<Vec<E>>(),
-        //     &t_evals.to_vec(),
-        //     true,
-        // )
-    }
 
     #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
     pub fn generate_poly_prod(
