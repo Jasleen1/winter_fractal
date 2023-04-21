@@ -7,7 +7,7 @@ use core::num;
 use std::cmp::max;
 
 use fractal_indexer::index::get_max_degree;
-use fractal_proofs::{FractalProverOptions, fft, FractalVerifierOptions};
+use fractal_proofs::{fft, FractalProverOptions, FractalVerifierOptions};
 use fractal_utils::FractalOptions;
 use winter_fri::FriOptions;
 
@@ -120,13 +120,11 @@ fn files_to_setup_outputs<
 
     // TODO: the IndexDomains should already guarantee powers of two, so why add extraneous bit or use next_power_of_two?
 
-    
     let size_subgroup_h = index_domains.h_field.len().next_power_of_two();
     let size_subgroup_k = index_domains.k_field.len().next_power_of_two();
     let size_subgroup_l = index_domains.l_field_len.next_power_of_two();
 
-    let evaluation_domain =
-        utils::get_power_series(index_domains.l_field_base, size_subgroup_l);
+    let evaluation_domain = utils::get_power_series(index_domains.l_field_base, size_subgroup_l);
 
     let summing_domain = index_domains.k_field;
 

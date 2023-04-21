@@ -3,7 +3,7 @@ use crate::errors::LowDegreeVerifierError;
 use fractal_proofs::{polynom, FieldElement, LowDegreeBatchProof};
 use fractal_utils::channel::DefaultFractalVerifierChannel;
 use fractal_utils::polynomial_utils::*;
-use winter_crypto::{ElementHasher, RandomCoin, MerkleTree, Digest};
+use winter_crypto::{Digest, ElementHasher, MerkleTree, RandomCoin};
 use winter_fri::FriVerifier;
 use winter_math::StarkField;
 
@@ -62,11 +62,17 @@ pub fn verify_low_degree_batch_proof<
     // Verify that merkle leaves are correct
     flame::start("verify merkle leaves");
     for i in (0..queried_positions.len()).into_iter() {
-        let evals_at_idx: Vec<E> = proof.all_unpadded_queried_evaluations.iter().map(|poly_evals| poly_evals[i]).collect();
+        let evals_at_idx: Vec<E> = proof
+            .all_unpadded_queried_evaluations
+            .iter()
+            .map(|poly_evals| poly_evals[i])
+            .collect();
         if H::hash_elements(&evals_at_idx) != proof.tree_proof.leaves[i] {
             println!(
                 "Hash_elements applied to input array elts {:?}",
-                proof.all_unpadded_queried_evaluations.iter()
+                proof
+                    .all_unpadded_queried_evaluations
+                    .iter()
                     .map(|x| H::hash_elements(x).as_bytes())
                     .collect::<Vec<[u8; 32]>>()
             );
@@ -77,9 +83,8 @@ pub fn verify_low_degree_batch_proof<
     flame::end("verify merkle leaves");
 
     flame::start("verify merkle batch");
-    MerkleTree::verify_batch(&proof.tree_root, &queried_positions, &proof.tree_proof).map_err(|_e| {
-        LowDegreeVerifierError::MerkleTreeErr
-    })?;
+    MerkleTree::verify_batch(&proof.tree_root, &queried_positions, &proof.tree_proof)
+        .map_err(|_e| LowDegreeVerifierError::MerkleTreeErr)?;
     flame::end("verify merkle batch");
 
     verify_lower_degree_batch::<B, E, H>(

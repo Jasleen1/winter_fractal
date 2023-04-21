@@ -313,7 +313,8 @@ mod test {
 
         // Let's first get the domains etc.
         let setup = get_example_setup::<B, E, H>();
-        let (prover_options, fractal_options, prover_key, verifier_key, _) = (setup.0, setup.1, setup.2, setup.3, setup.4);
+        let (prover_options, fractal_options, prover_key, verifier_key, _) =
+            (setup.0, setup.1, setup.2, setup.3, setup.4);
 
         let evaluation_domain = fractal_options.evaluation_domain.clone();
         let eval_len = evaluation_domain.len();

@@ -76,17 +76,29 @@ pub fn index_matrix<B: StarkField, E: FieldElement<BaseField = B>>(
         }
     }
     println!("Here");
-    let inv_twiddles_k_elts = index_domains.inv_twiddles_k_elts.clone();
-    println!("Clone 1");
+
+    // println!("Clone 1");
     // interpolate row_elts into a polynomial
-    fft::interpolate_poly_with_offset(&mut row_elts, &inv_twiddles_k_elts, index_domains.eta_k);
+    fft::interpolate_poly_with_offset(
+        &mut row_elts,
+        &index_domains.inv_twiddles_k_elts,
+        index_domains.eta_k,
+    );
 
     // interpolate col_elts into a polynomial
-    fft::interpolate_poly_with_offset(&mut col_elts, &inv_twiddles_k_elts, index_domains.eta_k);
+    fft::interpolate_poly_with_offset(
+        &mut col_elts,
+        &index_domains.inv_twiddles_k_elts,
+        index_domains.eta_k,
+    );
 
     // interpolate val_elts into a polynomial
-    fft::interpolate_poly_with_offset(&mut val_elts, &inv_twiddles_k_elts, index_domains.eta_k);
-    
+    fft::interpolate_poly_with_offset(
+        &mut val_elts,
+        &index_domains.inv_twiddles_k_elts,
+        index_domains.eta_k,
+    );
+
     // evaluate row_elts polynomial over l
     let mut row_evaluations = vec![B::ZERO; l_size];
     row_evaluations[..k_field_size].copy_from_slice(&row_elts);

@@ -2,9 +2,9 @@ use std::marker::PhantomData;
 
 use fractal_indexer::{index::IndexParams, snark_keys::*};
 use fractal_proofs::{
-    fft, polynom, FractalProof, InitialPolyProof, IopData, LayeredFractalProof,
-    LayeredLincheckProof, LayeredRowcheckProof, LincheckProof, LowDegreeBatchProof, MultiEval,
-    MultiPoly, TopLevelProof, TryInto, FractalProverOptions,
+    fft, polynom, FractalProof, FractalProverOptions, InitialPolyProof, IopData,
+    LayeredFractalProof, LayeredLincheckProof, LayeredRowcheckProof, LincheckProof,
+    LowDegreeBatchProof, MultiEval, MultiPoly, TopLevelProof, TryInto,
 };
 use models::r1cs::Matrix;
 use winter_fri::DefaultProverChannel;
@@ -279,6 +279,7 @@ impl<
         let mut local_queries = Vec::<E>::new();
 
         for i in 0..self.get_num_layers() {
+            // println!("Running layer {}", i + 1);
             // local_queries.push(query);
             // Doing this rn to make sure prover and verifier sample identically
             if i > 0 {
@@ -305,7 +306,7 @@ impl<
             acc.decommit_layer_with_queries(2, &queries)?,
             acc.decommit_layer_with_queries(3, &queries)?,
         ];
-        
+
         let gammas = vec![
             self.lincheck_provers[0].retrieve_gamma(beta)?,
             self.lincheck_provers[1].retrieve_gamma(beta)?,

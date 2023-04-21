@@ -9,7 +9,8 @@ use fractal_accumulator::accumulator::Accumulator;
 use fractal_utils::channel::DefaultFractalProverChannel;
 
 use fractal_proofs::{
-    fft, polynom, LayeredLincheckProof, LincheckProof, OracleQueries, TopLevelProof, TryInto, batch_inversion,
+    batch_inversion, fft, polynom, LayeredLincheckProof, LincheckProof, OracleQueries,
+    TopLevelProof, TryInto,
 };
 
 use fractal_utils::FractalProverOptions;
@@ -138,12 +139,22 @@ impl<
             // self.options.clone(),
         );
         //if this needs a channel... problem
-        product_sumcheck_prover.run_next_layer(query, accumulator, &options.h_domain, &options.h_domain_inv_twiddles)?;
+        product_sumcheck_prover.run_next_layer(
+            query,
+            accumulator,
+            &options.h_domain,
+            &options.h_domain_inv_twiddles,
+        )?;
         Ok(())
     }
 
     #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
-    fn lincheck_layer_two(&self, query: E, accumulator: &mut Accumulator<B, E, H>, options: &FractalProverOptions<B>) {
+    fn lincheck_layer_two(
+        &self,
+        query: E,
+        accumulator: &mut Accumulator<B, E, H>,
+        options: &FractalProverOptions<B>,
+    ) {
         let beta = query;
         let alpha = self.alpha.unwrap();
         debug!(
@@ -160,15 +171,8 @@ impl<
                 .iter()
                 .map(|i| E::from(*i))
                 .collect::<Vec<E>>(),
-            compute_vanishing_poly(
-                alpha,
-                E::from(options.eta),
-                options.size_subgroup_h,
-            ) * compute_vanishing_poly(
-                beta,
-                E::from(options.eta),
-                options.size_subgroup_h,
-            ),
+            compute_vanishing_poly(alpha, E::from(options.eta), options.size_subgroup_h)
+                * compute_vanishing_poly(beta, E::from(options.eta), options.size_subgroup_h),
         );
         let mut alpha_minus_row =
             polynom::mul_by_scalar(&self.prover_matrix_index.row_poly, -B::ONE)
@@ -219,7 +223,12 @@ impl<
         );
 
         matrix_sumcheck_prover
-            .run_next_layer(query, accumulator, &options.summing_domain, &options.k_domain_inv_twiddles)
+            .run_next_layer(
+                query,
+                accumulator,
+                &options.summing_domain,
+                &options.k_domain_inv_twiddles,
+            )
             .unwrap();
     }
 
@@ -241,24 +250,30 @@ impl<
     pub fn generate_t_alpha_evals(&self, alpha: E, options: &FractalProverOptions<B>) -> Vec<E> {
         // Lets get the coefficients (val(k)/ (alpha - col(k))
         // for all values of k, since these don't change with X.
-        let col_evals = polynom::eval_many(&self.prover_matrix_index.col_poly, &options.summing_domain);
-        let val_evals = polynom::eval_many(&self.prover_matrix_index.val_poly, &options.summing_domain);
-        let mut denom_terms: Vec<E> = col_evals.iter().map(|col_eval| alpha - E::from(*col_eval)).collect();
+        let col_evals =
+            polynom::eval_many(&self.prover_matrix_index.col_poly, &options.summing_domain);
+        let val_evals =
+            polynom::eval_many(&self.prover_matrix_index.val_poly, &options.summing_domain);
+        let mut denom_terms: Vec<E> = col_evals
+            .iter()
+            .map(|col_eval| alpha - E::from(*col_eval))
+            .collect();
         denom_terms = batch_inversion(&denom_terms);
         // This computes the term val(k) / (alpha - col(k))
-        let coefficient_values: Vec<E> = (0..options.summing_domain.len()).into_iter().map(|id| E::from(val_evals[id]) * denom_terms[id]).collect();
+        let coefficient_values: Vec<E> = (0..options.summing_domain.len())
+            .into_iter()
+            .map(|id| E::from(val_evals[id]) * denom_terms[id])
+            .collect();
 
         // This is the v_h(alpha) term, which only needs to be computed once.
-        let v_h_alpha = compute_vanishing_poly(
-            alpha.clone(),
-            E::from(options.eta),
-            options.size_subgroup_h,
-        );
+        let v_h_alpha =
+            compute_vanishing_poly(alpha.clone(), E::from(options.eta), options.size_subgroup_h);
         //let v_h_alpha = vanishing_poly_for_mult_subgroup(self.alpha, self.options.size_subgroup_h);
         // Now we compute the terms sum_k (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
         // over the eval domain.
         let mut t_evals = Vec::new();
-        let row_evals = polynom::eval_many(&self.prover_matrix_index.row_poly, &options.summing_domain);
+        let row_evals =
+            polynom::eval_many(&self.prover_matrix_index.row_poly, &options.summing_domain);
 
         flame::start("double loop");
         for x_val_id in 0..options.evaluation_domain.len() {
@@ -266,15 +281,15 @@ impl<
 
             // Getting sum_k (1/ (X - row(k))) * (val(k)/ (alpha - col(k)))
             let mut sum_without_vs = E::ZERO;
-            let mut denom_terms: Vec<B> = row_evals.iter().map(|row_eval| x_val - *row_eval).collect();
+            let mut denom_terms: Vec<B> =
+                row_evals.iter().map(|row_eval| x_val - *row_eval).collect();
             denom_terms = batch_inversion(&denom_terms);
-            for id in 0..options.summing_domain.len(){
+            for id in 0..options.summing_domain.len() {
                 let prod_term = coefficient_values[id] * E::from(denom_terms[id]);
-                sum_without_vs +=  prod_term;
+                sum_without_vs += prod_term;
             }
             // This is v_H(X).
-            let v_h_x =
-                compute_vanishing_poly(x_val, options.eta, options.size_subgroup_h);
+            let v_h_x = compute_vanishing_poly(x_val, options.eta, options.size_subgroup_h);
             //let v_h_x = vanishing_poly_for_mult_subgroup(x_val, self.options.size_subgroup_h);
             // This is finally v_H(X) * v_H(alpha) * sum_K (1/ (X - row(k))) * (val(k)/ (alpha - col(k)))
             let sum_with_vs = (sum_without_vs * E::from(v_h_x)) * v_h_alpha;
@@ -299,7 +314,10 @@ impl<
         let mut t_alpha_eval_domain_poly: Vec<E> = t_evals.clone().to_vec();
         // let twiddles_evaluation_domain: Vec<B> =
         //     fft::get_inv_twiddles(options.evaluation_domain.len());
-        fft::interpolate_poly(&mut t_alpha_eval_domain_poly, &options.l_domain_inv_twiddles);
+        fft::interpolate_poly(
+            &mut t_alpha_eval_domain_poly,
+            &options.l_domain_inv_twiddles,
+        );
         t_alpha_eval_domain_poly
         // polynom::interpolate(
         //     &self
@@ -314,16 +332,19 @@ impl<
     }
 
     #[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
-    pub fn generate_poly_prod(&self, alpha: E, t_alpha_coeffs: &Vec<E>, options: &FractalProverOptions<B>) -> Vec<E> {
+    pub fn generate_poly_prod(
+        &self,
+        alpha: E,
+        t_alpha_coeffs: &Vec<E>,
+        options: &FractalProverOptions<B>,
+    ) -> Vec<E> {
         // This function needs to compute the polynomial
         // u_H(X, alpha)*f_1 - t_alpha*f_2
         // here are the steps to this:
         // 1. find out how polynomials are represented and get u_H(X, alpha) = (X^|H| - alpha)/(X - alpha)
         // 2. Polynom includes a mul and a sub function, use these to do the respective ops
         //eta_to_h_size = eta.exp(B::PositiveInteger::from(self.options.size_subgroup_h));
-        let alpha_to_h_size = alpha.exp(E::PositiveInteger::from(
-            options.size_subgroup_h as u64,
-        ));
+        let alpha_to_h_size = alpha.exp(E::PositiveInteger::from(options.size_subgroup_h as u64));
         debug!("alpha_to_h_size: {}", &alpha_to_h_size);
         let mut u_numerator = vec![E::ZERO; (options.size_subgroup_h).try_into().unwrap()];
         u_numerator[0] = alpha_to_h_size.neg();

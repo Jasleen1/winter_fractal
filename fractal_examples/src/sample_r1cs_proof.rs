@@ -8,11 +8,12 @@ use std::cmp::max;
 use std::time::Instant;
 
 use fractal_indexer::index::get_max_degree;
-use fractal_proofs::{fft, FractalProverOptions};
+use fractal_proofs::{fft, FractalProverOptions, Serializable};
 use fractal_prover::LayeredProver;
 use fractal_prover::{prover::FractalProver, LayeredSubProver};
 use fractal_utils::FractalOptions;
 use fractal_verifier::verifier::verify_layered_fractal_proof_from_top;
+use models::r1cs::Matrix;
 use winter_fri::FriOptions;
 
 use structopt::StructOpt;
@@ -78,7 +79,7 @@ pub(crate) fn orchestrate_r1cs_example<
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
     arith_parser.parse_arith_file(&arith_file, verbose);
     println!("Parsed the arith file");
-    let r1cs = arith_parser.r1cs_instance;
+    let mut r1cs = arith_parser.r1cs_instance;
 
     let mut wires_parser = JsnarkWireReaderParser::<B>::new().unwrap();
     println!("Got the wire parser");
@@ -116,17 +117,19 @@ pub(crate) fn orchestrate_r1cs_example<
     let index_domains = build_index_domains::<B, E>(index_params.clone());
     println!("built index domains");
     let indexed_a = index_matrix::<B, E>(&r1cs.A, &index_domains);
+    r1cs.A = Matrix::new("dummy A", Vec::<Vec<B>>::new()).unwrap();
     println!("indexed matrix a");
     let indexed_b = index_matrix::<B, E>(&r1cs.B, &index_domains);
+    r1cs.B = Matrix::new("dummy B", Vec::<Vec<B>>::new()).unwrap();
     println!("indexed matrix b");
     let indexed_c = index_matrix::<B, E>(&r1cs.C, &index_domains);
+    r1cs.C = Matrix::new("dummy C", Vec::<Vec<B>>::new()).unwrap();
     println!("indexed matrices");
     // This is the index i.e. the pre-processed data for this r1cs
     let index = Index::new(index_params.clone(), indexed_a, indexed_b, indexed_c);
 
     // TODO: the IndexDomains should already guarantee powers of two, so why add extraneous bit or use next_power_of_two?
 
-    
     let size_subgroup_h = index_domains.h_field.len().next_power_of_two();
     let size_subgroup_k = index_domains.k_field.len().next_power_of_two();
 
@@ -225,7 +228,7 @@ struct ExampleOptions {
     #[structopt(
         short = "a",
         long = "arith_file",
-        default_value = "fractal_examples/jsnark_outputs/fibonacciexample.arith"
+        default_value = "fractal_examples/jsnark_outputs/fftexample.arith"
     )]
     arith_file: String,
 
@@ -233,7 +236,7 @@ struct ExampleOptions {
     #[structopt(
         short = "w",
         long = "wire_file",
-        default_value = "fractal_examples/jsnark_outputs/fibonacciexample.wires"
+        default_value = "fractal_examples/jsnark_outputs/fftexample.wires"
     )]
     wires_file: String,
 

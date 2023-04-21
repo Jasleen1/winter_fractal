@@ -37,7 +37,6 @@ pub struct FractalOptions<B: StarkField> {
     pub num_queries: usize,
 }
 
-
 #[derive(Clone)]
 pub struct FractalProverOptions<B: StarkField> {
     pub degree_fs: usize,
@@ -64,11 +63,11 @@ pub struct FractalProverOptions<B: StarkField> {
 #[derive(Clone)]
 pub struct FractalVerifierOptions<B: StarkField> {
     pub degree_fs: usize,
-    // H domain in paper
+    /// H domain in paper
     pub size_subgroup_h: usize,
-    // K domain in paper
+    /// K domain in paper
     pub size_subgroup_k: usize,
-    // L domain in paper
+    /// L domain in paper
     pub size_subgroup_l: usize,
     pub eta: B,
     pub eta_k: B,

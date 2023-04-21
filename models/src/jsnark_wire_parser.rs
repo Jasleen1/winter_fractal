@@ -111,7 +111,7 @@ impl<'a, E: StarkField> JsnarkWireReaderParser<E> {
             }
             Err(e) => println!("{:?}", e),
         }
-         
+
         self.pad_power_two();
 
         // if verbose {

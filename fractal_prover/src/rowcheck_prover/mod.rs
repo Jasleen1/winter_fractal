@@ -2,7 +2,9 @@ use std::{convert::TryInto, marker::PhantomData};
 
 use fractal_indexer::hash_values;
 use fractal_proofs::{polynom, RowcheckProof};
-use fractal_utils::{channel::DefaultFractalProverChannel, polynomial_utils::*, FractalProverOptions};
+use fractal_utils::{
+    channel::DefaultFractalProverChannel, polynomial_utils::*, FractalProverOptions,
+};
 
 use winter_crypto::{ElementHasher, Hasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions};
@@ -131,7 +133,11 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         })
     }
     #[cfg_attr(feature = "flame_it", flame("rowcheck_prover"))]
-    fn rowcheck_layer_one(&self, accumulator: &mut Accumulator<B, E, H>, options: &FractalProverOptions<B>) {
+    fn rowcheck_layer_one(
+        &self,
+        accumulator: &mut Accumulator<B, E, H>,
+        options: &FractalProverOptions<B>,
+    ) {
         // The rowcheck is supposed to prove whether f_az * f_bz - f_cz = 0 on all of H.
         // Which means that the polynomial f_az * f_bz - f_cz must be divisible by the
         // vanishing polynomial for H.
