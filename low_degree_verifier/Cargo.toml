@@ -8,7 +8,7 @@ edition = "2021"
 
 [features]
 default = []
-flame_it = ["flame", "flamer"]
+flame_it = ["flame", "flamer", "low_degree_prover/flame_it"]
 
 [dependencies]
 displaydoc = "0.1.7"

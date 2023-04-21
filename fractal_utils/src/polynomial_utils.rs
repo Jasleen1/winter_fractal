@@ -83,9 +83,13 @@ pub fn pad_with_zeroes<E: FieldElement>(poly: &mut Vec<E>, total_len: usize) {
         return;
     }
     let diff = total_len - poly.len();
-    for _ in 0..diff {
-        //poly.push(E::ZERO);
-    }
+    let mut zeroes = vec![E::ZERO; diff];
+    poly.append(&mut zeroes);
+}
+
+pub fn pad_to_next_power_of_two<E: FieldElement>(poly: &mut Vec<E>) {
+    let total_len = poly.len().next_power_of_two();
+    let diff = total_len - poly.len();
     let mut zeroes = vec![E::ZERO; diff];
     poly.append(&mut zeroes);
 }

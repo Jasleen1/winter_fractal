@@ -110,45 +110,58 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let eval_domain_size = self.evaluation_domain.len();
         let eval_domain_twiddles: Vec<B> = fft::get_twiddles(eval_domain_size);
 
+        flame::start("loop1");
         for poly in self.constituant_polynomials.iter() {
             let mut unpadded_evals = poly.clone();
             pad_with_zeroes(&mut unpadded_evals, eval_domain_size);
             fft::evaluate_poly(&mut unpadded_evals, &eval_domain_twiddles);
             all_unpadded_evaluations.push(unpadded_evals);
         }
+        flame::end("loop1");
 
-        let zipped_evals = Self::zip_evals(all_unpadded_evaluations, self.evaluation_domain.len());
+        flame::start("make tree");
+        let zipped_evals = Self::zip_evals(all_unpadded_evaluations.clone(), self.evaluation_domain.len());
         let eval_hashes = zipped_evals
             .iter()
             .map(|evals| H::hash_elements(evals))
             .collect::<Vec<_>>();
-        println!("len(eval_hashes): {}", &eval_hashes.len());
         let tree = MerkleTree::<H>::new(eval_hashes).unwrap();
         let tree_root = *tree.root();
+        flame::end("make tree");
+
+        flame::start("commit_fri_layer");
         channel.commit_fri_layer(tree_root);
+        flame::end("commit_fri_layer");
 
         let queried_positions = channel.draw_query_positions();
+
+        flame::start("tree_proof");
         let tree_proof = tree.prove_batch(&queried_positions).unwrap();
+        flame::end("tree_proof");
 
         let commitment_idx = channel.layer_commitments().len();
-        let eval_domain_queried = queried_positions
-            .iter()
-            .map(|&pos| self.evaluation_domain[pos])
-            .collect::<Vec<_>>();
 
-        for poly in self.constituant_polynomials.iter() {
-            let unpadded_queried_evaluations = polynom::eval_many(&poly, &eval_domain_queried);
+        for evals in all_unpadded_evaluations {
+            let unpadded_queried_evaluations = queried_positions
+                .iter()
+                .map(|&pos| evals[pos])
+                .collect::<Vec<_>>();
             all_unpadded_queried_evaluations.push(unpadded_queried_evaluations);
         }
-        
+
+        flame::start("composed_evals");
         let composed_evals: Vec<E> =
             polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
+        flame::end("composed_evals");
+
         let mut fri_prover =
             winter_fri::FriProver::<B, E, DefaultFractalProverChannel<B, E, H>, H>::new(
                 self.fri_options.clone(),
             );
+        flame::start("fri_proof");
         fri_prover.build_layers(channel, composed_evals.clone());
         let fri_proof = fri_prover.build_proof(&queried_positions);
+        flame::end("fri_proof");
         // use only the commitments that we just added
         let commitments = channel.layer_commitments()[commitment_idx..].to_vec();
         let composed_queried_evaluations = queried_positions
