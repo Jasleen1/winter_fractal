@@ -608,12 +608,12 @@ mod test {
 
         // Let's first get the domains etc.
         let setup = get_example_setup::<B, E, H>();
-        let (fractal_options, prover_key, verifier_key, wires) =
-            (setup.0, setup.1, setup.2, setup.3);
+        let (prover_options, fractal_options, prover_key, verifier_key, wires) =
+            (setup.0, setup.1, setup.2, setup.3, setup.4);
 
         let setup_2 = get_example_setup::<B, E, H>();
-        let (_, prover_key_2, verifier_key_2, wires_2) =
-            (setup_2.0, setup_2.1, setup_2.2, setup_2.3);
+        let (_, _, prover_key_2, verifier_key_2, wires_2) =
+            (setup_2.0, setup_2.1, setup_2.2, setup_2.3, setup_2.4);
 
         let evaluation_domain = fractal_options.evaluation_domain.clone();
         let eval_len = evaluation_domain.len();
@@ -655,11 +655,11 @@ mod test {
             prover_key_2.matrix_a_index,
             f_az_coeffs,
             z_coeffs,
-            &fractal_options,
+            // &fractal_options,
         );
 
         let proof = lincheck_prover_a
-            .generate_proof(&Some(prover_key), pub_inputs_bytes.clone())
+            .generate_proof(&Some(prover_key), pub_inputs_bytes.clone(), &prover_options)
             .unwrap();
 
         println!("starting verifier tasks");

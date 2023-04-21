@@ -41,7 +41,7 @@ struct ExampleOptions {
     #[structopt(
         short = "a",
         long = "arith_file",
-        default_value = "fibonacciexample.arith"
+        default_value = "fibonacciexample_15.arith"
     )]
     arith_file: String,
 
@@ -49,7 +49,7 @@ struct ExampleOptions {
     #[structopt(
         short = "w",
         long = "wire_file",
-        default_value = "fibonacciexample.wires"
+        default_value = "fibonacciexample_15.wires"
     )]
     wires_file: String,
 

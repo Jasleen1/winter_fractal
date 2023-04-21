@@ -31,9 +31,9 @@ fn test_indexing() {
         eta_k: BaseElement::ONE,
     };
     let domains: IndexDomains<BaseElement, BaseElement> = build_index_domains(params.clone());
-    let indexed_a: IndexedMatrix<BaseElement, _> = IndexedMatrix::new(&r1cs_instance.A, &domains);
-    let indexed_b = IndexedMatrix::new(&r1cs_instance.B, &domains);
-    let indexed_c = IndexedMatrix::new(&r1cs_instance.C, &domains);
+    let indexed_a: IndexedMatrix<BaseElement, _> = IndexedMatrix::new(r1cs_instance.A, &domains);
+    let indexed_b = IndexedMatrix::new(r1cs_instance.B, &domains);
+    let indexed_c = IndexedMatrix::new(r1cs_instance.C, &domains);
     let index = Index::new(params, indexed_a, indexed_b, indexed_c);
     println!("Index is {:?}", index);
 }
@@ -107,7 +107,7 @@ fn test_single_indexed_matrix_17() {
         smallprimefield::BaseElement<17, 3, 4>,
     > = build_index_domains(params.clone());
     println!("Domains {:?}", domains);
-    let indexed_a = IndexedMatrix::new(&matrix_a, &domains);
+    let indexed_a = IndexedMatrix::new(matrix_a, &domains);
     println!("Indexed a is {:?}", indexed_a);
 
     let row_poly = indexed_a.row_poly;
@@ -144,9 +144,9 @@ fn test_indexing_f17() {
         eta_k: SmallFieldElement17::ONE,
     };
     let domains = build_primefield_index_domains(params.clone());
-    let indexed_a = IndexedMatrix::new(&r1cs_instance.A, &domains);
-    let indexed_b = IndexedMatrix::new(&r1cs_instance.B, &domains);
-    let indexed_c = IndexedMatrix::new(&r1cs_instance.C, &domains);
+    let indexed_a = IndexedMatrix::new(r1cs_instance.A, &domains);
+    let indexed_b = IndexedMatrix::new(r1cs_instance.B, &domains);
+    let indexed_c = IndexedMatrix::new(r1cs_instance.C, &domains);
     let index = Index::new(params, indexed_a, indexed_b, indexed_c);
     println!("Index is {:?}", index);
 }

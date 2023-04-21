@@ -8,6 +8,7 @@ use std::cmp::max;
 use std::time::Instant;
 
 use fractal_indexer::index::get_max_degree;
+use fractal_proofs::{fft, FractalProverOptions};
 use fractal_prover::LayeredProver;
 use fractal_prover::{prover::FractalProver, LayeredSubProver};
 use fractal_utils::FractalOptions;
@@ -36,7 +37,7 @@ use winter_math::StarkField;
 
 fn main() {
     let mut options = ExampleOptions::from_args();
-    options.verbose = true;
+    options.verbose = false;
     if options.verbose {
         println!(
             "Arith file {}, wire value file {}",
@@ -65,10 +66,12 @@ pub(crate) fn orchestrate_r1cs_example<
 ) {
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
     arith_parser.parse_arith_file(&arith_file, verbose);
-    let r1cs = arith_parser.clone_r1cs();
+    println!("Parsed the arith file");
+    let r1cs = arith_parser.r1cs_instance;
 
     let mut wires_parser = JsnarkWireReaderParser::<B>::new().unwrap();
-    wires_parser.parse_wire_file(&wire_file, verbose);
+    println!("Got the wire parser");
+    wires_parser.parse_wire_file(&wire_file, true);
     let wires = wires_parser.wires;
     println!("Len wires = {}", wires.len());
     // 0. Compute num_non_zero by counting max(number of non-zero elts across A, B, C).
@@ -97,18 +100,22 @@ pub(crate) fn orchestrate_r1cs_example<
         eta_k,
     };
 
+    let degree_fs = r1cs.num_cols();
+
     let index_domains = build_index_domains::<B, E>(index_params.clone());
-    println!("build index domains");
+    println!("built index domains");
     let indexed_a = index_matrix::<B, E>(&r1cs.A, &index_domains);
+    println!("indexed matrix a");
     let indexed_b = index_matrix::<B, E>(&r1cs.B, &index_domains);
+    println!("indexed matrix b");
     let indexed_c = index_matrix::<B, E>(&r1cs.C, &index_domains);
-    println!("indexed matries");
+    println!("indexed matrices");
     // This is the index i.e. the pre-processed data for this r1cs
     let index = Index::new(index_params.clone(), indexed_a, indexed_b, indexed_c);
 
     // TODO: the IndexDomains should already guarantee powers of two, so why add extraneous bit or use next_power_of_two?
 
-    let degree_fs = r1cs.num_cols();
+    
     let size_subgroup_h = index_domains.h_field.len().next_power_of_two();
     let size_subgroup_k = index_domains.k_field.len().next_power_of_two();
 
@@ -126,30 +133,55 @@ pub(crate) fn orchestrate_r1cs_example<
         degree_fs,
         size_subgroup_h,
         size_subgroup_k,
+        summing_domain: summing_domain.clone(),
+        evaluation_domain: evaluation_domain.clone(),
+        h_domain: h_domain.clone(),
+        eta,
+        eta_k,
+        fri_options: fri_options.clone(),
+        num_queries,
+    };
+
+    let h_domain_twiddles = fft::get_twiddles(size_subgroup_h);
+    let h_domain_inv_twiddles = fft::get_inv_twiddles(size_subgroup_h);
+    let k_domain_twiddles = fft::get_twiddles(size_subgroup_k);
+    let k_domain_inv_twiddles = fft::get_inv_twiddles(size_subgroup_k);
+    let l_domain_twiddles = fft::get_twiddles(evaluation_domain.len());
+    let l_domain_inv_twiddles = fft::get_inv_twiddles(evaluation_domain.len());
+    let prover_options: FractalProverOptions<B> = FractalProverOptions::<B> {
+        degree_fs,
+        size_subgroup_h,
+        size_subgroup_k,
         summing_domain,
         evaluation_domain,
         h_domain,
+        h_domain_twiddles,
+        h_domain_inv_twiddles,
+        k_domain_twiddles,
+        k_domain_inv_twiddles,
+        l_domain_twiddles,
+        l_domain_inv_twiddles,
         eta,
         eta_k,
-        fri_options,
+        fri_options: fri_options.clone(),
         num_queries,
     };
 
     let (prover_key, verifier_key) =
-        generate_prover_and_verifier_keys::<B, E, H>(index, options.clone()).unwrap();
-
+        generate_prover_and_verifier_keys::<B, E, H>(index, &options).unwrap();
+    println!("Prover and verifier keys generated");
     let pub_inputs_bytes = vec![0u8, 1u8, 2u8];
     //let pub_inputs_bytes = vec![];
     let mut prover = FractalProver::<B, E, H>::new(
         prover_key,
-        options.clone(),
+        prover_options.clone(),
         vec![],
         wires,
         pub_inputs_bytes.clone(),
     );
     let now = Instant::now();
     let proof = prover
-        .generate_proof(&None, pub_inputs_bytes.clone())
+        .generate_proof(&None, pub_inputs_bytes.clone(), &prover_options)
         .unwrap();
     println!(
         "---------------------\nProof generated in {} ms",

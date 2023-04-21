@@ -53,7 +53,6 @@ impl<'a, E: StarkField> LineProcessor for JsnarkWireParser<'a, E> {
 
         match scanf!(buf, "{} {x}", usize, u128) {
             Some((wire_id, wire_value)) => {
-                println!("handle {} {}", wire_id, wire_value);
                 self.handle_assign(wire_id, E::from(wire_value));
                 return;
             }
@@ -89,17 +88,30 @@ impl<'a, E: StarkField> JsnarkWireReaderParser<E> {
         let mut wire_parser = JsnarkWireParser::<E>::new(&mut self.wires).unwrap();
         wire_parser.verbose = verbose;
 
-        if let Ok(lines) = crate::io::read_lines(wire_file) {
-            for line in lines {
-                match line {
-                    Ok(ip) => {
-                        wire_parser.process_line(ip);
+        // if let Ok(lines) = crate::io::read_lines(wire_file) {
+        //     for line in lines {
+        //         match line {
+        //             Ok(ip) => {
+        //                 wire_parser.process_line(ip);
+        //             }
+        //             Err(e) => println!("{:?}", e),
+        //         }
+        //     }
+        // }
+        match crate::io::read_lines(wire_file) {
+            Ok(lines) => {
+                for line in lines {
+                    match line {
+                        Ok(ip) => {
+                            wire_parser.process_line(ip);
+                        }
+                        Err(e) => println!("{:?}", e),
                     }
-                    Err(e) => println!("{:?}", e),
                 }
             }
+            Err(e) => println!("{:?}", e),
         }
-
+         
         self.pad_power_two();
 
         // if verbose {

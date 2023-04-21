@@ -12,7 +12,7 @@ use fractal_proofs::{
     fft, polynom, LayeredLincheckProof, LincheckProof, OracleQueries, TopLevelProof, TryInto,
 };
 
-use fractal_utils::FractalOptions;
+use fractal_utils::FractalProverOptions;
 use winter_crypto::{
     BatchMerkleProof, ElementHasher, Hasher, MerkleTree, MerkleTreeError, RandomCoin,
 };
@@ -32,8 +32,8 @@ pub struct LincheckProver<
     prover_matrix_index: ProverMatrixIndex<B, E>,
     f_1_poly_coeffs: Vec<B>,
     f_2_poly_coeffs: Vec<B>,
-    options: FractalOptions<B>,
-    evaluation_domain_e: Vec<E>,
+    // options: FractalProverOptions<B>,
+    // evaluation_domain_e: Vec<E>,
     _h: PhantomData<H>,
     _e: PhantomData<E>,
     current_layer: usize,
@@ -52,19 +52,19 @@ impl<
         prover_matrix_index: ProverMatrixIndex<B, E>,
         f_1_poly_coeffs: Vec<B>,
         f_2_poly_coeffs: Vec<B>,
-        options: &FractalOptions<B>,
+        // options: &FractalProverOptions<B>,
     ) -> Self {
-        let evaluation_domain_e = options
-            .evaluation_domain
-            .iter()
-            .map(|i| E::from(*i))
-            .collect();
+        // let evaluation_domain_e = options
+        //     .evaluation_domain
+        //     .iter()
+        //     .map(|i| E::from(*i))
+        //     .collect();
         LincheckProver {
             prover_matrix_index: prover_matrix_index,
             f_1_poly_coeffs,
             f_2_poly_coeffs,
-            options: options.clone(),
-            evaluation_domain_e,
+            // options: options.clone(),
+            // evaluation_domain_e,
             _h: PhantomData,
             _e: PhantomData,
             current_layer: 0,
@@ -77,16 +77,17 @@ impl<
         &mut self,
         query: E,
         accumulator: &mut Accumulator<B, E, H>,
+        options: &FractalProverOptions<B>,
     ) -> Result<(), ProverError> {
         self.alpha = Some(query);
-        let t_alpha_evals = self.generate_t_alpha_evals(query);
-        let t_alpha = self.generate_t_alpha(t_alpha_evals.clone());
+        let t_alpha_evals = self.generate_t_alpha_evals(query, options);
+        let t_alpha = self.generate_t_alpha(t_alpha_evals.clone(), options);
         debug!("t_alpha degree: {}", &t_alpha.len() - 1);
-        accumulator.add_polynomial_e(t_alpha.clone(), self.options.size_subgroup_h - 1);
+        accumulator.add_polynomial_e(t_alpha.clone(), options.size_subgroup_h - 1);
         self.t_alpha = Some(t_alpha.clone());
 
         // let poly_prod = self.generate_poly_prod_evals(query, &t_alpha_evals);
-        let poly_prod_coeffs = self.generate_poly_prod(query, &t_alpha);
+        let poly_prod_coeffs = self.generate_poly_prod(query, &t_alpha, options);
         debug!(
             "poly_prod_coeffs degree {}",
             polynom::degree_of(&poly_prod_coeffs)
@@ -122,25 +123,25 @@ impl<
         //         .collect::<Vec<E>>(),
         // );
 
-        let g_degree = self.options.h_domain.len() - 2;
-        let e_degree = self.options.h_domain.len() - 1;
+        let g_degree = options.h_domain.len() - 2;
+        let e_degree = options.h_domain.len() - 1;
 
         let mut product_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
             poly_prod_coeffs.clone(),
             vec![E::ONE],
             E::ZERO,
-            self.options.h_domain.clone(),
-            self.options.eta,
+            // options.h_domain.clone(),
+            options.eta,
             g_degree,
             e_degree,
-            self.options.clone(),
+            // self.options.clone(),
         );
         //if this needs a channel... problem
-        product_sumcheck_prover.run_next_layer(query, accumulator)?;
+        product_sumcheck_prover.run_next_layer(query, accumulator, &options.h_domain, &options.h_domain_inv_twiddles)?;
         Ok(())
     }
 
-    fn lincheck_layer_two(&self, query: E, accumulator: &mut Accumulator<B, E, H>) {
+    fn lincheck_layer_two(&self, query: E, accumulator: &mut Accumulator<B, E, H>, options: &FractalProverOptions<B>) {
         let beta = query;
         let alpha = self.alpha.unwrap();
         debug!(
@@ -159,12 +160,12 @@ impl<
                 .collect::<Vec<E>>(),
             compute_vanishing_poly(
                 alpha,
-                E::from(self.options.eta),
-                self.options.size_subgroup_h,
+                E::from(options.eta),
+                options.size_subgroup_h,
             ) * compute_vanishing_poly(
                 beta,
-                E::from(self.options.eta),
-                self.options.size_subgroup_h,
+                E::from(options.eta),
+                options.size_subgroup_h,
             ),
         );
         let mut alpha_minus_row =
@@ -208,15 +209,15 @@ impl<
             matrix_proof_numerator,
             matrix_proof_denominator,
             gamma,
-            self.options.summing_domain.clone(),
-            self.options.eta_k,
-            self.options.summing_domain.len() - 2,
-            2 * self.options.summing_domain.len() - 3,
-            self.options.clone(),
+            // options.summing_domain.clone(),
+            options.eta_k,
+            options.summing_domain.len() - 2,
+            2 * options.summing_domain.len() - 3,
+            // self.options.clone(),
         );
 
         matrix_sumcheck_prover
-            .run_next_layer(query, accumulator)
+            .run_next_layer(query, accumulator, &options.summing_domain, &options.k_domain_inv_twiddles)
             .unwrap();
     }
 
@@ -234,12 +235,12 @@ impl<
     /// sum_{k in summing domain} (v_H(X)/ (X - row(k))) * (v_H(Y)/ (Y - col(k))) * val(k).
     /// Fixing Y = alpha, this gives us t_alpha(X) = sum_k (v_H(X)/ (X - row(k))) * (v_H(alpha)/ (alpha - col(k))) * val(k).
     /// = v_H(alpha) * sum_k (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
-    pub fn generate_t_alpha_evals(&self, alpha: E) -> Vec<E> {
+    pub fn generate_t_alpha_evals(&self, alpha: E, options: &FractalProverOptions<B>) -> Vec<E> {
         // Lets get the coefficients (val(k)/ (alpha - col(k))
         // for all values of k, since these don't change with X.
         let mut coefficient_values = Vec::new();
-        for id in 0..self.options.summing_domain.len() {
-            let summing_elt = E::from(self.options.summing_domain[id]);
+        for id in 0..options.summing_domain.len() {
+            let summing_elt = E::from(options.summing_domain[id]);
             let denom_term = alpha - self.prover_matrix_index.get_col_eval(summing_elt);
             let inv_denom_term = denom_term.inv();
             // This computes the term val(k) / (alpha - col(k))
@@ -251,21 +252,21 @@ impl<
         // This is the v_h(alpha) term, which only needs to be computed once.
         let v_h_alpha = compute_vanishing_poly(
             alpha.clone(),
-            E::from(self.options.eta),
-            self.options.size_subgroup_h,
+            E::from(options.eta),
+            options.size_subgroup_h,
         );
         //let v_h_alpha = vanishing_poly_for_mult_subgroup(self.alpha, self.options.size_subgroup_h);
         // Now we compute the terms sum_k (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
         // over the eval domain.
         let mut t_evals = Vec::new();
-        for x_val_id in 0..self.options.evaluation_domain.len() {
-            let x_val = self.options.evaluation_domain[x_val_id];
+        for x_val_id in 0..options.evaluation_domain.len() {
+            let x_val = options.evaluation_domain[x_val_id];
 
             // Getting sum_k (1/ (X - row(k))) * (val(k)/ (alpha - col(k)))
             let mut sum_without_vs = E::ZERO;
-            for id in 0..self.options.summing_domain.len() {
+            for id in 0..options.summing_domain.len() {
                 //summing \n summing
-                let summing_elt = E::from(self.options.summing_domain[id]);
+                let summing_elt = E::from(options.summing_domain[id]);
                 let denom_term =
                     E::from(x_val) - self.prover_matrix_index.get_row_eval(summing_elt);
                 let prod_term = coefficient_values[id] * denom_term.inv();
@@ -273,7 +274,7 @@ impl<
             }
             // This is v_H(X).
             let v_h_x =
-                compute_vanishing_poly(x_val, self.options.eta, self.options.size_subgroup_h);
+                compute_vanishing_poly(x_val, options.eta, options.size_subgroup_h);
             //let v_h_x = vanishing_poly_for_mult_subgroup(x_val, self.options.size_subgroup_h);
             // This is finally v_H(X) * v_H(alpha) * sum_K (1/ (X - row(k))) * (val(k)/ (alpha - col(k)))
             let sum_with_vs = (sum_without_vs * E::from(v_h_x)) * v_h_alpha;
@@ -282,21 +283,21 @@ impl<
         t_evals
     }
 
-    pub fn generate_t_alpha_on_h(&self, t_evals: Vec<B>) -> Vec<B> {
-        let mut t_alpha_h_domain_poly: Vec<B> = t_evals.clone();
+    // pub fn generate_t_alpha_on_h(&self, t_evals: Vec<B>) -> Vec<B> {
+    //     let mut t_alpha_h_domain_poly: Vec<B> = t_evals.clone();
 
-        let twiddles_h_domain: Vec<B> = fft::get_inv_twiddles(self.options.h_domain.len());
+    //     let twiddles_h_domain: Vec<B> = fft::get_inv_twiddles(self.options.h_domain.len());
 
-        fft::interpolate_poly(&mut t_alpha_h_domain_poly, &twiddles_h_domain);
+    //     fft::interpolate_poly(&mut t_alpha_h_domain_poly, &twiddles_h_domain);
 
-        t_alpha_h_domain_poly
-    }
+    //     t_alpha_h_domain_poly
+    // }
 
-    pub fn generate_t_alpha(&self, t_evals: Vec<E>) -> Vec<E> {
+    pub fn generate_t_alpha(&self, t_evals: Vec<E>, options: &FractalProverOptions<B>) -> Vec<E> {
         let mut t_alpha_eval_domain_poly: Vec<E> = t_evals.clone().to_vec();
-        let twiddles_evaluation_domain: Vec<B> =
-            fft::get_inv_twiddles(self.options.evaluation_domain.len());
-        fft::interpolate_poly(&mut t_alpha_eval_domain_poly, &twiddles_evaluation_domain);
+        // let twiddles_evaluation_domain: Vec<B> =
+        //     fft::get_inv_twiddles(options.evaluation_domain.len());
+        fft::interpolate_poly(&mut t_alpha_eval_domain_poly, &options.l_domain_inv_twiddles);
         t_alpha_eval_domain_poly
         // polynom::interpolate(
         //     &self
@@ -310,7 +311,7 @@ impl<
         // )
     }
 
-    pub fn generate_poly_prod(&self, alpha: E, t_alpha_coeffs: &Vec<E>) -> Vec<E> {
+    pub fn generate_poly_prod(&self, alpha: E, t_alpha_coeffs: &Vec<E>, options: &FractalProverOptions<B>) -> Vec<E> {
         // This function needs to compute the polynomial
         // u_H(X, alpha)*f_1 - t_alpha*f_2
         // here are the steps to this:
@@ -318,10 +319,10 @@ impl<
         // 2. Polynom includes a mul and a sub function, use these to do the respective ops
         //eta_to_h_size = eta.exp(B::PositiveInteger::from(self.options.size_subgroup_h));
         let alpha_to_h_size = alpha.exp(E::PositiveInteger::from(
-            self.options.size_subgroup_h as u64,
+            options.size_subgroup_h as u64,
         ));
         debug!("alpha_to_h_size: {}", &alpha_to_h_size);
-        let mut u_numerator = vec![E::ZERO; (self.options.size_subgroup_h).try_into().unwrap()];
+        let mut u_numerator = vec![E::ZERO; (options.size_subgroup_h).try_into().unwrap()];
         u_numerator[0] = alpha_to_h_size.neg();
         u_numerator.push(E::ONE);
         let u_denominator = vec![alpha.neg(), E::ONE];
@@ -360,60 +361,60 @@ impl<
         poly
     }
 
-    pub fn generate_poly_prod_evals(&self, alpha: E, t_alpha: &Vec<E>) -> Vec<E> {
-        // This function needs to compute the polynomial
-        // u_H(X, alpha)*f_1 - t_alpha*f_2
-        // here are the steps to this:
-        // 1. find out how polynomials are represented and get u_H(X, alpha) = (X^|H| - alpha)/(X - alpha)
-        // 2. Polynom includes a mul and a sub function, use these to do the respective ops
-        // botttom of page 29
-        let alpha_to_h_size = alpha.exp(E::PositiveInteger::from(
-            self.options.size_subgroup_h as u64,
-        ));
-        let mut u_numerator = vec![E::ZERO; (self.options.size_subgroup_h).try_into().unwrap()];
-        u_numerator[0] = alpha_to_h_size.neg();
-        u_numerator.push(E::ONE);
-        let u_denominator = vec![alpha.neg(), E::ONE];
-        let mut u_alpha = polynom::div(&u_numerator, &u_denominator);
+    // pub fn generate_poly_prod_evals(&self, alpha: E, t_alpha: &Vec<E>) -> Vec<E> {
+    //     // This function needs to compute the polynomial
+    //     // u_H(X, alpha)*f_1 - t_alpha*f_2
+    //     // here are the steps to this:
+    //     // 1. find out how polynomials are represented and get u_H(X, alpha) = (X^|H| - alpha)/(X - alpha)
+    //     // 2. Polynom includes a mul and a sub function, use these to do the respective ops
+    //     // botttom of page 29
+    //     let alpha_to_h_size = alpha.exp(E::PositiveInteger::from(
+    //         self.options.size_subgroup_h as u64,
+    //     ));
+    //     let mut u_numerator = vec![E::ZERO; (self.options.size_subgroup_h).try_into().unwrap()];
+    //     u_numerator[0] = alpha_to_h_size.neg();
+    //     u_numerator.push(E::ONE);
+    //     let u_denominator = vec![alpha.neg(), E::ONE];
+    //     let mut u_alpha = polynom::div(&u_numerator, &u_denominator);
 
-        let mut prod = Vec::<E>::new();
-        let eval_twiddles = fft::get_twiddles(self.options.evaluation_domain.len());
-        let mut f_1_eval = self
-            .f_1_poly_coeffs
-            .iter()
-            .map(|i| E::from(*i))
-            .collect::<Vec<E>>();
-        fractal_utils::polynomial_utils::pad_with_zeroes(
-            &mut f_1_eval,
-            self.options.evaluation_domain.len(),
-        );
+    //     let mut prod = Vec::<E>::new();
+    //     let eval_twiddles = fft::get_twiddles(self.options.evaluation_domain.len());
+    //     let mut f_1_eval = self
+    //         .f_1_poly_coeffs
+    //         .iter()
+    //         .map(|i| E::from(*i))
+    //         .collect::<Vec<E>>();
+    //     fractal_utils::polynomial_utils::pad_with_zeroes(
+    //         &mut f_1_eval,
+    //         self.options.evaluation_domain.len(),
+    //     );
 
-        fft::evaluate_poly(&mut f_1_eval, &mut eval_twiddles.clone());
-        let mut f_2_eval = self
-            .f_2_poly_coeffs
-            .iter()
-            .map(|i| E::from(*i))
-            .collect::<Vec<E>>();
-        fractal_utils::polynomial_utils::pad_with_zeroes(
-            &mut f_2_eval,
-            self.options.evaluation_domain.len(),
-        );
-        fft::evaluate_poly(&mut f_2_eval, &mut eval_twiddles.clone());
-        fractal_utils::polynomial_utils::pad_with_zeroes(
-            &mut u_alpha,
-            self.options.evaluation_domain.len(),
-        );
-        fft::evaluate_poly(&mut u_alpha, &mut eval_twiddles.clone());
-        //none of that fft nonsense, let's do this the lagrange way
-        //f_1_eval = polynom::eval_many(&self.f_1_poly_coeffs, &self.options.evaluation_domain).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
-        //f_2_eval = polynom::eval_many(&self.f_2_poly_coeffs, &self.options.evaluation_domain).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
-        // u_alpha = polynom::eval_many(&u_alpha, &self.evaluation_domain_e);
-        for pos in 0..self.options.evaluation_domain.len() {
-            let next = (u_alpha[pos] * f_1_eval[pos]) - (t_alpha[pos] * f_2_eval[pos]);
-            prod.push(next);
-        }
-        prod
-    }
+    //     fft::evaluate_poly(&mut f_1_eval, &mut eval_twiddles.clone());
+    //     let mut f_2_eval = self
+    //         .f_2_poly_coeffs
+    //         .iter()
+    //         .map(|i| E::from(*i))
+    //         .collect::<Vec<E>>();
+    //     fractal_utils::polynomial_utils::pad_with_zeroes(
+    //         &mut f_2_eval,
+    //         self.options.evaluation_domain.len(),
+    //     );
+    //     fft::evaluate_poly(&mut f_2_eval, &mut eval_twiddles.clone());
+    //     fractal_utils::polynomial_utils::pad_with_zeroes(
+    //         &mut u_alpha,
+    //         self.options.evaluation_domain.len(),
+    //     );
+    //     fft::evaluate_poly(&mut u_alpha, &mut eval_twiddles.clone());
+    //     //none of that fft nonsense, let's do this the lagrange way
+    //     //f_1_eval = polynom::eval_many(&self.f_1_poly_coeffs, &self.options.evaluation_domain).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
+    //     //f_2_eval = polynom::eval_many(&self.f_2_poly_coeffs, &self.options.evaluation_domain).iter().map(|i| E::from(*i)).collect::<Vec<E>>();
+    //     // u_alpha = polynom::eval_many(&u_alpha, &self.evaluation_domain_e);
+    //     for pos in 0..self.options.evaluation_domain.len() {
+    //         let next = (u_alpha[pos] * f_1_eval[pos]) - (t_alpha[pos] * f_2_eval[pos]);
+    //         prod.push(next);
+    //     }
+    //     prod
+    // }
 }
 
 impl<
@@ -426,13 +427,14 @@ impl<
         &mut self,
         query: E,
         accumulator: &mut Accumulator<B, E, H>,
+        options: &FractalProverOptions<B>,
     ) -> Result<(), ProverError> {
         match self.get_current_layer() {
             0 => {
-                self.lincheck_layer_one(query, accumulator);
+                self.lincheck_layer_one(query, accumulator, options);
             }
             1 => {
-                self.lincheck_layer_two(query, accumulator);
+                self.lincheck_layer_two(query, accumulator, options);
             }
             _ => (),
         };
@@ -447,9 +449,9 @@ impl<
         2
     }
 
-    fn get_fractal_options(&self) -> FractalOptions<B> {
-        self.options.clone()
-    }
+    // fn get_fractal_options(&self) -> FractalProverOptions<B> {
+    //     self.options.clone()
+    // }
 }
 
 impl<
@@ -462,8 +464,9 @@ impl<
         &mut self,
         prover_key: &Option<ProverKey<B, E, H>>,
         public_inputs_bytes: Vec<u8>,
+        options: &FractalProverOptions<B>,
     ) -> Result<TopLevelProof<B, E, H>, ProverError> {
-        let options = self.get_fractal_options();
+        // let options = self.get_fractal_options();
         let mut coin = RandomCoin::<B, H>::new(&public_inputs_bytes);
 
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
@@ -494,7 +497,7 @@ impl<
 
             let query = coin.draw().expect("failed to draw FRI alpha"); //channel.draw_fri_alpha();
             local_queries.push(query);
-            self.run_next_layer(query, &mut acc)?;
+            self.run_next_layer(query, &mut acc, options)?;
             layer_commitments.push(acc.commit_layer()?); //todo: do something with this
         }
 

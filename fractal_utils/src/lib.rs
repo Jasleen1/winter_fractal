@@ -30,3 +30,42 @@ pub struct FractalOptions<B: StarkField> {
     pub fri_options: FriOptions,
     pub num_queries: usize,
 }
+
+
+#[derive(Clone)]
+pub struct FractalProverOptions<B: StarkField> {
+    pub degree_fs: usize,
+    pub size_subgroup_h: usize,
+    pub size_subgroup_k: usize,
+    // K domain in paper
+    pub summing_domain: Vec<B>,
+    // L domain in paper
+    pub evaluation_domain: Vec<B>,
+    // H domain in paper
+    pub h_domain: Vec<B>,
+    pub h_domain_twiddles: Vec<B>,
+    pub h_domain_inv_twiddles: Vec<B>,
+    pub k_domain_twiddles: Vec<B>,
+    pub k_domain_inv_twiddles: Vec<B>,
+    pub l_domain_twiddles: Vec<B>,
+    pub l_domain_inv_twiddles: Vec<B>,
+    pub eta: B,
+    pub eta_k: B,
+    pub fri_options: FriOptions,
+    pub num_queries: usize,
+}
+
+#[derive(Clone)]
+pub struct FractalVerifierOptions<B: StarkField> {
+    pub degree_fs: usize,
+    // H domain in paper
+    pub size_subgroup_h: usize,
+    // K domain in paper
+    pub size_subgroup_k: usize,
+    // L domain in paper
+    pub size_subgroup_l: usize,
+    pub eta: B,
+    pub eta_k: B,
+    pub fri_options: FriOptions,
+    pub num_queries: usize,
+}

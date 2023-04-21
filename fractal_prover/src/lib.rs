@@ -3,9 +3,8 @@ use std::thread::AccessError;
 use errors::ProverError;
 use fractal_accumulator::{accumulator::Accumulator, errors::AccumulatorProverError};
 use fractal_indexer::snark_keys::ProverKey;
-use fractal_proofs::{FieldElement, IopData, LayeredProof, LowDegreeBatchProof, TopLevelProof};
+use fractal_proofs::{FieldElement, IopData, LayeredProof, LowDegreeBatchProof, TopLevelProof, FractalProverOptions};
 use fractal_utils::channel::DefaultFractalProverChannel;
-use fractal_utils::FractalOptions;
 use log;
 use winter_crypto::ElementHasher;
 use winter_fri::{FriOptions, ProverChannel};
@@ -64,6 +63,7 @@ pub trait LayeredSubProver<
         &mut self,
         query: E,
         accumulator: &mut Accumulator<B, E, H>,
+        options: &FractalProverOptions<B>,
     ) -> Result<(), ProverError>;
 
     /// Gets the id of the current layer, count starts at zero
@@ -72,8 +72,8 @@ pub trait LayeredSubProver<
     /// Gets the total number of layers for this layered prover
     fn get_num_layers(&self) -> usize;
 
-    /// Gets options for fractal proofs
-    fn get_fractal_options(&self) -> FractalOptions<B>;
+    // Gets options for fractal proofs
+    // fn get_fractal_options(&self) -> FractalProverOptions<B>;
 
     // fn generate_proof(
     //     &mut self,
@@ -112,6 +112,7 @@ pub trait LayeredProver<
         &mut self,
         prover_key: &Option<ProverKey<B, E, H>>,
         public_input_bytes: Vec<u8>,
+        options: &FractalProverOptions<B>,
     ) -> Result<TopLevelProof<B, E, H>, ProverError>;
     // {
     //     let options = self.get_fractal_options();

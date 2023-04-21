@@ -7,6 +7,7 @@ use core::num;
 use std::cmp::max;
 
 use fractal_indexer::index::get_max_degree;
+use fractal_proofs::{FractalProverOptions, fft, FractalVerifierOptions};
 use fractal_utils::FractalOptions;
 use winter_fri::FriOptions;
 
@@ -33,6 +34,7 @@ pub fn get_example_setup<
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 >() -> (
+    FractalProverOptions<B>,
     FractalOptions<B>,
     ProverKey<B, E, H>,
     VerifierKey<B, H>,
@@ -66,6 +68,7 @@ fn files_to_setup_outputs<
     wire_file: &str,
     verbose: bool,
 ) -> (
+    FractalProverOptions<B>,
     FractalOptions<B>,
     ProverKey<B, E, H>,
     VerifierKey<B, H>,
@@ -104,7 +107,7 @@ fn files_to_setup_outputs<
         eta,
         eta_k,
     };
-
+    let degree_fs = r1cs.num_cols();
     let index_domains = build_index_domains::<B, E>(index_params.clone());
     println!("build index domains");
     let indexed_a = index_matrix::<B, E>(&r1cs.A, &index_domains);
@@ -116,12 +119,13 @@ fn files_to_setup_outputs<
 
     // TODO: the IndexDomains should already guarantee powers of two, so why add extraneous bit or use next_power_of_two?
 
-    let degree_fs = r1cs.num_cols();
+    
     let size_subgroup_h = index_domains.h_field.len().next_power_of_two();
     let size_subgroup_k = index_domains.k_field.len().next_power_of_two();
+    let size_subgroup_l = index_domains.l_field_len.next_power_of_two();
 
     let evaluation_domain =
-        utils::get_power_series(index_domains.l_field_base, index_domains.l_field_len);
+        utils::get_power_series(index_domains.l_field_base, size_subgroup_l);
 
     let summing_domain = index_domains.k_field;
 
@@ -130,13 +134,49 @@ fn files_to_setup_outputs<
     let num_queries = 16;
     let fri_options = FriOptions::new(lde_blowup, 4, 32);
     //println!("h_domain: {:?}, summing_domain: {:?}, evaluation_domain: {:?}", &h_domain, &summing_domain, &evaluation_domain);
+    let h_domain_twiddles = fft::get_twiddles(size_subgroup_h);
+    let h_domain_inv_twiddles = fft::get_inv_twiddles(size_subgroup_h);
+    let k_domain_twiddles = fft::get_twiddles(size_subgroup_k);
+    let k_domain_inv_twiddles = fft::get_inv_twiddles(size_subgroup_k);
+    let l_domain_twiddles = fft::get_twiddles(evaluation_domain.len());
+    let l_domain_inv_twiddles = fft::get_inv_twiddles(evaluation_domain.len());
     let options: FractalOptions<B> = FractalOptions::<B> {
+        degree_fs,
+        size_subgroup_h,
+        size_subgroup_k,
+        summing_domain: summing_domain.clone(),
+        evaluation_domain: evaluation_domain.clone(),
+        h_domain: h_domain.clone(),
+        eta,
+        eta_k,
+        fri_options: fri_options.clone(),
+        num_queries,
+    };
+
+    let prover_options: FractalProverOptions<B> = FractalProverOptions::<B> {
         degree_fs,
         size_subgroup_h,
         size_subgroup_k,
         summing_domain,
         evaluation_domain,
         h_domain,
+        h_domain_twiddles,
+        h_domain_inv_twiddles,
+        k_domain_twiddles,
+        k_domain_inv_twiddles,
+        l_domain_twiddles,
+        l_domain_inv_twiddles,
+        eta,
+        eta_k,
+        fri_options: fri_options.clone(),
+        num_queries,
+    };
+
+    let verifier_options: FractalVerifierOptions<B> = FractalVerifierOptions::<B> {
+        degree_fs,
+        size_subgroup_h,
+        size_subgroup_k,
+        size_subgroup_l,
         eta,
         eta_k,
         fri_options,
@@ -144,9 +184,9 @@ fn files_to_setup_outputs<
     };
 
     let (prover_key, verifier_key) =
-        generate_prover_and_verifier_keys::<B, E, H>(index, options.clone()).unwrap();
+        generate_prover_and_verifier_keys::<B, E, H>(index, &options).unwrap();
 
-    (options, prover_key, verifier_key, wires)
+    (prover_options, options, prover_key, verifier_key, wires)
 }
 
 #[derive(Debug)]

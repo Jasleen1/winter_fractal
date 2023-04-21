@@ -242,9 +242,9 @@ pub fn create_index_from_r1cs<B: StarkField, E: FieldElement<BaseField = B>>(
     r1cs_instance: R1CS<B>,
 ) -> Index<B, E> {
     let domains = build_index_domains(params.clone());
-    let indexed_a = IndexedMatrix::new(&r1cs_instance.A, &domains);
-    let indexed_b = IndexedMatrix::new(&r1cs_instance.B, &domains);
-    let indexed_c = IndexedMatrix::new(&r1cs_instance.C, &domains);
+    let indexed_a = IndexedMatrix::new(r1cs_instance.A, &domains);
+    let indexed_b = IndexedMatrix::new(r1cs_instance.B, &domains);
+    let indexed_c = IndexedMatrix::new(r1cs_instance.C, &domains);
     Index::new(params, indexed_a, indexed_b, indexed_c)
 }
 
@@ -253,9 +253,9 @@ pub fn create_primefield_index_from_r1cs(
     r1cs_instance: R1CS<SmallFieldElement17>,
 ) -> Index<SmallFieldElement17, SmallFieldElement17> {
     let domains = build_primefield_index_domains(params.clone());
-    let indexed_a = IndexedMatrix::new(&r1cs_instance.A, &domains);
-    let indexed_b = IndexedMatrix::new(&r1cs_instance.B, &domains);
-    let indexed_c = IndexedMatrix::new(&r1cs_instance.C, &domains);
+    let indexed_a = IndexedMatrix::new(r1cs_instance.A, &domains);
+    let indexed_b = IndexedMatrix::new(r1cs_instance.B, &domains);
+    let indexed_c = IndexedMatrix::new(r1cs_instance.C, &domains);
     Index::new(params, indexed_a, indexed_b, indexed_c)
 }
 

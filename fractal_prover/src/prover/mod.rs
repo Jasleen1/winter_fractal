@@ -4,7 +4,7 @@ use fractal_indexer::{index::IndexParams, snark_keys::*};
 use fractal_proofs::{
     fft, polynom, FractalProof, InitialPolyProof, IopData, LayeredFractalProof,
     LayeredLincheckProof, LayeredRowcheckProof, LincheckProof, LowDegreeBatchProof, MultiEval,
-    MultiPoly, TopLevelProof, TryInto,
+    MultiPoly, TopLevelProof, TryInto, FractalProverOptions,
 };
 use models::r1cs::Matrix;
 use winter_fri::DefaultProverChannel;
@@ -16,7 +16,6 @@ use winter_utils::transpose_slice;
 
 use fractal_accumulator::accumulator::Accumulator;
 use fractal_utils::channel::DefaultFractalProverChannel;
-use fractal_utils::FractalOptions;
 
 use crate::{
     errors::ProverError, lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver,
@@ -29,7 +28,7 @@ pub struct FractalProver<
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
     pub prover_key: Option<ProverKey<B, E, H>>,
-    options: FractalOptions<B>,
+    // options: FractalProverOptions<B>,
     witness: Vec<B>,
     variable_assignment: Vec<B>,
     pub_input_bytes: Vec<u8>,
@@ -51,14 +50,14 @@ impl<
 {
     pub fn new(
         prover_key: ProverKey<B, E, H>,
-        options: FractalOptions<B>,
+        options: FractalProverOptions<B>,
         witness: Vec<B>,
         variable_assignment: Vec<B>,
         pub_input_bytes: Vec<u8>,
     ) -> Self {
         FractalProver {
             prover_key: Some(prover_key),
-            options,
+            // options,
             witness,
             variable_assignment,
             pub_input_bytes,
@@ -140,6 +139,7 @@ impl<
         &mut self,
         query: E,
         accumulator: &mut Accumulator<B, E, H>,
+        options: &FractalProverOptions<B>,
     ) -> Result<(), ProverError> {
         // 1. Generate the rowcheck proof.
         // Evaluate the Az, Bz, Cz polynomials.
@@ -147,7 +147,7 @@ impl<
             self.f_az_coeffs.clone(),
             self.f_bz_coeffs.clone(),
             self.f_cz_coeffs.clone(),
-            self.options.clone(),
+            // &options,
         );
 
         /*//hacky way to avoid lifetimes: move prover_key contents to LincheckProvers in this step
@@ -165,25 +165,25 @@ impl<
             a_index,
             self.f_az_coeffs.to_vec(),
             self.z_coeffs.to_vec(),
-            &self.options,
+            // &self.options,
         );
         let mut lincheck_prover_b = LincheckProver::<B, E, H>::new(
             b_index,
             self.f_bz_coeffs.to_vec(),
             self.z_coeffs.to_vec(),
-            &self.options,
+            // &self.options,
         );
         let mut lincheck_prover_c = LincheckProver::<B, E, H>::new(
             c_index,
             self.f_cz_coeffs.to_vec(),
             self.z_coeffs.to_vec(),
-            &self.options,
+            // &self.options,
         );
 
-        rowcheck_prover.run_next_layer(query, accumulator)?;
-        lincheck_prover_a.run_next_layer(query, accumulator)?;
-        lincheck_prover_b.run_next_layer(query, accumulator)?;
-        lincheck_prover_c.run_next_layer(query, accumulator)?;
+        rowcheck_prover.run_next_layer(query, accumulator, &options)?;
+        lincheck_prover_a.run_next_layer(query, accumulator, &options)?;
+        lincheck_prover_b.run_next_layer(query, accumulator, &options)?;
+        lincheck_prover_c.run_next_layer(query, accumulator, &options)?;
         self.lincheck_provers = vec![lincheck_prover_a, lincheck_prover_b, lincheck_prover_c];
 
         Ok(())
@@ -193,9 +193,10 @@ impl<
         &mut self,
         query: E,
         accumulator: &mut Accumulator<B, E, H>,
+        options: &FractalProverOptions<B>,
     ) -> Result<(), ProverError> {
         for lincheck_prover in self.lincheck_provers.iter_mut() {
-            lincheck_prover.run_next_layer(query, accumulator)?;
+            lincheck_prover.run_next_layer(query, accumulator, &options)?;
         }
         Ok(())
     }
@@ -211,6 +212,7 @@ impl<
         &mut self,
         query: E,
         accumulator: &mut Accumulator<B, E, H>,
+        options: &FractalProverOptions<B>,
     ) -> Result<(), ProverError> {
         match self.current_layer {
             0 => {
@@ -218,11 +220,11 @@ impl<
                 self.current_layer += 1;
             }
             1 => {
-                self.fractal_layer_two(query, accumulator)?;
+                self.fractal_layer_two(query, accumulator, options)?;
                 self.current_layer += 1;
             }
             2 => {
-                self.fractal_layer_three(query, accumulator)?;
+                self.fractal_layer_three(query, accumulator, options)?;
                 self.current_layer += 1;
             }
             _ => (),
@@ -235,9 +237,9 @@ impl<
     fn get_num_layers(&self) -> usize {
         FRACTAL_LAYERS
     }
-    fn get_fractal_options(&self) -> FractalOptions<B> {
-        self.options.clone()
-    }
+    // fn get_fractal_options(&self) -> FractalProverOptions<B> {
+    //     self.options.clone()
+    // }
 }
 
 impl<
@@ -250,8 +252,9 @@ impl<
         &mut self,
         prover_key: &Option<ProverKey<B, E, H>>,
         public_inputs_bytes: Vec<u8>,
+        options: &FractalProverOptions<B>,
     ) -> Result<TopLevelProof<B, E, H>, ProverError> {
-        let options = self.get_fractal_options();
+        // let options = self.get_fractal_options();
         let mut coin = RandomCoin::<B, H>::new(&public_inputs_bytes);
 
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
@@ -280,7 +283,7 @@ impl<
             }
             let query = coin.draw().expect("failed to draw FRI alpha"); //channel.draw_fri_alpha();
             local_queries.push(query);
-            self.run_next_layer(query, &mut acc)?;
+            self.run_next_layer(query, &mut acc, options)?;
             layer_commitments[i] = acc.commit_layer()?; //todo: do something with this
         }
 

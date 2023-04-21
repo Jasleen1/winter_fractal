@@ -309,7 +309,7 @@ mod test {
 
         // Let's first get the domains etc.
         let setup = get_example_setup::<B, E, H>();
-        let (fractal_options, prover_key, verifier_key) = (setup.0, setup.1, setup.2);
+        let (prover_options, fractal_options, prover_key, verifier_key, _) = (setup.0, setup.1, setup.2, setup.3, setup.4);
 
         let evaluation_domain = fractal_options.evaluation_domain.clone();
         let eval_len = evaluation_domain.len();
@@ -363,11 +363,11 @@ mod test {
             f_az_coeffs,
             f_bz_coeffs,
             f_cz_coeffs,
-            fractal_options.clone(),
+            // &fractal_options,
         );
         let query = E::from(0u128);
         rowcheck_prover
-            .run_next_layer(query, &mut accumulator)
+            .run_next_layer(query, &mut accumulator, &prover_options)
             .unwrap();
         // Now all the polynomials from the rowcheck layer should be in the accumulator.
         // (spoiler: it's only one polynomial but we still need to commit it)

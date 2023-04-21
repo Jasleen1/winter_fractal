@@ -355,7 +355,7 @@ pub fn generate_prover_and_verifier_keys<
         indexed_b,
         indexed_c,
     }: Index<B, E>,
-    options: FractalOptions<B>,
+    options: &FractalOptions<B>,
 ) -> Result<(ProverKey<B, E, H>, VerifierKey<B, H>), IndexerError> {
     let mut acc = Accumulator::<B, E, H>::new(
         options.evaluation_domain.len(),
