@@ -63,14 +63,17 @@ pub struct ProverMatrixIndex<B: StarkField, E: FieldElement<BaseField = B>> {
 }
 
 impl<B: StarkField, E: FieldElement<BaseField = B>> ProverMatrixIndex<B, E> {
+    #[cfg_attr(feature = "flame_it", flame("index"))]
     pub fn get_val_eval(&self, point: E) -> E {
         polynom::eval(&self.val_poly, point)
     }
 
+    #[cfg_attr(feature = "flame_it", flame("index"))]
     pub fn get_col_eval(&self, point: E) -> E {
         polynom::eval(&self.col_poly, point)
     }
 
+    #[cfg_attr(feature = "flame_it", flame("index"))]
     pub fn get_row_eval(&self, point: E) -> E {
         polynom::eval(&self.row_poly, point)
     }

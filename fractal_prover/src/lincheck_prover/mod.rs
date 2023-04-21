@@ -9,7 +9,7 @@ use fractal_accumulator::accumulator::Accumulator;
 use fractal_utils::channel::DefaultFractalProverChannel;
 
 use fractal_proofs::{
-    fft, polynom, LayeredLincheckProof, LincheckProof, OracleQueries, TopLevelProof, TryInto,
+    fft, polynom, LayeredLincheckProof, LincheckProof, OracleQueries, TopLevelProof, TryInto, batch_inversion,
 };
 
 use fractal_utils::FractalProverOptions;
@@ -241,17 +241,13 @@ impl<
     pub fn generate_t_alpha_evals(&self, alpha: E, options: &FractalProverOptions<B>) -> Vec<E> {
         // Lets get the coefficients (val(k)/ (alpha - col(k))
         // for all values of k, since these don't change with X.
-        let mut coefficient_values = Vec::new();
-        for id in 0..options.summing_domain.len() {
-            let summing_elt = E::from(options.summing_domain[id]);
-            let denom_term = alpha - self.prover_matrix_index.get_col_eval(summing_elt);
-            let inv_denom_term = denom_term.inv();
-            // This computes the term val(k) / (alpha - col(k))
-            // Why does this type as B instead of E?
-            let k_term =
-                E::from(self.prover_matrix_index.get_val_eval(summing_elt)) * inv_denom_term;
-            coefficient_values.push(k_term)
-        }
+        let col_evals = polynom::eval_many(&self.prover_matrix_index.col_poly, &options.summing_domain);
+        let val_evals = polynom::eval_many(&self.prover_matrix_index.val_poly, &options.summing_domain);
+        let mut denom_terms: Vec<E> = col_evals.iter().map(|col_eval| alpha - E::from(*col_eval)).collect();
+        denom_terms = batch_inversion(&denom_terms);
+        // This computes the term val(k) / (alpha - col(k))
+        let coefficient_values: Vec<E> = (0..options.summing_domain.len()).into_iter().map(|id| E::from(val_evals[id]) * denom_terms[id]).collect();
+
         // This is the v_h(alpha) term, which only needs to be computed once.
         let v_h_alpha = compute_vanishing_poly(
             alpha.clone(),
@@ -262,18 +258,19 @@ impl<
         // Now we compute the terms sum_k (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
         // over the eval domain.
         let mut t_evals = Vec::new();
+        let row_evals = polynom::eval_many(&self.prover_matrix_index.row_poly, &options.summing_domain);
+
+        flame::start("double loop");
         for x_val_id in 0..options.evaluation_domain.len() {
             let x_val = options.evaluation_domain[x_val_id];
 
             // Getting sum_k (1/ (X - row(k))) * (val(k)/ (alpha - col(k)))
             let mut sum_without_vs = E::ZERO;
-            for id in 0..options.summing_domain.len() {
-                //summing \n summing
-                let summing_elt = E::from(options.summing_domain[id]);
-                let denom_term =
-                    E::from(x_val) - self.prover_matrix_index.get_row_eval(summing_elt);
-                let prod_term = coefficient_values[id] * denom_term.inv();
-                sum_without_vs = sum_without_vs + prod_term;
+            let mut denom_terms: Vec<B> = row_evals.iter().map(|row_eval| x_val - *row_eval).collect();
+            denom_terms = batch_inversion(&denom_terms);
+            for id in 0..options.summing_domain.len(){
+                let prod_term = coefficient_values[id] * E::from(denom_terms[id]);
+                sum_without_vs +=  prod_term;
             }
             // This is v_H(X).
             let v_h_x =
@@ -283,6 +280,7 @@ impl<
             let sum_with_vs = (sum_without_vs * E::from(v_h_x)) * v_h_alpha;
             t_evals.push(sum_with_vs);
         }
+        flame::end("double loop");
         t_evals
     }
 

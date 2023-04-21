@@ -11,6 +11,7 @@ use winter_utils::batch_iter_mut;
  * Note that v_H(X) = X^dom_size - eta^dom_size. If eta = 1 we're
  * in a multiplicative subgroup itself.
  **/
+ #[cfg_attr(feature = "flame_it", flame("utils"))]
 pub fn compute_vanishing_poly<E: FieldElement>(x: E, eta: E, dom_size: usize) -> E {
     let power_u64: u64 = dom_size.try_into().unwrap();
     let power = E::PositiveInteger::from(power_u64);
@@ -19,6 +20,7 @@ pub fn compute_vanishing_poly<E: FieldElement>(x: E, eta: E, dom_size: usize) ->
 
 /// This function generates the vanshing polynomial coefficients for a multiplicative
 /// subgroup of size dom_size and with multiplicative factor eta.
+#[cfg_attr(feature = "flame_it", flame("utils"))]
 pub fn get_vanishing_poly<E: FieldElement>(eta: E, dom_size: usize) -> Vec<E> {
     let mut vanishing_poly = vec![E::ZERO; dom_size];
     vanishing_poly.push(E::ONE);
@@ -39,6 +41,7 @@ pub fn vanishing_poly_for_mult_subgroup<E: FieldElement>(x: E, dom_size: usize) 
 // The derivative is calculated as |H| x^{|H|-1}.
 // This is equivalent to computing u_H(X, X) for a multiplicative coset H
 // of order dom_size = |H|.
+#[cfg_attr(feature = "flame_it", flame("utils"))]
 pub fn compute_derivative_on_single_val<E: FieldElement>(x: E, dom_size: u128) -> E {
     let dom_size_coeff = E::from(dom_size);
     let power_u64: u64 = (dom_size - 1).try_into().unwrap();
@@ -52,6 +55,7 @@ pub fn compute_derivative_on_single_val<E: FieldElement>(x: E, dom_size: u128) -
 // The (i, j)th element of this binomial is the coefficient of X^i * Y^j
 pub type BivariatePoly<E> = Vec<Vec<E>>;
 
+#[cfg_attr(feature = "flame_it", flame("utils"))]
 pub fn compute_binomial_on_x<E: FieldElement>(bivariate: BivariatePoly<E>, x_val: E) -> Vec<E> {
     // Given a BivariatePoly, computes a monomial in Y, obtained by evaluating bivariate(x_val, Y)
     // represented by the output vector
@@ -60,6 +64,7 @@ pub fn compute_binomial_on_x<E: FieldElement>(bivariate: BivariatePoly<E>, x_val
     compute_binomial_on_y(transposed_bivariate.mat, x_val)
 }
 
+#[cfg_attr(feature = "flame_it", flame("utils"))]
 pub fn compute_binomial_on_y<E: FieldElement>(bivariate: BivariatePoly<E>, y_val: E) -> Vec<E> {
     // Given a BivariatePoly, computes a monomial in X, obtained by evaluating bivariate(X, y_val)
     // represented by the output vector
@@ -94,6 +99,7 @@ pub fn get_to_degree_size<E: FieldElement>(poly: &mut Vec<E>) {
     }
 }
 
+#[cfg_attr(feature = "flame_it", flame("utils"))]
 pub fn get_complementary_poly<E: FieldElement>(
     current_degree: usize,
     desired_degree: usize,
@@ -106,6 +112,7 @@ pub fn get_complementary_poly<E: FieldElement>(
     out_poly
 }
 
+#[cfg_attr(feature = "flame_it", flame("utils"))]
 pub fn get_randomized_complementary_poly<E: FieldElement>(
     current_degree: usize,
     desired_degree: usize,
@@ -273,6 +280,7 @@ impl<
     /// Helper function to zip the evaluations so that each element of the output is of the
     /// form [poly_1(e), ..., poly_n(e)] i.e. evaluations of all the polynomials are included
     /// in the same array.
+    #[cfg_attr(feature = "flame_it", flame("utils"))]
     fn zip_evals(separate_evals: Vec<Vec<E>>, evaluation_domain_len: usize) -> Vec<Vec<E>> {
         let mut zipped_evals = vec![Vec::<E>::new(); evaluation_domain_len];
         for (_, eval) in separate_evals.iter().enumerate() {

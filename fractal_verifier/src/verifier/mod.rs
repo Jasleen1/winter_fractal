@@ -83,6 +83,7 @@ use crate::{lincheck_verifier::verify_lincheck_proof, rowcheck_verifier::verify_
     Ok(())
 }*/
 
+#[cfg_attr(feature = "flame_it", flame("fractal_verifier"))]
 pub fn verify_layered_fractal_proof_from_top<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -137,6 +138,7 @@ pub fn verify_layered_fractal_proof_from_top<
     Ok(())
 }
 
+#[cfg_attr(feature = "flame_it", flame("fractal_verifier"))]
 pub fn verify_decommitments<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -177,6 +179,7 @@ pub fn verify_decommitments<
     Ok(())
 }
 
+#[cfg_attr(feature = "flame_it", flame("fractal_verifier"))]
 pub fn verify_layered_fractal_proof<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -223,6 +226,7 @@ pub fn verify_layered_fractal_proof<
 
 /// This function should take as input the full layered fractal proof and return proofs to be passed into the subroutines.
 /// Correctness of decommitments should be checked elsewhere.
+#[cfg_attr(feature = "flame_it", flame("fractal_verifier"))]
 fn parse_proofs_for_subroutines<
     B: StarkField,
     E: FieldElement<BaseField = B>,
