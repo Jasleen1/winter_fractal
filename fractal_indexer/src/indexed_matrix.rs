@@ -76,8 +76,6 @@ pub fn index_matrix<B: StarkField, E: FieldElement<BaseField = B>>(
             count += 1;
         }
     }
-    println!("Here");
-
     // println!("Clone 1");
     // interpolate row_elts into a polynomial
     fft::interpolate_poly_with_offset(
@@ -114,8 +112,6 @@ pub fn index_matrix<B: StarkField, E: FieldElement<BaseField = B>>(
     let mut val_evaluations = vec![B::ZERO; l_size];
     val_evaluations[..k_field_size].copy_from_slice(&val_elts);
     fft::evaluate_poly(&mut val_evaluations, &index_domains.twiddles_l_elts);
-
-    println!("Clone 2");
 
     IndexedMatrix {
         matrix: mat.clone(),

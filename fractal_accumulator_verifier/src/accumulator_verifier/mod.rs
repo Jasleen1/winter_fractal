@@ -162,7 +162,6 @@ impl<
         for v in self.max_degrees_by_layer.iter() {
             max_degrees.extend(v);
         }
-        println!("verifier max_degrees: {:?}", &max_degrees);
         let res = verify_low_degree_batch_proof(proof, max_degrees, &mut coin, self.num_queries);
         println!("res = {:?}", res);
         Ok(res?)
