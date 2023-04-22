@@ -9,7 +9,6 @@ use models::errors::R1CSError;
 use thiserror::Error;
 use winter_crypto::MerkleTreeError;
 
-
 /// The errors for a Fractal Prover
 #[derive(Debug, Error, PartialEq)]
 pub enum ProverError {
@@ -27,8 +26,8 @@ pub enum ProverError {
     FractalUtilErr(FractalUtilError),
     /// Errors related to the [`fractal_accumulator`] crate.
     AccumulatorErr(AccumulatorProverError),
-    /// In some cases, a prover key for a struct my be an option and may not be set. 
-    /// Logically speaking it shouldn't be accessed in such a situation. 
+    /// In some cases, a prover key for a struct my be an option and may not be set.
+    /// Logically speaking it shouldn't be accessed in such a situation.
     ProverKeyNoneErr(),
 }
 

@@ -248,7 +248,7 @@ impl<
         let row_evals =
             polynom::eval_many(&self.prover_matrix_index.row_poly, &options.summing_domain);
 
-        for x_val_id in 0..options.summing_domain.len(){
+        for x_val_id in 0..options.summing_domain.len() {
             // this division calculates (v_H(X)/ (X - row(k)))
             let div_res_b = polynom::syn_div(&v_h_x, 1, row_evals[x_val_id]);
             let div_res: Vec<E> = div_res_b.iter().map(|c| E::from(*c)).collect();
@@ -258,7 +258,7 @@ impl<
         }
         polynom::mul_by_scalar(&sum_without_v_h_alpha, v_h_alpha)
     }
-     
+
     /*#[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
     pub fn generate_t_alpha_evals(&self, alpha: E, options: &FractalProverOptions<B>) -> Vec<E> {
         // Lets get the coefficients (val(k)/ (alpha - col(k))

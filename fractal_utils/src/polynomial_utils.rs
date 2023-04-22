@@ -1,5 +1,5 @@
 use crate::{errors::FractalUtilError, matrix_utils::*};
-use fractal_math::{fft, FieldElement, StarkField, polynom};
+use fractal_math::{fft, polynom, FieldElement, StarkField};
 use std::{convert::TryInto, marker::PhantomData};
 use winter_crypto::{BatchMerkleProof, Digest, ElementHasher, MerkleTree};
 use winter_fri::{DefaultProverChannel, FriOptions};
@@ -31,7 +31,7 @@ pub fn get_vanishing_poly<E: FieldElement>(eta: E, dom_size: usize) -> Vec<E> {
 }
 
 /// Efficient function for dividing a polynomial by the vanshing polynomial for a multiplicative
-/// subgroup of size dom_size and with multiplicative factor eta 
+/// subgroup of size dom_size and with multiplicative factor eta
 #[cfg_attr(feature = "flame_it", flame("utils"))]
 pub fn divide_by_vanishing<E: FieldElement>(p: &[E], eta: E, dom_size: usize) -> Vec<E> {
     let dom_size_32: u32 = dom_size.try_into().unwrap();
@@ -40,7 +40,7 @@ pub fn divide_by_vanishing<E: FieldElement>(p: &[E], eta: E, dom_size: usize) ->
 }
 
 /// Efficient function for dividing a polynomial by the vanshing polynomial for a multiplicative
-/// subgroup of size dom_size and with multiplicative factor eta 
+/// subgroup of size dom_size and with multiplicative factor eta
 #[cfg_attr(feature = "flame_it", flame("utils"))]
 pub fn divide_by_vanishing_in_place<E: FieldElement>(p: &mut [E], eta: E, dom_size: usize) {
     let dom_size_32: u32 = dom_size.try_into().unwrap();
@@ -106,7 +106,7 @@ pub fn pad_with_zeroes<E: FieldElement>(poly: &mut Vec<E>, total_len: usize) {
 }
 
 pub fn unpad_with_zeroes<E: FieldElement>(poly: &mut Vec<E>) {
-    while poly.ends_with(&[E::ZERO]){
+    while poly.ends_with(&[E::ZERO]) {
         let _ = poly.pop();
     }
 }
@@ -170,7 +170,10 @@ where
     pad_with_zeroes(&mut b_evals, domain_len);
     fft::evaluate_poly(&mut a_evals, &twiddles);
     fft::evaluate_poly(&mut b_evals, &twiddles);
-    let mut c_coeffs: Vec<E> = (0..domain_len).into_iter().map(|i| a_evals[i] * b_evals[i]).collect();
+    let mut c_coeffs: Vec<E> = (0..domain_len)
+        .into_iter()
+        .map(|i| a_evals[i] * b_evals[i])
+        .collect();
     fft::interpolate_poly(&mut c_coeffs, &inv_twiddles);
     unpad_with_zeroes(&mut c_coeffs);
     c_coeffs

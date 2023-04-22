@@ -7,7 +7,7 @@ use core::num;
 use std::cmp::max;
 
 use fractal_indexer::index::get_max_degree;
-use fractal_proofs::{fft, FractalProverOptions, FractalVerifierOptions};
+use fractal_proofs::{fft, get_power_series, FractalProverOptions, FractalVerifierOptions};
 use fractal_utils::FractalOptions;
 use winter_fri::FriOptions;
 
@@ -25,9 +25,9 @@ use winter_crypto::ElementHasher;
 
 use winter_math::fields::f64::BaseElement;
 use winter_math::fields::QuadExtension;
-use winter_math::utils;
 use winter_math::FieldElement;
 use winter_math::StarkField;
+use winter_math::*;
 
 #[cfg_attr(feature = "flame_it", flame)]
 pub fn get_example_setup<
@@ -124,7 +124,7 @@ fn files_to_setup_outputs<
     let size_subgroup_k = index_domains.k_field.len().next_power_of_two();
     let size_subgroup_l = index_domains.l_field_len.next_power_of_two();
 
-    let evaluation_domain = utils::get_power_series(index_domains.l_field_base, size_subgroup_l);
+    let evaluation_domain = get_power_series(index_domains.l_field_base, size_subgroup_l);
 
     let summing_domain = index_domains.k_field;
 

@@ -223,7 +223,7 @@ struct ExampleOptions {
     #[structopt(
         short = "a",
         long = "arith_file",
-        default_value = "fractal_examples/jsnark_outputs/fftexample.arith"
+        default_value = "fractal_examples/jsnark_outputs/fftexample_7.arith"
     )]
     arith_file: String,
 
@@ -231,7 +231,7 @@ struct ExampleOptions {
     #[structopt(
         short = "w",
         long = "wire_file",
-        default_value = "fractal_examples/jsnark_outputs/fftexample.wires"
+        default_value = "fractal_examples/jsnark_outputs/fftexample_7.wires"
     )]
     wires_file: String,
 

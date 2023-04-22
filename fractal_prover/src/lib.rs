@@ -59,7 +59,7 @@ pub const FRACTAL_LAYERS: usize = 3;
 
 /// This trait is meant to be _like_ a layered IOP prover but we don't want it to do any commitments.
 /// This is why we called it the LayeredSubProver, since we will be implementing it in subroutines of an actual IOP
-/// prover to maintain a semblance of modularity. 
+/// prover to maintain a semblance of modularity.
 /// This trait includes subroutines associated with a layered IOP.
 pub trait LayeredSubProver<
     B: StarkField,
@@ -80,11 +80,10 @@ pub trait LayeredSubProver<
 
     /// Gets the total number of layers for this layered prover
     fn get_num_layers(&self) -> usize;
-
 }
 
 /// This is a trait for a layered IOP prover which also implements the trait
-/// [`LayeredSubProver`]. The main additional function is the actual proof generation, 
+/// [`LayeredSubProver`]. The main additional function is the actual proof generation,
 /// which takes place in the [`LayeredProver::generate_proof`] function and returns a
 /// proof of type [`TopLevelProof`].
 pub trait LayeredProver<
@@ -102,8 +101,8 @@ pub trait LayeredProver<
         options: &FractalProverOptions<B>,
     ) -> Result<TopLevelProof<B, E, H>, ProverError>;
     // BELOW IS A SAMPLE IMPLEMENTATION OF THIS FUNCTION
-    // This function, however, needs a special-purpose implementation, 
-    // depending on the specific IOP. 
+    // This function, however, needs a special-purpose implementation,
+    // depending on the specific IOP.
     // {
     //     let options = self.get_fractal_options();
     //     let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
@@ -126,4 +125,3 @@ pub trait LayeredProver<
     //     Ok(acc.create_fri_proof()?)
     // }
 }
-

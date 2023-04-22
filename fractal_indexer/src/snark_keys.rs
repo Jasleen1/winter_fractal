@@ -14,7 +14,7 @@ use winter_fri::utils::hash_values;
 use winter_math::{polynom, FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
-#[derive(Debug, Clone)] // Clone
+#[derive(Debug)] // Clone
 pub struct ProverIndexPolynomial<
     B: StarkField,
     E: FieldElement<BaseField = B>,
