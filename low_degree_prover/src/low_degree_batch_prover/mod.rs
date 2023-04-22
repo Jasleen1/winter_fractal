@@ -157,8 +157,12 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         }
 
         flame::start("composed_evals");
-        let composed_evals: Vec<E> =
-            polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
+        println!("randomized sum, eval domain: {}, {}", &self.randomized_sum.len(), self.evaluation_domain.len());
+        let mut composed_evals = self.randomized_sum.clone();
+        pad_with_zeroes(&mut composed_evals, eval_domain_size);
+        fft::evaluate_poly(&mut composed_evals, &eval_domain_twiddles);
+        //let composed_evals: Vec<E> =
+            //polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
         flame::end("composed_evals");
 
         let mut fri_prover =
