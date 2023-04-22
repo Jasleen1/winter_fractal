@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, usize};
 
-use fractal_indexer::{hash_values, snark_keys::*};
+use fractal_indexer::{hash_values, snark_keys::*, index::IndexParams};
 use fractal_utils::polynomial_utils::*;
 use models::r1cs::Matrix;
 
@@ -403,6 +403,17 @@ impl<
         2
     }
 
+    fn get_max_degree_constraint(num_input_variables: usize, num_non_zero: usize, num_constraints: usize) -> usize {
+        let summing_domain_len = num_non_zero;
+        let h_domain_len = std::cmp::max(num_input_variables, num_constraints);
+        let v = vec![
+            h_domain_len -2, //product sumcheck g_degree
+            summing_domain_len -2, //matrix sumcheck g_degree
+            2 * summing_domain_len - 3, //matrix sumcheck e_degree
+        ];
+        v.iter().max().unwrap().next_power_of_two()
+    }
+
     // fn get_fractal_options(&self) -> FractalProverOptions<B> {
     //     self.options.clone()
     // }
@@ -436,6 +447,7 @@ impl<
             options.num_queries,
             options.fri_options.clone(),
             public_inputs_bytes,
+            prover_key.as_ref().unwrap().params.max_degree,
         );
 
         acc.add_unchecked_polynomial(self.f_2_poly_coeffs.clone());

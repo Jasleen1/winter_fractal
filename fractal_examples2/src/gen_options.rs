@@ -6,8 +6,8 @@
 use core::num;
 use std::cmp::max;
 
-use fractal_indexer::index::get_max_degree;
 use fractal_proofs::{fft, get_power_series, FractalProverOptions, FractalVerifierOptions};
+use fractal_prover::{prover::FractalProver, LayeredSubProver};
 use fractal_utils::FractalOptions;
 use winter_fri::FriOptions;
 
@@ -93,7 +93,7 @@ fn files_to_setup_outputs<
     let num_non_zero = r1cs.max_num_nonzero().next_power_of_two();
     let num_constraints =
         max(max(r1cs.A.l0_norm(), r1cs.B.l0_norm()), r1cs.C.l0_norm()).next_power_of_two();
-    let max_degree = get_max_degree(num_input_variables, num_non_zero, num_constraints);
+    let max_degree = FractalProver::<B,E,H>::get_max_degree_constraint(num_input_variables, num_non_zero, num_constraints);
     // TODO: make the calculation of eta automated
     let eta = B::GENERATOR.exp(B::PositiveInteger::from(2 * B::TWO_ADICITY));
     let eta_k = B::GENERATOR.exp(B::PositiveInteger::from(1337 * B::TWO_ADICITY));

@@ -1,6 +1,6 @@
 use std::{convert::TryInto, marker::PhantomData};
 
-use fractal_indexer::hash_values;
+use fractal_indexer::{hash_values, index::IndexParams};
 use fractal_proofs::{polynom, RowcheckProof};
 use fractal_utils::{
     channel::DefaultFractalProverChannel, polynomial_utils::*, FractalProverOptions,
@@ -129,7 +129,8 @@ impl<
         self.current_layer
     }
 
-    // fn get_fractal_options(&self) -> FractalProverOptions<B> {
-    //     self.fractal_options.clone()
-    // }
+    fn get_max_degree_constraint(num_input_variables: usize, _num_non_zero: usize, num_constraints: usize) -> usize {
+        let h_domain_len = std::cmp::max(num_input_variables, num_constraints);
+        (h_domain_len -2).next_power_of_two()
+    }
 }

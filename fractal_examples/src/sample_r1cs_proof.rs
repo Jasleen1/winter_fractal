@@ -7,7 +7,6 @@ use core::num;
 use std::cmp::max;
 use std::time::Instant;
 
-use fractal_indexer::index::get_max_degree;
 use fractal_proofs::{fft, FractalProverOptions, Serializable};
 use fractal_prover::LayeredProver;
 use fractal_prover::{prover::FractalProver, LayeredSubProver};
@@ -96,7 +95,7 @@ pub(crate) fn orchestrate_r1cs_example<
     let num_non_zero = r1cs.max_num_nonzero().next_power_of_two();
     let num_constraints =
         max(max(r1cs.A.num_rows(), r1cs.B.num_rows()), r1cs.C.num_rows()).next_power_of_two();
-    let max_degree = get_max_degree(num_input_variables, num_non_zero, num_constraints);
+    let max_degree = FractalProver::<B,E,H>::get_max_degree_constraint(num_input_variables, num_non_zero, num_constraints);
     // TODO: make the calculation of eta automated
     let eta = B::GENERATOR.exp(B::PositiveInteger::from(2 * B::TWO_ADICITY));
     let eta_k = B::GENERATOR.exp(B::PositiveInteger::from(1337 * B::TWO_ADICITY));

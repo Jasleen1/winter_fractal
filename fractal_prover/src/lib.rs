@@ -2,7 +2,7 @@ use std::thread::AccessError;
 
 use errors::ProverError;
 use fractal_accumulator::{accumulator::Accumulator, errors::AccumulatorProverError};
-use fractal_indexer::snark_keys::ProverKey;
+use fractal_indexer::{snark_keys::ProverKey, index::IndexParams};
 use fractal_proofs::{
     FieldElement, FractalProverOptions, IopData, LayeredProof, LowDegreeBatchProof, TopLevelProof,
 };
@@ -80,6 +80,8 @@ pub trait LayeredSubProver<
 
     /// Gets the total number of layers for this layered prover
     fn get_num_layers(&self) -> usize;
+
+    fn get_max_degree_constraint(num_input_variables: usize, num_non_zero: usize, num_constraints: usize) -> usize;
 }
 
 /// This is a trait for a layered IOP prover which also implements the trait

@@ -30,6 +30,7 @@ pub struct Accumulator<
     pub fri_max_degrees_ext: Vec<usize>,
     pub layer_evals: Vec<MultiEval<B, E, H>>,
     pub public_inputs_bytes: Vec<u8>,
+    pub max_degree: usize,
     _h: PhantomData<H>,
 }
 
@@ -46,6 +47,7 @@ impl<
         num_queries: usize,
         fri_options: FriOptions,
         public_inputs_bytes: Vec<u8>,
+        max_degree: usize,
     ) -> Self {
         Self {
             evaluation_domain_len,
@@ -65,6 +67,7 @@ impl<
             fri_max_degrees_ext: Vec::new(),
             layer_evals: Vec::new(),
             public_inputs_bytes,
+            max_degree,
             _h: PhantomData,
         }
     }
@@ -270,7 +273,7 @@ impl<
 
         channel.public_coin.reseed(channel_state);
         let mut low_degree_prover =
-            LowDegreeBatchProver::<B, E, H>::new(&self.evaluation_domain, self.fri_options.clone());
+            LowDegreeBatchProver::<B, E, H>::new(&self.evaluation_domain, self.fri_options.clone(), self.max_degree);
 
         for i in 0..self.fri_max_degrees_ext.len() {
             //println!("prover adding max_degree_ext {}", self.fri_max_degrees_ext.get(i).unwrap());
@@ -465,6 +468,7 @@ mod test {
                 num_queries,
                 fri_options,
                 vec![],
+                max_degree
             );
         let alphas = acc.draw_queries(Some(20))?;
         assert!(alphas.len() == 20);

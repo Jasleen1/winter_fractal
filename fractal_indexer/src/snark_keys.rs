@@ -368,6 +368,7 @@ pub fn generate_prover_and_verifier_keys<
         options.num_queries,
         options.fri_options.clone(),
         vec![],
+        params.max_degree
     );
     acc.add_unchecked_polynomial(indexed_a.col_poly.clone());
     acc.add_unchecked_polynomial(indexed_a.row_poly.clone());

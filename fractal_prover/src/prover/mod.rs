@@ -239,12 +239,17 @@ impl<
     fn get_current_layer(&self) -> usize {
         self.current_layer
     }
+
     fn get_num_layers(&self) -> usize {
         FRACTAL_LAYERS
     }
-    // fn get_fractal_options(&self) -> FractalProverOptions<B> {
-    //     self.options.clone()
-    // }
+
+    fn get_max_degree_constraint(num_input_variables: usize, num_non_zero: usize, num_constraints: usize) -> usize {
+        core::cmp::max(
+            LincheckProver::<B,E,H>::get_max_degree_constraint(num_input_variables, num_non_zero, num_constraints),
+            RowcheckProver::<B,E,H>::get_max_degree_constraint(num_input_variables, num_non_zero, num_constraints)
+        )
+    }
 }
 
 impl<
@@ -256,7 +261,7 @@ impl<
     #[cfg_attr(feature = "flame_it", flame("fractal_prover"))]
     fn generate_proof(
         &mut self,
-        prover_key: &Option<ProverKey<B, E, H>>,
+        _prover_key: &Option<ProverKey<B, E, H>>,
         public_inputs_bytes: Vec<u8>,
         options: &FractalProverOptions<B>,
     ) -> Result<TopLevelProof<B, E, H>, ProverError> {
@@ -275,6 +280,7 @@ impl<
             options.num_queries,
             options.fri_options.clone(),
             public_inputs_bytes,
+            self.prover_key.as_ref().unwrap().params.max_degree
         );
         let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 3];
         let mut local_queries = Vec::<E>::new();

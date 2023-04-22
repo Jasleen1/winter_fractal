@@ -198,7 +198,7 @@ mod test {
         assert!(public_coin.draw::<E>().unwrap() == channel.draw_fri_alpha());
 
         let mut prover =
-            LowDegreeBatchProver::<B, E, H>::new(&evaluation_domain, fri_options.clone());
+            LowDegreeBatchProver::<B, E, H>::new(&evaluation_domain, fri_options.clone(), max_degree);
 
         let max_degrees: Vec<usize> = vec![14, 63, 29, 31];
         let mut polys: Vec<Vec<B>> = Vec::new();
@@ -221,7 +221,7 @@ mod test {
         assert!(public_coin.draw::<E>().unwrap() == channel.draw_fri_alpha());
 
         let mut prover =
-            LowDegreeBatchProver::<B, E, H>::new(&evaluation_domain, fri_options.clone());
+            LowDegreeBatchProver::<B, E, H>::new(&evaluation_domain, fri_options.clone(), max_degree);
         let max_degrees2: Vec<usize> = vec![37, 41, 36, 9];
         let mut polys: Vec<Vec<B>> = Vec::new();
         for degree in max_degrees2.iter() {

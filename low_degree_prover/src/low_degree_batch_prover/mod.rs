@@ -39,15 +39,14 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     LowDegreeBatchProver<B, E, H>
 {
     /// Creates a new low degree batch prover
-    pub fn new(evaluation_domain: &Vec<B>, fri_options: FriOptions) -> Self {
+    pub fn new(evaluation_domain: &Vec<B>, fri_options: FriOptions, fri_max_degree: usize) -> Self {
         let evaluation_domain_e = evaluation_domain.iter().map(|y| E::from(*y)).collect();
-        let fri_max_degree = evaluation_domain.len() / fri_options.blowup_factor() - 1;
         LowDegreeBatchProver {
             randomized_sum: Vec::new(),
             constituant_polynomials: Vec::new(),
             evaluation_domain: evaluation_domain_e,
             max_degrees: Vec::new(),
-            fri_max_degree,
+            fri_max_degree: fri_max_degree-1, //todo: the fri_max_degree should probably just be 1 less throughout the codebase
             fri_options,
             _h: PhantomData,
         }

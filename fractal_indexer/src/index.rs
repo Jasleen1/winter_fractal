@@ -260,7 +260,7 @@ pub fn create_primefield_index_from_r1cs(
     Index::new(params, indexed_a, indexed_b, indexed_c)
 }
 
-pub fn get_max_degree(
+/*pub fn get_max_degree(
     num_input_variables: usize,
     _num_constraints: usize,
     num_non_zero: usize,
@@ -270,4 +270,4 @@ pub fn get_max_degree(
         max(2 * num_non_zero - 3, num_non_zero - 2),
     ) + 1;
     max_whole.next_power_of_two()
-}
+}*/
