@@ -105,6 +105,12 @@ pub fn pad_with_zeroes<E: FieldElement>(poly: &mut Vec<E>, total_len: usize) {
     poly.append(&mut zeroes);
 }
 
+pub fn unpad_with_zeroes<E: FieldElement>(poly: &mut Vec<E>) {
+    while poly.ends_with(&[E::ZERO]){
+        let _ = poly.pop();
+    }
+}
+
 pub fn pad_to_next_power_of_two<E: FieldElement>(poly: &mut Vec<E>) {
     let total_len = poly.len().next_power_of_two();
     let diff = total_len - poly.len();
@@ -166,6 +172,7 @@ where
     fft::evaluate_poly(&mut b_evals, &twiddles);
     let mut c_coeffs: Vec<E> = (0..domain_len).into_iter().map(|i| a_evals[i] * b_evals[i]).collect();
     fft::interpolate_poly(&mut c_coeffs, &inv_twiddles);
+    unpad_with_zeroes(&mut c_coeffs);
     c_coeffs
 }
 
