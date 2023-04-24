@@ -229,10 +229,12 @@ impl<
             compute_vanishing_poly(alpha.clone(), E::from(options.eta), options.size_subgroup_h);
         let v_h_x = get_vanishing_poly(options.eta, options.size_subgroup_h);
 
-        let col_evals =
-            polynom::eval_many(&self.prover_matrix_index.col_poly, &options.summing_domain);
-        let val_evals =
-            polynom::eval_many(&self.prover_matrix_index.val_poly, &options.summing_domain);
+        let summing_twiddles = fft::get_twiddles(options.summing_domain.len());
+
+        let col_evals = fft::evaluate_poly_with_offset(&self.prover_matrix_index.col_poly, &summing_twiddles, options.eta_k,1);
+        let val_evals = fft::evaluate_poly_with_offset(&self.prover_matrix_index.val_poly, &summing_twiddles, options.eta_k,1);
+        let row_evals = fft::evaluate_poly_with_offset(&self.prover_matrix_index.row_poly, &summing_twiddles, options.eta_k,1);
+
         let mut denom_terms: Vec<E> = col_evals
             .iter()
             .map(|col_eval| alpha - E::from(*col_eval))
@@ -245,8 +247,6 @@ impl<
             .collect();
 
         let mut sum_without_v_h_alpha = vec![];
-        let row_evals =
-            polynom::eval_many(&self.prover_matrix_index.row_poly, &options.summing_domain);
 
         for x_val_id in 0..options.summing_domain.len() {
             // this division calculates (v_H(X)/ (X - row(k)))
