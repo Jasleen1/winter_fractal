@@ -77,7 +77,7 @@ fn files_to_setup_outputs<
 ) {
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
     arith_parser.parse_arith_file(&arith_file, verbose);
-    let r1cs = arith_parser.clone_r1cs();
+    let mut r1cs = arith_parser.clone_r1cs();
 
     let mut wires_parser = JsnarkWireReaderParser::<B>::new().unwrap();
     wires_parser.parse_wire_file(&wire_file, verbose);
@@ -109,11 +109,11 @@ fn files_to_setup_outputs<
         eta_k,
     };
     let degree_fs = r1cs.num_cols();
-    let index_domains = build_index_domains::<B, E>(index_params.clone());
+    let index_domains = build_index_domains::<B>(index_params.clone());
     println!("build index domains");
-    let indexed_a = index_matrix::<B, E>(&r1cs.A, &index_domains);
-    let indexed_b = index_matrix::<B, E>(&r1cs.B, &index_domains);
-    let indexed_c = index_matrix::<B, E>(&r1cs.C, &index_domains);
+    let indexed_a = index_matrix::<B>(&mut r1cs.A, &index_domains);
+    let indexed_b = index_matrix::<B>(&mut r1cs.B, &index_domains);
+    let indexed_c = index_matrix::<B>(&mut r1cs.C, &index_domains);
     println!("indexed matries");
     // This is the index i.e. the pre-processed data for this r1cs
     let index = Index::new(index_params.clone(), indexed_a, indexed_b, indexed_c);

@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 use crate::{
     errors::*,
@@ -209,9 +209,9 @@ pub struct ProverKey<
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
     pub params: IndexParams<B>,
-    pub matrix_a_index: ProverMatrixIndex<B, E>,
-    pub matrix_b_index: ProverMatrixIndex<B, E>,
-    pub matrix_c_index: ProverMatrixIndex<B, E>,
+    pub matrix_a_index: Arc<ProverMatrixIndex<B, E>>,
+    pub matrix_b_index: Arc<ProverMatrixIndex<B, E>>,
+    pub matrix_c_index: Arc<ProverMatrixIndex<B, E>>,
     pub accumulator: Accumulator<B, E, H>,
 }
 
@@ -358,7 +358,7 @@ pub fn generate_prover_and_verifier_keys<
         indexed_a,
         indexed_b,
         indexed_c,
-    }: Index<B, E>,
+    }: Index<B>,
     options: &FractalOptions<B>,
 ) -> Result<(ProverKey<B, E, H>, VerifierKey<B, H>), IndexerError> {
     let mut acc = Accumulator::<B, E, H>::new(
@@ -405,9 +405,9 @@ pub fn generate_prover_and_verifier_keys<
     Ok((
         ProverKey {
             params: params.clone(),
-            matrix_a_index,
-            matrix_b_index,
-            matrix_c_index,
+            matrix_a_index: matrix_a_index.into(),
+            matrix_b_index: matrix_b_index.into(),
+            matrix_c_index: matrix_c_index.into(),
             accumulator: acc,
         },
         VerifierKey {

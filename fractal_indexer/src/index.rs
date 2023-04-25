@@ -20,19 +20,19 @@ pub struct IndexParams<B: StarkField> {
     pub eta_k: B,
 }
 #[derive(Clone, Debug)]
-pub struct Index<B: StarkField, E: FieldElement<BaseField = B>> {
+pub struct Index<B: StarkField> {
     pub params: IndexParams<B>,
-    pub indexed_a: IndexedMatrix<B, E>,
-    pub indexed_b: IndexedMatrix<B, E>,
-    pub indexed_c: IndexedMatrix<B, E>,
+    pub indexed_a: IndexedMatrix<B>,
+    pub indexed_b: IndexedMatrix<B>,
+    pub indexed_c: IndexedMatrix<B>,
 }
 
-impl<B: StarkField, E: FieldElement<BaseField = B>> Index<B, E> {
+impl<B: StarkField> Index<B> {
     pub fn new(
         params: IndexParams<B>,
-        indexed_a: IndexedMatrix<B, E>,
-        indexed_b: IndexedMatrix<B, E>,
-        indexed_c: IndexedMatrix<B, E>,
+        indexed_a: IndexedMatrix<B>,
+        indexed_b: IndexedMatrix<B>,
+        indexed_c: IndexedMatrix<B>,
     ) -> Self {
         Index {
             params,
@@ -47,7 +47,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>> Index<B, E> {
 /// but do we want to keep it this way, since below the actual implementation to generate
 /// indices is BaseElement
 #[derive(Clone, Debug)]
-pub struct IndexDomains<B: StarkField, E: FieldElement<BaseField = B>> {
+pub struct IndexDomains<B: StarkField> {
     pub i_field_base: B,
     pub k_field_base: B, // Generate sufficiently large set to enumerate all nonzero matrix entries.
     pub h_field_base: B, // Generate sufficiently large set to enumerate each row or each column.
@@ -59,8 +59,7 @@ pub struct IndexDomains<B: StarkField, E: FieldElement<BaseField = B>> {
     pub inv_twiddles_k_elts: Vec<B>,
     pub twiddles_l_elts: Vec<B>,
     pub eta: B,
-    pub eta_k: B,
-    pub phantom_e: PhantomData<E>,
+    pub eta_k: B
 }
 
 /// ***************  HELPERS *************** \\\
@@ -74,9 +73,9 @@ pub struct IndexDomains<B: StarkField, E: FieldElement<BaseField = B>> {
 /// Perhaps we can add a function "get_subgroup_of_size" or "get_generator_of_order"
 /// Generators are needed here since we'll need those for FFT-friendly subgroups anyway.
 #[cfg_attr(feature = "flame_it", flame)]
-pub fn build_index_domains<B: StarkField, E: FieldElement<BaseField = B>>(
+pub fn build_index_domains<B: StarkField>(
     params: IndexParams<B>,
-) -> IndexDomains<B, E> {
+) -> IndexDomains<B> {
     let num_input_variables = params.num_input_variables;
     let num_constraints = params.num_constraints;
     let num_non_zero = params.num_non_zero;
@@ -153,14 +152,13 @@ pub fn build_index_domains<B: StarkField, E: FieldElement<BaseField = B>>(
         twiddles_l_elts: twiddles_l_elts,
         eta: params.eta,
         eta_k: params.eta_k,
-        phantom_e: PhantomData::<E>,
     }
 }
 
 // Same as build_basefield_index_domains but for a prime field of size 17
 pub fn build_primefield_index_domains(
     params: IndexParams<SmallFieldElement17>,
-) -> IndexDomains<SmallFieldElement17, SmallFieldElement17> {
+) -> IndexDomains<SmallFieldElement17> {
     let num_input_variables = params.num_input_variables;
     let num_constraints = params.num_constraints;
     let num_non_zero = params.num_non_zero;
@@ -231,7 +229,6 @@ pub fn build_primefield_index_domains(
             twiddles_l_elts: twiddles_l_elts,
             eta: params.eta,
             eta_k: params.eta_k,
-            phantom_e: PhantomData::<SmallFieldElement17>,
         }
     }
 }
@@ -241,7 +238,7 @@ pub fn build_primefield_index_domains(
 pub fn create_index_from_r1cs<B: StarkField, E: FieldElement<BaseField = B>>(
     params: IndexParams<B>,
     r1cs_instance: R1CS<B>,
-) -> Index<B, E> {
+) -> Index<B> {
     let domains = build_index_domains(params.clone());
     let indexed_a = IndexedMatrix::new(r1cs_instance.A, &domains);
     let indexed_b = IndexedMatrix::new(r1cs_instance.B, &domains);
@@ -252,7 +249,7 @@ pub fn create_index_from_r1cs<B: StarkField, E: FieldElement<BaseField = B>>(
 pub fn create_primefield_index_from_r1cs(
     params: IndexParams<SmallFieldElement17>,
     r1cs_instance: R1CS<SmallFieldElement17>,
-) -> Index<SmallFieldElement17, SmallFieldElement17> {
+) -> Index<SmallFieldElement17> {
     let domains = build_primefield_index_domains(params.clone());
     let indexed_a = IndexedMatrix::new(r1cs_instance.A, &domains);
     let indexed_b = IndexedMatrix::new(r1cs_instance.B, &domains);

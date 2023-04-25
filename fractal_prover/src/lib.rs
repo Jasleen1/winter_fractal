@@ -27,7 +27,7 @@ extern crate flamer;
 mod tests;
 
 /// This constant stores the number of layers in the Fractal IOP
-pub const FRACTAL_LAYERS: usize = 3;
+pub const FRACTAL_LAYERS: usize = 2;
 
 //multiple proofs can be run in parallel starting from the same transcript state
 //Lincheck is 2 layers, Rowcheck is 1. Before all this, need to commit to f_az, f_bz, etc

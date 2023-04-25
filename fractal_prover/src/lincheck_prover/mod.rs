@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, usize};
+use std::{marker::PhantomData, usize, sync::Arc};
 
 use fractal_indexer::{hash_values, snark_keys::*, index::IndexParams};
 use fractal_utils::polynomial_utils::*;
@@ -30,7 +30,7 @@ pub struct LincheckProver<
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
-    prover_matrix_index: ProverMatrixIndex<B, E>,
+    prover_matrix_index: Arc<ProverMatrixIndex<B, E>>,
     f_1_poly_coeffs: Vec<B>,
     f_2_poly_coeffs: Vec<B>,
     _h: PhantomData<H>,
@@ -48,7 +48,7 @@ impl<
 {
     /// Create a new fractal lincheck prover
     pub fn new(
-        prover_matrix_index: ProverMatrixIndex<B, E>,
+        prover_matrix_index: Arc<ProverMatrixIndex<B, E>>,
         f_1_poly_coeffs: Vec<B>,
         f_2_poly_coeffs: Vec<B>,
     ) -> Self {

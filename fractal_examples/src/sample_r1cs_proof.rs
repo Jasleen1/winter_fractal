@@ -113,15 +113,16 @@ pub(crate) fn orchestrate_r1cs_example<
 
     let degree_fs = r1cs.num_cols();
 
-    let index_domains = build_index_domains::<B, E>(index_params.clone());
+    let index_domains = build_index_domains::<B>(index_params.clone());
     println!("built index domains");
-    let indexed_a = index_matrix::<B, E>(&r1cs.A, &index_domains);
+    let indexed_a = index_matrix::<B>(&mut r1cs.A, &index_domains);
+    println!("ret again {}", 4);
     r1cs.A = Matrix::new("dummy A", Vec::<Vec<B>>::new()).unwrap();
     println!("indexed matrix a");
-    let indexed_b = index_matrix::<B, E>(&r1cs.B, &index_domains);
+    let indexed_b = index_matrix::<B>(&mut r1cs.B, &index_domains);
     r1cs.B = Matrix::new("dummy B", Vec::<Vec<B>>::new()).unwrap();
     println!("indexed matrix b");
-    let indexed_c = index_matrix::<B, E>(&r1cs.C, &index_domains);
+    let indexed_c = index_matrix::<B>(&mut r1cs.C, &index_domains);
     r1cs.C = Matrix::new("dummy C", Vec::<Vec<B>>::new()).unwrap();
     println!("indexed matrices");
     // This is the index i.e. the pre-processed data for this r1cs

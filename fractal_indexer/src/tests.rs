@@ -30,8 +30,8 @@ fn test_indexing() {
         eta: BaseElement::ONE,
         eta_k: BaseElement::ONE,
     };
-    let domains: IndexDomains<BaseElement, BaseElement> = build_index_domains(params.clone());
-    let indexed_a: IndexedMatrix<BaseElement, _> = IndexedMatrix::new(r1cs_instance.A, &domains);
+    let domains: IndexDomains<BaseElement> = build_index_domains(params.clone());
+    let indexed_a: IndexedMatrix<BaseElement> = IndexedMatrix::new(r1cs_instance.A, &domains);
     let indexed_b = IndexedMatrix::new(r1cs_instance.B, &domains);
     let indexed_c = IndexedMatrix::new(r1cs_instance.C, &domains);
     let index = Index::new(params, indexed_a, indexed_b, indexed_c);
@@ -103,7 +103,6 @@ fn test_single_indexed_matrix_17() {
     };
     println!("104");
     let domains: IndexDomains<
-        smallprimefield::BaseElement<17, 3, 4>,
         smallprimefield::BaseElement<17, 3, 4>,
     > = build_index_domains(params.clone());
     println!("Domains {:?}", domains);

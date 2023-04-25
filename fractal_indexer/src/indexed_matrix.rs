@@ -10,7 +10,7 @@ use models::r1cs::*;
 use winter_math::{fft, StarkField};
 
 #[derive(Clone, Debug)]
-pub struct IndexedMatrix<B: StarkField, E: FieldElement<BaseField = B>> {
+pub struct IndexedMatrix<B: StarkField> {
     // i_field: Vec<E>, // This is the subfield of H (below) based on which non-witness inputs are indexed
     // h_field: Vec<E>, // This is the field which indexes the matrices. Total length of input+witness = |H|.
     // k_field: Vec<E>, // This is the field used for the sparse matrix representation
@@ -21,16 +21,16 @@ pub struct IndexedMatrix<B: StarkField, E: FieldElement<BaseField = B>> {
     pub col_poly: Vec<B>,
     pub val_poly: Vec<B>,
 
-    pub row_evals_on_l: Vec<E>,
-    pub col_evals_on_l: Vec<E>,
-    pub val_evals_on_l: Vec<E>,
+    //pub row_evals_on_l: Vec<E>,
+    //pub col_evals_on_l: Vec<E>,
+    //pub val_evals_on_l: Vec<E>,
 }
 
 // TODO: Implement commitment for the index to be used as part of the verifier key
 // TODO: Add error checking
-impl<B: StarkField, E: FieldElement<BaseField = B>> IndexedMatrix<B, E> {
-    pub fn new(mat: Matrix<B>, domains: &IndexDomains<B, E>) -> Self {
-        index_matrix(&mat, domains)
+impl<B: StarkField> IndexedMatrix<B> {
+    pub fn new(mut mat: Matrix<B>, domains: &IndexDomains<B>) -> Self {
+        index_matrix(&mut mat, domains)
     }
 }
 
@@ -39,10 +39,11 @@ impl<B: StarkField, E: FieldElement<BaseField = B>> IndexedMatrix<B, E> {
 // function for Indexed Matrix?
 // QUESTION: Should the IndexDomain struct also depend on E?
 /// This function takes as input a set of domains and a matrix and indexes it according to Fractal's indexing algorithm
-pub fn index_matrix<B: StarkField, E: FieldElement<BaseField = B>>(
-    mat: &Matrix<B>,
-    index_domains: &IndexDomains<B, E>,
-) -> IndexedMatrix<B, E> {
+/// To save memory, this also moves the data from the input matrix to the output
+pub fn index_matrix<B: StarkField>(
+    mat: &mut Matrix<B>,
+    index_domains: &IndexDomains<B>,
+) -> IndexedMatrix<B> {
     let h_size = index_domains.h_field.len().try_into().unwrap();
     let l_size = index_domains.l_field_len;
     let num_rows = mat.dims.0;
@@ -98,7 +99,7 @@ pub fn index_matrix<B: StarkField, E: FieldElement<BaseField = B>>(
         index_domains.eta_k,
     );
 
-    // evaluate row_elts polynomial over l
+    /*// evaluate row_elts polynomial over l
     let mut row_evaluations = vec![B::ZERO; l_size];
     row_evaluations[..k_field_size].copy_from_slice(&row_elts);
     fft::evaluate_poly(&mut row_evaluations, &index_domains.twiddles_l_elts);
@@ -111,14 +112,17 @@ pub fn index_matrix<B: StarkField, E: FieldElement<BaseField = B>>(
     // evaluate row_elts polynomial over l
     let mut val_evaluations = vec![B::ZERO; l_size];
     val_evaluations[..k_field_size].copy_from_slice(&val_elts);
-    fft::evaluate_poly(&mut val_evaluations, &index_domains.twiddles_l_elts);
+    fft::evaluate_poly(&mut val_evaluations, &index_domains.twiddles_l_elts);*/
+    let mut outmat = Matrix::new("dummy", Vec::<Vec<B>>::new()).unwrap();
+
+    std::mem::swap(mat, &mut outmat);
 
     IndexedMatrix {
-        matrix: mat.clone(),
+        matrix: outmat,
         row_poly: row_elts,
         col_poly: col_elts,
         val_poly: val_elts,
-        row_evals_on_l: row_evaluations
+        /*row_evals_on_l: row_evaluations
             .iter()
             .map(|&b| E::from(b))
             .collect::<Vec<E>>(),
@@ -129,7 +133,7 @@ pub fn index_matrix<B: StarkField, E: FieldElement<BaseField = B>>(
         val_evals_on_l: val_evaluations
             .iter()
             .map(|&b| E::from(b))
-            .collect::<Vec<E>>(),
+            .collect::<Vec<E>>(),*/
     }
 }
 

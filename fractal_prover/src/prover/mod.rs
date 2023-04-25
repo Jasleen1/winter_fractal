@@ -91,7 +91,7 @@ impl<
     }
 
     #[cfg_attr(feature = "flame_it", flame("fractal_prover"))]
-    fn fractal_layer_one(
+    fn fractal_initial_layer(
         &mut self,
         accumulator: &mut Accumulator<B, E, H>,
     ) -> Result<(), ProverError> {
@@ -130,7 +130,7 @@ impl<
         self.f_cz_coeffs = f_cz_coeffs.to_vec();
         self.z_coeffs = z_coeffs.to_vec();
 
-        //TODO: Put in correct degree constraints
+        //TODO: Put in any degree constraints if needed
         accumulator.add_unchecked_polynomial(z_coeffs.to_vec());
         accumulator.add_unchecked_polynomial(f_az_coeffs.to_vec());
         accumulator.add_unchecked_polynomial(f_bz_coeffs.to_vec());
@@ -139,7 +139,7 @@ impl<
     }
 
     #[cfg_attr(feature = "flame_it", flame("fractal_prover"))]
-    fn fractal_layer_two(
+    fn fractal_layer_one(
         &mut self,
         query: E,
         accumulator: &mut Accumulator<B, E, H>,
@@ -154,13 +154,7 @@ impl<
             // &options,
         );
 
-        /*//hacky way to avoid lifetimes: move prover_key contents to LincheckProvers in this step
-        let prover_key = std::mem::replace(&mut self.prover_key, None).unwrap();
-        self.prover_key = None;
-        let a_index = prover_key.matrix_a_index;
-        let b_index = prover_key.matrix_b_index;
-        let c_index = prover_key.matrix_c_index;*/
-
+        // Don't worry, the matrix indexes are actually smart pointers. clone doesn't allocate new memory.
         let a_index = self.prover_key.as_ref().unwrap().matrix_a_index.clone();
         let b_index = self.prover_key.as_ref().unwrap().matrix_b_index.clone();
         let c_index = self.prover_key.as_ref().unwrap().matrix_c_index.clone();
@@ -194,7 +188,7 @@ impl<
     }
 
     #[cfg_attr(feature = "flame_it", flame("fractal_prover"))]
-    fn fractal_layer_three(
+    fn fractal_layer_two(
         &mut self,
         query: E,
         accumulator: &mut Accumulator<B, E, H>,
@@ -221,15 +215,11 @@ impl<
     ) -> Result<(), ProverError> {
         match self.current_layer {
             0 => {
-                self.fractal_layer_one(accumulator)?;
+                self.fractal_layer_one(query, accumulator, options)?;
                 self.current_layer += 1;
             }
             1 => {
                 self.fractal_layer_two(query, accumulator, options)?;
-                self.current_layer += 1;
-            }
-            2 => {
-                self.fractal_layer_three(query, accumulator, options)?;
                 self.current_layer += 1;
             }
             _ => (),
@@ -267,6 +257,7 @@ impl<
     ) -> Result<TopLevelProof<B, E, H>, ProverError> {
         // let options = self.get_fractal_options();
         let mut coin = RandomCoin::<B, H>::new(&public_inputs_bytes);
+        coin.reseed(self.prover_key.as_ref().unwrap().accumulator.get_layer_commitment(1)?);
 
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             options.evaluation_domain.len(),
@@ -282,15 +273,22 @@ impl<
             public_inputs_bytes,
             self.prover_key.as_ref().unwrap().params.max_degree
         );
-        let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 3];
+        let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 2];
         let mut local_queries = Vec::<E>::new();
 
+        let query = coin.draw().expect("failed to draw FRI alpha"); //channel.draw_fri_alpha();
+        local_queries.push(query);
+        self.fractal_initial_layer(&mut acc)?;
+        let initial_commitment = acc.commit_layer()?;
+
+        channel.commit_fractal_iop_layer(initial_commitment);
+        coin.reseed(initial_commitment);
+
         for i in 0..self.get_num_layers() {
-            // println!("Running layer {}", i + 1);
-            // local_queries.push(query);
             // Doing this rn to make sure prover and verifier sample identically
             if i > 0 {
-                let previous_commit = acc.get_layer_commitment(i)?;
+                // argument to get_layer_commitment is offset by 1 because we used the accumulator earlier
+                let previous_commit = acc.get_layer_commitment(i+1)?;
                 channel.commit_fractal_iop_layer(previous_commit);
                 coin.reseed(previous_commit);
             }
@@ -299,20 +297,21 @@ impl<
             self.run_next_layer(query, &mut acc, options)?;
             layer_commitments[i] = acc.commit_layer()?; //todo: do something with this
         }
-
         let queries = acc.draw_query_positions()?;
 
         let beta = local_queries[2];
 
         //todo: duplicate code. Fractal should be two layers and the initial_* fields should be used to replace what is currently layer 1
-        let initial_commitment = layer_commitments[0];
+        //let initial_commitment = layer_commitments[0];
         let initial_decommitment = acc.decommit_layer_with_queries(1, &queries)?;
 
         let layer_decommits = vec![
-            acc.decommit_layer_with_queries(1, &queries)?,
+            //acc.decommit_layer_with_queries(1, &queries)?,
             acc.decommit_layer_with_queries(2, &queries)?,
             acc.decommit_layer_with_queries(3, &queries)?,
         ];
+
+        println!("Finished decommitting");
 
         let gammas = vec![
             self.lincheck_provers[0].retrieve_gamma(beta)?,

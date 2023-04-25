@@ -105,7 +105,7 @@ pub fn verify_layered_fractal_proof_from_top<
 
     // draw queries using only the last iop layer commit and the public input.
     // this helps keep the rngs in sync, but proper chaining of layers needs to be checked elsewhere!
-    let query_seed = proof.layer_commitments[2];
+    let query_seed = proof.layer_commitments[1];
     let mut coin = RandomCoin::<B, H>::new(&pub_inputs_bytes);
     coin.reseed(query_seed);
 
@@ -120,7 +120,7 @@ pub fn verify_layered_fractal_proof_from_top<
         &mut accumulator_verifier,
     )?;
 
-    let fractal_proof = parse_proofs_for_subroutines(&proof, &pub_inputs_bytes);
+    let fractal_proof = parse_proofs_for_subroutines(&verifier_key, &proof, &pub_inputs_bytes);
     verify_layered_fractal_proof(
         &verifier_key,
         fractal_proof,
@@ -130,7 +130,7 @@ pub fn verify_layered_fractal_proof_from_top<
     )?;
 
     accumulator_verifier.verify_fri_proof(
-        proof.layer_commitments[2],
+        proof.layer_commitments[1],
         proof.low_degree_proof,
         pub_inputs_bytes,
     )?;
@@ -157,6 +157,14 @@ pub fn verify_decommitments<
         &proof.preprocessing_decommitment.1,
     )?;
 
+    // Verifier that the initial layer was queried correctly
+    accumulator_verifier.verify_layer_with_queries(
+        proof.initial_commitment,
+        query_indices,
+        &proof.initial_decommitment.0,
+        &proof.initial_decommitment.1,
+    )?;
+
     // Verify that the committed layers were queried correctly
     accumulator_verifier.verify_layer_with_queries(
         proof.layer_commitments[0],
@@ -169,12 +177,6 @@ pub fn verify_decommitments<
         query_indices,
         &proof.layer_decommitments[1].0,
         &proof.layer_decommitments[1].1,
-    )?;
-    accumulator_verifier.verify_layer_with_queries(
-        proof.layer_commitments[2],
-        query_indices,
-        &proof.layer_decommitments[2].0,
-        &proof.layer_decommitments[2].1,
     )?;
     Ok(())
 }
@@ -232,6 +234,7 @@ fn parse_proofs_for_subroutines<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
+    verifier_key: &VerifierKey<B,H>,
     proof: &TopLevelProof<B, E, H>,
     public_inputs_bytes: &Vec<u8>,
 ) -> LayeredFractalProof<B, E> {
@@ -250,34 +253,37 @@ fn parse_proofs_for_subroutines<
     let row_c = extract_vec_e(&proof.preprocessing_decommitment.0, 7);
     let val_c = extract_vec_e(&proof.preprocessing_decommitment.0, 8);
 
+    // get values from the initial layer
+    let f_z_vals = extract_vec_e(&proof.initial_decommitment.0, 0);
+    let f_az_vals = extract_vec_e(&proof.initial_decommitment.0, 1);
+    let f_bz_vals = extract_vec_e(&proof.initial_decommitment.0, 2);
+    let f_cz_vals = extract_vec_e(&proof.initial_decommitment.0, 3);
+
     // get values from the first layer
-    let f_z_vals = extract_vec_e(&proof.layer_decommitments[0].0, 0);
-    let f_az_vals = extract_vec_e(&proof.layer_decommitments[0].0, 1);
-    let f_bz_vals = extract_vec_e(&proof.layer_decommitments[0].0, 2);
-    let f_cz_vals = extract_vec_e(&proof.layer_decommitments[0].0, 3);
+    let s_vals = extract_vec_e(&proof.layer_decommitments[0].0, 0);
+    let t_alpha_a_vals = extract_vec_e(&proof.layer_decommitments[0].0, 1);
+    let product_sumcheck_a_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[0].0, 2, 3);
+    let t_alpha_b_vals = extract_vec_e(&proof.layer_decommitments[0].0, 4);
+    let product_sumcheck_b_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[0].0, 5, 6);
+    let t_alpha_c_vals = extract_vec_e(&proof.layer_decommitments[0].0, 7);
+    let product_sumcheck_c_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[0].0, 8, 9);
 
     // get values from the second layer
-    let s_vals = extract_vec_e(&proof.layer_decommitments[1].0, 0);
-    let t_alpha_a_vals = extract_vec_e(&proof.layer_decommitments[1].0, 1);
-    let product_sumcheck_a_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[1].0, 2, 3);
-    let t_alpha_b_vals = extract_vec_e(&proof.layer_decommitments[1].0, 4);
-    let product_sumcheck_b_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[1].0, 5, 6);
-    let t_alpha_c_vals = extract_vec_e(&proof.layer_decommitments[1].0, 7);
-    let product_sumcheck_c_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[1].0, 8, 9);
-
-    // get values from the third layer
-    let matrix_sumcheck_a_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[2].0, 0, 1);
-    let matrix_sumcheck_b_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[2].0, 2, 3);
-    let matrix_sumcheck_c_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[2].0, 4, 5);
+    let matrix_sumcheck_a_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[1].0, 0, 1);
+    let matrix_sumcheck_b_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[1].0, 2, 3);
+    let matrix_sumcheck_c_vals = extract_sumcheck_vec_e(&proof.layer_decommitments[1].0, 4, 5);
 
     // Sample our own alpha and beta to check the prover
     let mut coin = RandomCoin::<B, H>::new(&public_inputs_bytes);
-    //coin.reseed(proof.initial_commitment);
-    coin.reseed(proof.layer_commitments[0]);
+    coin.reseed(verifier_key.commitment);
+    let _: E = coin.draw().expect("failed to draw FRI alpha");
+    coin.reseed(proof.initial_commitment);
     let alpha: E = coin.draw().expect("failed to draw FRI alpha");
-
-    coin.reseed(proof.layer_commitments[1]);
+    coin.reseed(proof.layer_commitments[0]);
     let beta: E = coin.draw().expect("failed to draw FRI alpha");
+    
+
+//    coin.reseed(proof.layer_commitments[1]);
 
     let gammas = &proof.unverified_misc;
 
