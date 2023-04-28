@@ -60,25 +60,30 @@ pub fn index_matrix<B: StarkField>(
     let mut val_elts = vec![B::ZERO; k_field_size];
 
     let mut count = 0;
-
+    let mut col_derivatives = Vec::<B>::new();
     for c_int in 0..num_cols {
         let c = index_domains.h_field[c_int];
         let c_derivative = compute_derivative_xx(c, h_size);
-        for r_int in 0..num_rows {
-            if mat.mat[r_int].contains_key(&c_int) {
-                if mat.mat[r_int][&c_int] == B::ZERO {
-                    continue;
-                }
-                
-                let r = index_domains.h_field[r_int];
-
-                row_elts[count] = c;
-                col_elts[count] = r;
-                val_elts[count] = mat.mat[r_int][&c_int] / c_derivative;
-                    // * polynomial_utils::compute_derivative_on_single_val(r, h_size)
-                    // / ( * compute_derivative_xx(r, h_size));
-                count += 1;
+        col_derivatives.push(c_derivative);
+    }
+    
+    for r_int in 0..num_rows {
+        for c_int in mat.mat[r_int].keys() {
+            if mat.mat[r_int][&c_int] == B::ZERO {
+                // Really, this should never happen
+                continue;
             }
+
+            let c = index_domains.h_field[*c_int];
+            let r = index_domains.h_field[r_int];
+
+            row_elts[count] = c;
+            col_elts[count] = r;
+            val_elts[count] = mat.mat[r_int][&c_int] / col_derivatives[*c_int];
+                // * polynomial_utils::compute_derivative_on_single_val(r, h_size)
+                // / ( * compute_derivative_xx(r, h_size));
+            count += 1;
+        
         }
     }
     // println!("Clone 1");
