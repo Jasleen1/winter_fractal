@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::hash::Hash;
+use rustc_hash::FxHashMap;
 
 use winter_math::StarkField;
 
@@ -10,7 +9,7 @@ pub type MatrixDimensions = (usize, usize);
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Matrix<E: StarkField> {
     pub name: String,
-    pub mat: Vec<HashMap<usize, E>>,
+    pub mat: Vec<FxHashMap<usize, E>>,
     pub dims: MatrixDimensions,
 }
 
@@ -42,10 +41,10 @@ pub fn valid_matrix<E: StarkField>(
     }
 }
 
-fn compress_matrix<E: StarkField>(longer_matrix: Vec<Vec<E>>) -> Vec<HashMap<usize, E>> {
-    let mut out_matrix = Vec::<HashMap::<usize, E>>::new();
+fn compress_matrix<E: StarkField>(longer_matrix: Vec<Vec<E>>) -> Vec<FxHashMap<usize, E>> {
+    let mut out_matrix = Vec::<FxHashMap::<usize, E>>::new();
     for row in longer_matrix.iter() {
-        let mut compressed_row = HashMap::<usize, E>::new();
+        let mut compressed_row = FxHashMap::<usize, E>::default();
         for (loc, elt)  in row.iter().enumerate() {
             if *elt != E::ZERO {
                 compressed_row.insert(loc, *elt);
@@ -120,7 +119,7 @@ impl<E: StarkField> Matrix<E> {
             self.dims.0 <= num_rows,
             "Attempted to reduce number of rows."
         );
-        let zero_row = HashMap::<usize, E>::new();
+        let zero_row = FxHashMap::<usize, E>::default();
         let num_to_pad = num_rows - self.dims.0;
         for _ in 0..num_to_pad {
             self.mat.push(zero_row.clone());
@@ -128,8 +127,8 @@ impl<E: StarkField> Matrix<E> {
         self.dims.0 = num_rows;
     }
 
-    fn compress_row(new_row: &Vec<E>) -> HashMap<usize, E> {
-        let mut new_row_comp = HashMap::<usize, E>::new();
+    fn compress_row(new_row: &Vec<E>) -> FxHashMap<usize, E> {
+        let mut new_row_comp = FxHashMap::<usize, E>::default();
         for (loc, val) in new_row.iter().enumerate() {
             if *val != E::ZERO {
                 new_row_comp.insert(loc, *val);
@@ -147,7 +146,7 @@ impl<E: StarkField> Matrix<E> {
     }
 
     pub fn pad_rows(&mut self, new_row_count: usize) {
-        let new_row = HashMap::<usize, E>::new();
+        let new_row = FxHashMap::<usize, E>::default();
         for _ in 0..new_row_count {
             self.mat.push(new_row.clone());
             self.dims.0 = self.dims.0 + 1;
@@ -179,7 +178,7 @@ impl<E: StarkField> Matrix<E> {
         }
     }
 
-    fn row_to_vec(&self, row: &HashMap<usize, E>) -> Vec<E> {
+    fn row_to_vec(&self, row: &FxHashMap<usize, E>) -> Vec<E> {
         let mut vec_form = vec![E::ZERO; self.dims.1];
         row.iter()
         .map(|(&loc, val)| vec_form[loc] = *val);
@@ -198,7 +197,7 @@ impl<E: StarkField> Matrix<E> {
 pub(crate) fn create_empty_matrix<E: StarkField>(name: String) -> Matrix<E> {
     Matrix {
         name,
-        mat: Vec::<HashMap<usize, E>>::new(),
+        mat: Vec::<FxHashMap<usize, E>>::new(),
         dims: (0, 0),
     }
 }
