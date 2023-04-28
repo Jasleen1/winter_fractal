@@ -27,8 +27,8 @@ fn main() {
     let wires = wire_file_parser.wires;
 
     if verbose {
-        r1cs_instance.debug_print_bits_horizontal();
-        r1cs_instance.debug_print_symbolic();
+        // r1cs_instance.debug_print_bits_horizontal();
+        // r1cs_instance.debug_print_symbolic();
         print_vec(&wires);
         println!("");
     }

@@ -21,7 +21,7 @@ fn test_construct_matrix_f128() {
     assert!(c == 1);
     for i in 0..1 {
         for j in 0..1 {
-            assert!(matrix.mat[i][j] == f128::BaseElement::ONE);
+            assert!(matrix.mat[i][&j] == f128::BaseElement::ONE);
         }
     }
     assert!(matrix.name == "dummy");
@@ -37,7 +37,7 @@ fn test_construct_matrix_f17() {
     assert!(c == 1);
     for i in 0..1 {
         for j in 0..1 {
-            assert!(matrix.mat[i][j] == SmallFieldElement17::ONE);
+            assert!(matrix.mat[i][&j] == SmallFieldElement17::ONE);
         }
     }
     assert!(matrix.name == "dummy");

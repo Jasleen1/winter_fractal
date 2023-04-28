@@ -65,18 +65,20 @@ pub fn index_matrix<B: StarkField>(
         let c = index_domains.h_field[c_int];
         let c_derivative = compute_derivative_xx(c, h_size);
         for r_int in 0..num_rows {
-            if mat.mat[r_int][c_int] == B::ZERO {
-                continue;
-            }
-            
-            let r = index_domains.h_field[r_int];
+            if mat.mat[r_int].contains_key(&c_int) {
+                if mat.mat[r_int][&c_int] == B::ZERO {
+                    continue;
+                }
+                
+                let r = index_domains.h_field[r_int];
 
-            row_elts[count] = c;
-            col_elts[count] = r;
-            val_elts[count] = mat.mat[r_int][c_int] / c_derivative;
-                // * polynomial_utils::compute_derivative_on_single_val(r, h_size)
-                // / ( * compute_derivative_xx(r, h_size));
-            count += 1;
+                row_elts[count] = c;
+                col_elts[count] = r;
+                val_elts[count] = mat.mat[r_int][&c_int] / c_derivative;
+                    // * polynomial_utils::compute_derivative_on_single_val(r, h_size)
+                    // / ( * compute_derivative_xx(r, h_size));
+                count += 1;
+            }
         }
     }
     // println!("Clone 1");

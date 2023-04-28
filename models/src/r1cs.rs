@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::hash::Hash;
+
 use winter_math::StarkField;
 
 use crate::errors::*;
@@ -7,7 +10,7 @@ pub type MatrixDimensions = (usize, usize);
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Matrix<E: StarkField> {
     pub name: String,
-    pub mat: Vec<Vec<E>>,
+    pub mat: Vec<HashMap<usize, E>>,
     pub dims: MatrixDimensions,
 }
 
@@ -20,7 +23,7 @@ pub fn valid_matrix<E: StarkField>(
         let dims = (0, 0);
         return Ok(Matrix {
             name: String::from(name),
-            mat: matrix,
+            mat: compress_matrix(matrix),
             dims: dims,
         });
     } else {
@@ -33,19 +36,29 @@ pub fn valid_matrix<E: StarkField>(
         let dims = (rows, cols);
         return Ok(Matrix {
             name: String::from(name),
-            mat: matrix,
+            mat: compress_matrix(matrix),
             dims,
         });
     }
 }
 
+fn compress_matrix<E: StarkField>(longer_matrix: Vec<Vec<E>>) -> Vec<HashMap<usize, E>> {
+    let mut out_matrix = Vec::<HashMap::<usize, E>>::new();
+    for row in longer_matrix.iter() {
+        let mut compressed_row = HashMap::<usize, E>::new();
+        for (loc, elt)  in row.iter().enumerate() {
+            if *elt != E::ZERO {
+                compressed_row.insert(loc, *elt);
+            }
+        }
+        out_matrix.push(compressed_row);
+    }
+    out_matrix
+}
+
 impl<E: StarkField> Matrix<E> {
     pub fn new(name: &str, matrix: Vec<Vec<E>>) -> Result<Self, R1CSError> {
-        let valid = valid_matrix(name, matrix);
-        match valid {
-            Ok(m) => Ok(m),
-            Err(e) => Err(e),
-        }
+        Ok(valid_matrix(name, matrix)?)
     }
 
     pub fn num_rows(&self) -> usize {
@@ -66,20 +79,26 @@ impl<E: StarkField> Matrix<E> {
     // L0 norm, number of nonzero elements.
     pub fn l0_norm(&self) -> usize {
         let l0_norm = self.mat.iter().fold(0, |a, row| {
-            a + row
-                .iter()
-                .fold(0, |x, &y| if y == E::ZERO { x } else { x + 1 })
+            a + row.len()
         });
         l0_norm
     }
 
     pub fn dot(&self, vec: &Vec<E>) -> Vec<E> {
+        // self.mat
+        //     .iter()
+        //     .map(|a| {
+        //         a.iter()
+        //             .zip(vec.iter())
+        //             .map(|(x, y)| x.mul(*y))
+        //             .fold(E::ZERO, |sum, i| sum.add(i))
+        //     })
+        //     .collect()
         self.mat
             .iter()
             .map(|a| {
                 a.iter()
-                    .zip(vec.iter())
-                    .map(|(x, y)| x.mul(*y))
+                    .map(|(&loc, val)| val.mul(vec[loc]))
                     .fold(E::ZERO, |sum, i| sum.add(i))
             })
             .collect()
@@ -91,9 +110,9 @@ impl<E: StarkField> Matrix<E> {
             "Attempted to reduce number of columns."
         );
         self.dims.1 = num_cols;
-        for row in &mut self.mat {
-            row.resize(num_cols, E::ZERO);
-        }
+        // for row in &mut self.mat {
+        //     row.resize(num_cols, E::ZERO);
+        // }
     }
 
     pub fn define_rows(&mut self, num_rows: usize) {
@@ -101,7 +120,7 @@ impl<E: StarkField> Matrix<E> {
             self.dims.0 <= num_rows,
             "Attempted to reduce number of rows."
         );
-        let zero_row = vec![E::ZERO; self.dims.1];
+        let zero_row = HashMap::<usize, E>::new();
         let num_to_pad = num_rows - self.dims.0;
         for _ in 0..num_to_pad {
             self.mat.push(zero_row.clone());
@@ -109,18 +128,29 @@ impl<E: StarkField> Matrix<E> {
         self.dims.0 = num_rows;
     }
 
+    fn compress_row(new_row: &Vec<E>) -> HashMap<usize, E> {
+        let mut new_row_comp = HashMap::<usize, E>::new();
+        for (loc, val) in new_row.iter().enumerate() {
+            if *val != E::ZERO {
+                new_row_comp.insert(loc, *val);
+            }
+        }
+        new_row_comp
+    } 
+
     pub fn add_row(&mut self, new_row: &Vec<E>) {
         if new_row.len() != self.dims.1 {
             // FIXME: add error handling
         }
-        self.mat.push(new_row.clone());
+        self.mat.push(Self::compress_row(&new_row));
         self.dims.0 = self.dims.0 + 1;
     }
 
     pub fn pad_rows(&mut self, new_row_count: usize) {
-        let new_row = vec![E::ZERO; self.dims.1];
+        let new_row = HashMap::<usize, E>::new();
         for _ in 0..new_row_count {
-            self.add_row(&new_row);
+            self.mat.push(new_row.clone());
+            self.dims.0 = self.dims.0 + 1;
         }
     }
 
@@ -144,15 +174,22 @@ impl<E: StarkField> Matrix<E> {
     pub fn debug_print(&self) {
         println!("{}", self.name);
         for row in &self.mat {
-            print_vec(row);
+            println!("{:?}", row);
             println!("");
         }
+    }
+
+    fn row_to_vec(&self, row: &HashMap<usize, E>) -> Vec<E> {
+        let mut vec_form = vec![E::ZERO; self.dims.1];
+        row.iter()
+        .map(|(&loc, val)| vec_form[loc] = *val);
+        vec_form
     }
 
     pub fn debug_print_bits(&self) {
         println!("{}", self.name);
         for row in &self.mat {
-            print_vec_bits(row);
+            print_vec_bits(&self.row_to_vec(row));
             println!("");
         }
     }
@@ -161,7 +198,7 @@ impl<E: StarkField> Matrix<E> {
 pub(crate) fn create_empty_matrix<E: StarkField>(name: String) -> Matrix<E> {
     Matrix {
         name,
-        mat: Vec::<Vec<E>>::new(),
+        mat: Vec::<HashMap<usize, E>>::new(),
         dims: (0, 0),
     }
 }
@@ -264,21 +301,21 @@ impl<E: StarkField> R1CS<E> {
         self.C.debug_print_bits();
     }
 
-    pub fn debug_print_bits_horizontal(&self) {
-        let num_rows = self.A.dims.0;
-        if num_rows == 0 {
-            println!("No rows in the matrix!");
-            return;
-        }
-        for row_idx in 0..num_rows {
-            print_vec_bits(&self.A.mat[row_idx]);
-            print!("  ");
-            print_vec_bits(&self.B.mat[row_idx]);
-            print!("  ");
-            print_vec_bits(&self.C.mat[row_idx]);
-            println!("");
-        }
-    }
+    // pub fn debug_print_bits_horizontal(&self) {
+    //     let num_rows = self.A.dims.0;
+    //     if num_rows == 0 {
+    //         println!("No rows in the matrix!");
+    //         return;
+    //     }
+    //     for row_idx in 0..num_rows {
+    //         print_vec_bits(&self.A.mat[row_idx]);
+    //         print!("  ");
+    //         print_vec_bits(&self.B.mat[row_idx]);
+    //         print!("  ");
+    //         print_vec_bits(&self.C.mat[row_idx]);
+    //         println!("");
+    //     }
+    // }
 
     fn debug_print_row_symbolic(&self, row: &Vec<E>) {
         let mut first = true;
@@ -309,22 +346,22 @@ impl<E: StarkField> R1CS<E> {
         }
     }
 
-    pub fn debug_print_symbolic(&self) {
-        let num_rows = self.A.dims.0;
-        if num_rows == 0 {
-            println!("No rows in the matrix!");
-            return;
-        }
-        for row_idx in 0..num_rows {
-            print!("(");
-            self.debug_print_row_symbolic(&self.A.mat[row_idx]);
-            print!(")  (");
-            self.debug_print_row_symbolic(&self.B.mat[row_idx]);
-            print!(") == ");
-            self.debug_print_row_symbolic(&self.C.mat[row_idx]);
-            println!("");
-        }
-    }
+    // pub fn debug_print_symbolic(&self) {
+    //     let num_rows = self.A.dims.0;
+    //     if num_rows == 0 {
+    //         println!("No rows in the matrix!");
+    //         return;
+    //     }
+    //     for row_idx in 0..num_rows {
+    //         print!("(");
+    //         self.debug_print_row_symbolic(&self.A.mat[row_idx]);
+    //         print!(")  (");
+    //         self.debug_print_row_symbolic(&self.B.mat[row_idx]);
+    //         print!(") == ");
+    //         self.debug_print_row_symbolic(&self.C.mat[row_idx]);
+    //         println!("");
+    //     }
+    // }
 }
 
 // TODO: indexed R1CS consisting of 3 indexed matrices

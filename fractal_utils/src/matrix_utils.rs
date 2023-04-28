@@ -5,15 +5,15 @@ use std::convert::TryInto;
 
 // TODO: Add error checking and throwing
 
-pub type MatrixDimensions = (usize, usize);
+pub(crate) type MatrixDimensions = (usize, usize);
 #[derive(Clone, Debug)]
-pub struct Matrix<E: FieldElement> {
+pub(crate) struct Matrix<E: FieldElement> {
     pub name: String,
     pub mat: Vec<Vec<E>>,
     pub dims: MatrixDimensions,
 }
 
-pub fn valid_matrix<E: FieldElement>(
+pub(crate) fn valid_matrix<E: FieldElement>(
     name: &str,
     matrix: Vec<Vec<E>>,
 ) -> Result<Matrix<E>, MatrixError> {
@@ -42,7 +42,7 @@ pub fn valid_matrix<E: FieldElement>(
 }
 
 impl<E: FieldElement> Matrix<E> {
-    pub fn new(name: &str, matrix: Vec<Vec<E>>) -> Result<Self, MatrixError> {
+    pub(crate) fn new(name: &str, matrix: Vec<Vec<E>>) -> Result<Self, MatrixError> {
         let valid = valid_matrix(name, matrix);
         match valid {
             Ok(m) => Ok(m),
@@ -50,28 +50,28 @@ impl<E: FieldElement> Matrix<E> {
         }
     }
 
-    pub fn get_total_size(&self) -> usize {
+    pub(crate) fn get_total_size(&self) -> usize {
         let rows = self.dims.0;
         let cols = self.dims.1;
         let total_size = rows + cols;
         total_size
     }
 
-    pub fn get_rows(&self) -> usize {
+    pub(crate) fn get_rows(&self) -> usize {
         self.dims.0
     }
 
-    pub fn get_cols(&self) -> usize {
+    pub(crate) fn get_cols(&self) -> usize {
         self.dims.1
     }
 
     // TODO: Should throw an exception if the row and col are
     // too large
-    pub fn get_value(&self, row: usize, col: usize) -> E {
+    pub(crate) fn get_value(&self, row: usize, col: usize) -> E {
         self.mat[row][col]
     }
 
-    pub fn get_transpose(&self, transpose_name: &str) -> Self {
+    pub(crate) fn get_transpose(&self, transpose_name: &str) -> Self {
         let mut new_mat: Vec<Vec<E>> = Vec::new();
         let new_cols = self.get_rows();
         let new_rows = self.get_cols();
@@ -89,7 +89,7 @@ impl<E: FieldElement> Matrix<E> {
         }
     }
 
-    pub fn get_matrix_star(&self, index_field: Vec<E>) -> Result<Self, MatrixError> {
+    pub(crate) fn get_matrix_star(&self, index_field: Vec<E>) -> Result<Self, MatrixError> {
         let mut mat_star = Vec::new();
         let dom_size = index_field.len().try_into().unwrap();
         for i in 0..self.get_rows() {
