@@ -14,7 +14,7 @@ debug = 1
 
 [features]
 default = []
-flame_it = ["flame", "flamer"]
+flame_it = ["flame", "flamer", "fractal_utils/flame_it", "fractal_indexer/flame_it", "fractal_prover/flame_it"]
 
 [dependencies]
 displaydoc = "0.1.7"

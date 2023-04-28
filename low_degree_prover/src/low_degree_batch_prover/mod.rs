@@ -169,10 +169,9 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             winter_fri::FriProver::<B, E, DefaultFractalProverChannel<B, E, H>, H>::new(
                 self.fri_options.clone(),
             );
-        flame::start("fri_proof");
         fri_prover.build_layers(channel, composed_evals.clone());
         let fri_proof = fri_prover.build_proof(&queried_positions);
-        flame::end("fri_proof");
+        
         // use only the commitments that we just added
         let commitments = channel.layer_commitments()[commitment_idx..].to_vec();
         let composed_queried_evaluations = queried_positions

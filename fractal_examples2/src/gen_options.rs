@@ -29,7 +29,7 @@ use winter_math::FieldElement;
 use winter_math::StarkField;
 use winter_math::*;
 
-#[cfg_attr(feature = "flame_it", flame)]
+
 pub fn get_example_setup<
     B: StarkField,
     E: FieldElement<BaseField = B>,

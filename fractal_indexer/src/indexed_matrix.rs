@@ -61,19 +61,21 @@ pub fn index_matrix<B: StarkField>(
 
     let mut count = 0;
 
-    for r_int in 0..num_rows {
-        for c_int in 0..num_cols {
+    for c_int in 0..num_cols {
+        let c = index_domains.h_field[c_int];
+        let c_derivative = compute_derivative_xx(c, h_size);
+        for r_int in 0..num_rows {
             if mat.mat[r_int][c_int] == B::ZERO {
                 continue;
             }
-            let c = index_domains.h_field[c_int];
+            
             let r = index_domains.h_field[r_int];
 
             row_elts[count] = c;
             col_elts[count] = r;
-            val_elts[count] = mat.mat[r_int][c_int]
-                * polynomial_utils::compute_derivative_on_single_val(r, h_size)
-                / (compute_derivative_xx(c, h_size) * compute_derivative_xx(r, h_size));
+            val_elts[count] = mat.mat[r_int][c_int] / c_derivative;
+                // * polynomial_utils::compute_derivative_on_single_val(r, h_size)
+                // / ( * compute_derivative_xx(r, h_size));
             count += 1;
         }
     }
