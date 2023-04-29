@@ -1,3 +1,6 @@
+use std::io::BufRead;
+use std::io::BufReader;
+
 use lazy_static::lazy_static;
 use regex::Regex;
 use sscanf::scanf;
@@ -297,15 +300,30 @@ impl<'a, E: StarkField> JsnarkArithReaderParser<E> {
         let mut arith_parser = JsnarkArithParser::<E>::new(&mut self.r1cs_instance).unwrap();
         arith_parser.verbose = verbose;
 
-        if let Ok(lines) = crate::io::read_lines(arith_file) {
-            for line in lines {
-                match line {
-                    Ok(ip) => {
-                        arith_parser.process_line(ip);
+        // if let Ok(lines) = crate::io::read_lines(arith_file) {
+        //     for line in lines {
+        //         match line {
+        //             Ok(ip) => {
+        //                 arith_parser.process_line(ip);
+        //             }
+        //             Err(e) => println!("{:?}", e),
+        //         }
+        //     }
+        // }
+
+        match crate::io::open_file(arith_file) {
+            Ok(file) => {
+                let reader = BufReader::new(file);
+                for line in reader.lines() {
+                    match line {
+                        Ok(ip) => {
+                            arith_parser.process_line(ip);
+                        }
+                        Err(e) => println!("{:?}", e),
                     }
-                    Err(e) => println!("{:?}", e),
                 }
             }
+            Err(e) => println!("{:?}", e),
         }
 
         self.r1cs_instance.pad_power_two();
