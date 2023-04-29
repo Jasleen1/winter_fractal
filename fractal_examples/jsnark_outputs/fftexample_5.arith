@@ -1,0 +1,404 @@
+total 371
+input 0			 # The one-input wire.
+const-mul-0 in 1 <0> out 1 <1>
+input 2
+input 3
+input 4
+input 5
+input 6
+input 7
+input 8
+input 9
+input 10
+input 11
+input 12
+input 13
+input 14
+input 15
+input 16
+input 17
+input 18
+input 19
+input 20
+input 21
+input 22
+input 23
+input 24
+input 25
+input 26
+input 27
+input 28
+input 29
+input 30
+input 31
+input 32
+input 33
+const-mul-3fffffffc000 in 1 <0> out 1 <34>
+const-mul-efffffff00000001 in 1 <0> out 1 <35>
+const-mul-fffffffeff000001 in 1 <0> out 1 <36>
+const-mul-1000000000000 in 1 <0> out 1 <37>
+const-mul-ffffffff00000000 in 1 <0> out 1 <38>
+add in 2 <2 18> out 1 <39>
+const-mul-neg-1 in 1 <18> out 1 <40>
+add in 2 <2 40> out 1 <41>
+add in 2 <10 26> out 1 <42>
+const-mul-neg-1 in 1 <26> out 1 <43>
+add in 2 <10 43> out 1 <44>
+add in 2 <6 22> out 1 <45>
+const-mul-neg-1 in 1 <22> out 1 <46>
+add in 2 <6 46> out 1 <47>
+add in 2 <14 30> out 1 <48>
+const-mul-neg-1 in 1 <30> out 1 <49>
+add in 2 <14 49> out 1 <50>
+add in 2 <4 20> out 1 <51>
+const-mul-neg-1 in 1 <20> out 1 <52>
+add in 2 <4 52> out 1 <53>
+add in 2 <12 28> out 1 <54>
+const-mul-neg-1 in 1 <28> out 1 <55>
+add in 2 <12 55> out 1 <56>
+add in 2 <8 24> out 1 <57>
+const-mul-neg-1 in 1 <24> out 1 <58>
+add in 2 <8 58> out 1 <59>
+add in 2 <16 32> out 1 <60>
+const-mul-neg-1 in 1 <32> out 1 <61>
+add in 2 <16 61> out 1 <62>
+add in 2 <3 19> out 1 <63>
+const-mul-neg-1 in 1 <19> out 1 <64>
+add in 2 <3 64> out 1 <65>
+add in 2 <11 27> out 1 <66>
+const-mul-neg-1 in 1 <27> out 1 <67>
+add in 2 <11 67> out 1 <68>
+add in 2 <7 23> out 1 <69>
+const-mul-neg-1 in 1 <23> out 1 <70>
+add in 2 <7 70> out 1 <71>
+add in 2 <15 31> out 1 <72>
+const-mul-neg-1 in 1 <31> out 1 <73>
+add in 2 <15 73> out 1 <74>
+add in 2 <5 21> out 1 <75>
+const-mul-neg-1 in 1 <21> out 1 <76>
+add in 2 <5 76> out 1 <77>
+add in 2 <13 29> out 1 <78>
+const-mul-neg-1 in 1 <29> out 1 <79>
+add in 2 <13 79> out 1 <80>
+add in 2 <9 25> out 1 <81>
+const-mul-neg-1 in 1 <25> out 1 <82>
+add in 2 <9 82> out 1 <83>
+add in 2 <17 33> out 1 <84>
+const-mul-neg-1 in 1 <33> out 1 <85>
+add in 2 <17 85> out 1 <86>
+add in 2 <39 42> out 1 <87>
+const-mul-neg-1 in 1 <42> out 1 <88>
+add in 2 <39 88> out 1 <89>
+const-mul-1000000000000 in 1 <44> out 1 <90>
+add in 2 <41 90> out 1 <91>
+const-mul-neg-1 in 1 <90> out 1 <92>
+add in 2 <41 92> out 1 <93>
+add in 2 <45 48> out 1 <94>
+const-mul-neg-1 in 1 <48> out 1 <95>
+add in 2 <45 95> out 1 <96>
+const-mul-1000000000000 in 1 <50> out 1 <97>
+add in 2 <47 97> out 1 <98>
+const-mul-neg-1 in 1 <97> out 1 <99>
+add in 2 <47 99> out 1 <100>
+add in 2 <51 54> out 1 <101>
+const-mul-neg-1 in 1 <54> out 1 <102>
+add in 2 <51 102> out 1 <103>
+const-mul-1000000000000 in 1 <56> out 1 <104>
+add in 2 <53 104> out 1 <105>
+const-mul-neg-1 in 1 <104> out 1 <106>
+add in 2 <53 106> out 1 <107>
+add in 2 <57 60> out 1 <108>
+const-mul-neg-1 in 1 <60> out 1 <109>
+add in 2 <57 109> out 1 <110>
+const-mul-1000000000000 in 1 <62> out 1 <111>
+add in 2 <59 111> out 1 <112>
+const-mul-neg-1 in 1 <111> out 1 <113>
+add in 2 <59 113> out 1 <114>
+add in 2 <63 66> out 1 <115>
+const-mul-neg-1 in 1 <66> out 1 <116>
+add in 2 <63 116> out 1 <117>
+const-mul-1000000000000 in 1 <68> out 1 <118>
+add in 2 <65 118> out 1 <119>
+const-mul-neg-1 in 1 <118> out 1 <120>
+add in 2 <65 120> out 1 <121>
+add in 2 <69 72> out 1 <122>
+const-mul-neg-1 in 1 <72> out 1 <123>
+add in 2 <69 123> out 1 <124>
+const-mul-1000000000000 in 1 <74> out 1 <125>
+add in 2 <71 125> out 1 <126>
+const-mul-neg-1 in 1 <125> out 1 <127>
+add in 2 <71 127> out 1 <128>
+add in 2 <75 78> out 1 <129>
+const-mul-neg-1 in 1 <78> out 1 <130>
+add in 2 <75 130> out 1 <131>
+const-mul-1000000000000 in 1 <80> out 1 <132>
+add in 2 <77 132> out 1 <133>
+const-mul-neg-1 in 1 <132> out 1 <134>
+add in 2 <77 134> out 1 <135>
+add in 2 <81 84> out 1 <136>
+const-mul-neg-1 in 1 <84> out 1 <137>
+add in 2 <81 137> out 1 <138>
+const-mul-1000000000000 in 1 <86> out 1 <139>
+add in 2 <83 139> out 1 <140>
+const-mul-neg-1 in 1 <139> out 1 <141>
+add in 2 <83 141> out 1 <142>
+add in 2 <87 94> out 1 <143>
+const-mul-neg-1 in 1 <94> out 1 <144>
+add in 2 <87 144> out 1 <145>
+const-mul-fffffffeff000001 in 1 <98> out 1 <146>
+add in 2 <91 146> out 1 <147>
+const-mul-neg-1 in 1 <146> out 1 <148>
+add in 2 <91 148> out 1 <149>
+const-mul-1000000000000 in 1 <96> out 1 <150>
+add in 2 <89 150> out 1 <151>
+const-mul-neg-1 in 1 <150> out 1 <152>
+add in 2 <89 152> out 1 <153>
+const-mul-fffffeff00000101 in 1 <0> out 1 <154>
+const-mul-fffffeff00000101 in 1 <100> out 1 <155>
+add in 2 <93 155> out 1 <156>
+const-mul-neg-1 in 1 <155> out 1 <157>
+add in 2 <93 157> out 1 <158>
+add in 2 <101 108> out 1 <159>
+const-mul-neg-1 in 1 <108> out 1 <160>
+add in 2 <101 160> out 1 <161>
+const-mul-fffffffeff000001 in 1 <112> out 1 <162>
+add in 2 <105 162> out 1 <163>
+const-mul-neg-1 in 1 <162> out 1 <164>
+add in 2 <105 164> out 1 <165>
+const-mul-1000000000000 in 1 <110> out 1 <166>
+add in 2 <103 166> out 1 <167>
+const-mul-neg-1 in 1 <166> out 1 <168>
+add in 2 <103 168> out 1 <169>
+const-mul-fffffeff00000101 in 1 <114> out 1 <170>
+add in 2 <107 170> out 1 <171>
+const-mul-neg-1 in 1 <170> out 1 <172>
+add in 2 <107 172> out 1 <173>
+add in 2 <115 122> out 1 <174>
+const-mul-neg-1 in 1 <122> out 1 <175>
+add in 2 <115 175> out 1 <176>
+const-mul-fffffffeff000001 in 1 <126> out 1 <177>
+add in 2 <119 177> out 1 <178>
+const-mul-neg-1 in 1 <177> out 1 <179>
+add in 2 <119 179> out 1 <180>
+const-mul-1000000000000 in 1 <124> out 1 <181>
+add in 2 <117 181> out 1 <182>
+const-mul-neg-1 in 1 <181> out 1 <183>
+add in 2 <117 183> out 1 <184>
+const-mul-fffffeff00000101 in 1 <128> out 1 <185>
+add in 2 <121 185> out 1 <186>
+const-mul-neg-1 in 1 <185> out 1 <187>
+add in 2 <121 187> out 1 <188>
+add in 2 <129 136> out 1 <189>
+const-mul-neg-1 in 1 <136> out 1 <190>
+add in 2 <129 190> out 1 <191>
+const-mul-fffffffeff000001 in 1 <140> out 1 <192>
+add in 2 <133 192> out 1 <193>
+const-mul-neg-1 in 1 <192> out 1 <194>
+add in 2 <133 194> out 1 <195>
+const-mul-1000000000000 in 1 <138> out 1 <196>
+add in 2 <131 196> out 1 <197>
+const-mul-neg-1 in 1 <196> out 1 <198>
+add in 2 <131 198> out 1 <199>
+const-mul-fffffeff00000101 in 1 <142> out 1 <200>
+add in 2 <135 200> out 1 <201>
+const-mul-neg-1 in 1 <200> out 1 <202>
+add in 2 <135 202> out 1 <203>
+add in 2 <143 159> out 1 <204>
+const-mul-neg-1 in 1 <159> out 1 <205>
+add in 2 <143 205> out 1 <206>
+const-mul-efffffff00000001 in 1 <163> out 1 <207>
+add in 2 <147 207> out 1 <208>
+const-mul-neg-1 in 1 <207> out 1 <209>
+add in 2 <147 209> out 1 <210>
+const-mul-fffffffeff000001 in 1 <167> out 1 <211>
+add in 2 <151 211> out 1 <212>
+const-mul-neg-1 in 1 <211> out 1 <213>
+add in 2 <151 213> out 1 <214>
+const-mul-ffffffff00000 in 1 <0> out 1 <215>
+const-mul-ffffffff00000 in 1 <171> out 1 <216>
+add in 2 <156 216> out 1 <217>
+const-mul-neg-1 in 1 <216> out 1 <218>
+add in 2 <156 218> out 1 <219>
+const-mul-1000000000000 in 1 <161> out 1 <220>
+add in 2 <145 220> out 1 <221>
+const-mul-neg-1 in 1 <220> out 1 <222>
+add in 2 <145 222> out 1 <223>
+const-mul-1000 in 1 <0> out 1 <224>
+const-mul-1000 in 1 <165> out 1 <225>
+add in 2 <149 225> out 1 <226>
+const-mul-neg-1 in 1 <225> out 1 <227>
+add in 2 <149 227> out 1 <228>
+const-mul-fffffeff00000101 in 1 <169> out 1 <229>
+add in 2 <153 229> out 1 <230>
+const-mul-neg-1 in 1 <229> out 1 <231>
+add in 2 <153 231> out 1 <232>
+const-mul-ffffffef00000001 in 1 <0> out 1 <233>
+const-mul-ffffffef00000001 in 1 <173> out 1 <234>
+add in 2 <158 234> out 1 <235>
+const-mul-neg-1 in 1 <234> out 1 <236>
+add in 2 <158 236> out 1 <237>
+add in 2 <174 189> out 1 <238>
+const-mul-neg-1 in 1 <189> out 1 <239>
+add in 2 <174 239> out 1 <240>
+const-mul-efffffff00000001 in 1 <193> out 1 <241>
+add in 2 <178 241> out 1 <242>
+const-mul-neg-1 in 1 <241> out 1 <243>
+add in 2 <178 243> out 1 <244>
+const-mul-fffffffeff000001 in 1 <197> out 1 <245>
+add in 2 <182 245> out 1 <246>
+const-mul-neg-1 in 1 <245> out 1 <247>
+add in 2 <182 247> out 1 <248>
+const-mul-ffffffff00000 in 1 <201> out 1 <249>
+add in 2 <186 249> out 1 <250>
+const-mul-neg-1 in 1 <249> out 1 <251>
+add in 2 <186 251> out 1 <252>
+const-mul-1000000000000 in 1 <191> out 1 <253>
+add in 2 <176 253> out 1 <254>
+const-mul-neg-1 in 1 <253> out 1 <255>
+add in 2 <176 255> out 1 <256>
+const-mul-1000 in 1 <195> out 1 <257>
+add in 2 <180 257> out 1 <258>
+const-mul-neg-1 in 1 <257> out 1 <259>
+add in 2 <180 259> out 1 <260>
+const-mul-fffffeff00000101 in 1 <199> out 1 <261>
+add in 2 <184 261> out 1 <262>
+const-mul-neg-1 in 1 <261> out 1 <263>
+add in 2 <184 263> out 1 <264>
+const-mul-ffffffef00000001 in 1 <203> out 1 <265>
+add in 2 <188 265> out 1 <266>
+const-mul-neg-1 in 1 <265> out 1 <267>
+add in 2 <188 267> out 1 <268>
+add in 2 <204 238> out 1 <269>
+const-mul-neg-1 in 1 <238> out 1 <270>
+add in 2 <204 270> out 1 <271>
+const-mul-3fffffffc000 in 1 <242> out 1 <272>
+add in 2 <208 272> out 1 <273>
+const-mul-neg-1 in 1 <272> out 1 <274>
+add in 2 <208 274> out 1 <275>
+const-mul-efffffff00000001 in 1 <246> out 1 <276>
+add in 2 <212 276> out 1 <277>
+const-mul-neg-1 in 1 <276> out 1 <278>
+add in 2 <212 278> out 1 <279>
+const-mul-40000000000 in 1 <0> out 1 <280>
+const-mul-40000000000 in 1 <250> out 1 <281>
+add in 2 <217 281> out 1 <282>
+const-mul-neg-1 in 1 <281> out 1 <283>
+add in 2 <217 283> out 1 <284>
+const-mul-fffffffeff000001 in 1 <254> out 1 <285>
+add in 2 <221 285> out 1 <286>
+const-mul-neg-1 in 1 <285> out 1 <287>
+add in 2 <221 287> out 1 <288>
+const-mul-40 in 1 <0> out 1 <289>
+const-mul-40 in 1 <258> out 1 <290>
+add in 2 <226 290> out 1 <291>
+const-mul-neg-1 in 1 <290> out 1 <292>
+add in 2 <226 292> out 1 <293>
+const-mul-ffffffff00000 in 1 <262> out 1 <294>
+add in 2 <230 294> out 1 <295>
+const-mul-neg-1 in 1 <294> out 1 <296>
+add in 2 <230 296> out 1 <297>
+const-mul-fffffffb00000005 in 1 <0> out 1 <298>
+const-mul-fffffffb00000005 in 1 <266> out 1 <299>
+add in 2 <235 299> out 1 <300>
+const-mul-neg-1 in 1 <299> out 1 <301>
+add in 2 <235 301> out 1 <302>
+const-mul-1000000000000 in 1 <240> out 1 <303>
+add in 2 <206 303> out 1 <304>
+const-mul-neg-1 in 1 <303> out 1 <305>
+add in 2 <206 305> out 1 <306>
+const-mul-fffffffec0000001 in 1 <0> out 1 <307>
+const-mul-fffffffec0000001 in 1 <244> out 1 <308>
+add in 2 <210 308> out 1 <309>
+const-mul-neg-1 in 1 <308> out 1 <310>
+add in 2 <210 310> out 1 <311>
+const-mul-1000 in 1 <248> out 1 <312>
+add in 2 <214 312> out 1 <313>
+const-mul-neg-1 in 1 <312> out 1 <314>
+add in 2 <214 314> out 1 <315>
+const-mul-3fffffffc000000 in 1 <0> out 1 <316>
+const-mul-3fffffffc000000 in 1 <252> out 1 <317>
+add in 2 <219 317> out 1 <318>
+const-mul-neg-1 in 1 <317> out 1 <319>
+add in 2 <219 319> out 1 <320>
+const-mul-fffffeff00000101 in 1 <256> out 1 <321>
+add in 2 <223 321> out 1 <322>
+const-mul-neg-1 in 1 <321> out 1 <323>
+add in 2 <223 323> out 1 <324>
+const-mul-40000000000000 in 1 <0> out 1 <325>
+const-mul-40000000000000 in 1 <260> out 1 <326>
+add in 2 <228 326> out 1 <327>
+const-mul-neg-1 in 1 <326> out 1 <328>
+add in 2 <228 328> out 1 <329>
+const-mul-ffffffef00000001 in 1 <264> out 1 <330>
+add in 2 <232 330> out 1 <331>
+const-mul-neg-1 in 1 <330> out 1 <332>
+add in 2 <232 332> out 1 <333>
+const-mul-40000 in 1 <0> out 1 <334>
+const-mul-40000 in 1 <268> out 1 <335>
+add in 2 <237 335> out 1 <336>
+const-mul-neg-1 in 1 <335> out 1 <337>
+add in 2 <237 337> out 1 <338>
+mul in 2 <269 0> out 1 <339> 		# output of FFT[0]
+output 339			 # output of FFT[0]
+mul in 2 <273 0> out 1 <340> 		# output of FFT[1]
+output 340			 # output of FFT[1]
+mul in 2 <277 0> out 1 <341> 		# output of FFT[2]
+output 341			 # output of FFT[2]
+mul in 2 <282 0> out 1 <342> 		# output of FFT[3]
+output 342			 # output of FFT[3]
+mul in 2 <286 0> out 1 <343> 		# output of FFT[4]
+output 343			 # output of FFT[4]
+mul in 2 <291 0> out 1 <344> 		# output of FFT[5]
+output 344			 # output of FFT[5]
+mul in 2 <295 0> out 1 <345> 		# output of FFT[6]
+output 345			 # output of FFT[6]
+mul in 2 <300 0> out 1 <346> 		# output of FFT[7]
+output 346			 # output of FFT[7]
+mul in 2 <304 0> out 1 <347> 		# output of FFT[8]
+output 347			 # output of FFT[8]
+mul in 2 <309 0> out 1 <348> 		# output of FFT[9]
+output 348			 # output of FFT[9]
+mul in 2 <313 0> out 1 <349> 		# output of FFT[10]
+output 349			 # output of FFT[10]
+mul in 2 <318 0> out 1 <350> 		# output of FFT[11]
+output 350			 # output of FFT[11]
+mul in 2 <322 0> out 1 <351> 		# output of FFT[12]
+output 351			 # output of FFT[12]
+mul in 2 <327 0> out 1 <352> 		# output of FFT[13]
+output 352			 # output of FFT[13]
+mul in 2 <331 0> out 1 <353> 		# output of FFT[14]
+output 353			 # output of FFT[14]
+mul in 2 <336 0> out 1 <354> 		# output of FFT[15]
+output 354			 # output of FFT[15]
+mul in 2 <271 0> out 1 <355> 		# output of FFT[16]
+output 355			 # output of FFT[16]
+mul in 2 <275 0> out 1 <356> 		# output of FFT[17]
+output 356			 # output of FFT[17]
+mul in 2 <279 0> out 1 <357> 		# output of FFT[18]
+output 357			 # output of FFT[18]
+mul in 2 <284 0> out 1 <358> 		# output of FFT[19]
+output 358			 # output of FFT[19]
+mul in 2 <288 0> out 1 <359> 		# output of FFT[20]
+output 359			 # output of FFT[20]
+mul in 2 <293 0> out 1 <360> 		# output of FFT[21]
+output 360			 # output of FFT[21]
+mul in 2 <297 0> out 1 <361> 		# output of FFT[22]
+output 361			 # output of FFT[22]
+mul in 2 <302 0> out 1 <362> 		# output of FFT[23]
+output 362			 # output of FFT[23]
+mul in 2 <306 0> out 1 <363> 		# output of FFT[24]
+output 363			 # output of FFT[24]
+mul in 2 <311 0> out 1 <364> 		# output of FFT[25]
+output 364			 # output of FFT[25]
+mul in 2 <315 0> out 1 <365> 		# output of FFT[26]
+output 365			 # output of FFT[26]
+mul in 2 <320 0> out 1 <366> 		# output of FFT[27]
+output 366			 # output of FFT[27]
+mul in 2 <324 0> out 1 <367> 		# output of FFT[28]
+output 367			 # output of FFT[28]
+mul in 2 <329 0> out 1 <368> 		# output of FFT[29]
+output 368			 # output of FFT[29]
+mul in 2 <333 0> out 1 <369> 		# output of FFT[30]
+output 369			 # output of FFT[30]
+mul in 2 <338 0> out 1 <370> 		# output of FFT[31]
+output 370			 # output of FFT[31]

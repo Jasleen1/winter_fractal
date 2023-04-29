@@ -226,6 +226,24 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         let mut buf = parts.next().unwrap();
         buf = buf.trim();
 
+
+        // Extended commands, including with implicit inputs (coefficients):
+        match scanf!(
+            buf,
+            "{} in {} <{}> out {} <{}>",
+            String,
+            u32,
+            String,
+            u32,
+            String
+        ) {
+            Some((raw_cmd, _in_arity, in_args, _out_arity, out_args)) => {
+                self.handle_extended(raw_cmd, in_args, out_args);
+                return;
+            }
+            None => {}
+        }
+        
         // Arity 1 commands:
         match scanf!(buf, "total {}", usize) {
             Some(total) => {
@@ -255,24 +273,6 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
             }
             None => {}
         }
-
-        // Extended commands, including with implicit inputs (coefficients):
-        match scanf!(
-            buf,
-            "{} in {} <{}> out {} <{}>",
-            String,
-            u32,
-            String,
-            u32,
-            String
-        ) {
-            Some((raw_cmd, _in_arity, in_args, _out_arity, out_args)) => {
-                self.handle_extended(raw_cmd, in_args, out_args);
-                return;
-            }
-            None => {}
-        }
-
         println!("FAILED ARITH: {}", line);
     }
 }

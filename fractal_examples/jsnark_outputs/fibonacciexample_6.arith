@@ -1,0 +1,130 @@
+total 128
+input 0			 # The one-input wire.
+const-mul-0 in 1 <0> out 1 <1>
+input 2			 # init1
+input 3			 # init2
+const-mul-14 in 1 <2> out 1 <4>
+mul in 2 <3 4> out 1 <5>
+const-mul-14 in 1 <3> out 1 <6>
+mul in 2 <5 6> out 1 <7>
+const-mul-14 in 1 <5> out 1 <8>
+mul in 2 <7 8> out 1 <9>
+const-mul-14 in 1 <7> out 1 <10>
+mul in 2 <9 10> out 1 <11>
+const-mul-14 in 1 <9> out 1 <12>
+mul in 2 <11 12> out 1 <13>
+const-mul-14 in 1 <11> out 1 <14>
+mul in 2 <13 14> out 1 <15>
+const-mul-14 in 1 <13> out 1 <16>
+mul in 2 <15 16> out 1 <17>
+const-mul-14 in 1 <15> out 1 <18>
+mul in 2 <17 18> out 1 <19>
+const-mul-14 in 1 <17> out 1 <20>
+mul in 2 <19 20> out 1 <21>
+const-mul-14 in 1 <19> out 1 <22>
+mul in 2 <21 22> out 1 <23>
+const-mul-14 in 1 <21> out 1 <24>
+mul in 2 <23 24> out 1 <25>
+const-mul-14 in 1 <23> out 1 <26>
+mul in 2 <25 26> out 1 <27>
+const-mul-14 in 1 <25> out 1 <28>
+mul in 2 <27 28> out 1 <29>
+const-mul-14 in 1 <27> out 1 <30>
+mul in 2 <29 30> out 1 <31>
+const-mul-14 in 1 <29> out 1 <32>
+mul in 2 <31 32> out 1 <33>
+const-mul-14 in 1 <31> out 1 <34>
+mul in 2 <33 34> out 1 <35>
+const-mul-14 in 1 <33> out 1 <36>
+mul in 2 <35 36> out 1 <37>
+const-mul-14 in 1 <35> out 1 <38>
+mul in 2 <37 38> out 1 <39>
+const-mul-14 in 1 <37> out 1 <40>
+mul in 2 <39 40> out 1 <41>
+const-mul-14 in 1 <39> out 1 <42>
+mul in 2 <41 42> out 1 <43>
+const-mul-14 in 1 <41> out 1 <44>
+mul in 2 <43 44> out 1 <45>
+const-mul-14 in 1 <43> out 1 <46>
+mul in 2 <45 46> out 1 <47>
+const-mul-14 in 1 <45> out 1 <48>
+mul in 2 <47 48> out 1 <49>
+const-mul-14 in 1 <47> out 1 <50>
+mul in 2 <49 50> out 1 <51>
+const-mul-14 in 1 <49> out 1 <52>
+mul in 2 <51 52> out 1 <53>
+const-mul-14 in 1 <51> out 1 <54>
+mul in 2 <53 54> out 1 <55>
+const-mul-14 in 1 <53> out 1 <56>
+mul in 2 <55 56> out 1 <57>
+const-mul-14 in 1 <55> out 1 <58>
+mul in 2 <57 58> out 1 <59>
+const-mul-14 in 1 <57> out 1 <60>
+mul in 2 <59 60> out 1 <61>
+const-mul-14 in 1 <59> out 1 <62>
+mul in 2 <61 62> out 1 <63>
+const-mul-14 in 1 <61> out 1 <64>
+mul in 2 <63 64> out 1 <65>
+const-mul-14 in 1 <63> out 1 <66>
+mul in 2 <65 66> out 1 <67>
+const-mul-14 in 1 <65> out 1 <68>
+mul in 2 <67 68> out 1 <69>
+const-mul-14 in 1 <67> out 1 <70>
+mul in 2 <69 70> out 1 <71>
+const-mul-14 in 1 <69> out 1 <72>
+mul in 2 <71 72> out 1 <73>
+const-mul-14 in 1 <71> out 1 <74>
+mul in 2 <73 74> out 1 <75>
+const-mul-14 in 1 <73> out 1 <76>
+mul in 2 <75 76> out 1 <77>
+const-mul-14 in 1 <75> out 1 <78>
+mul in 2 <77 78> out 1 <79>
+const-mul-14 in 1 <77> out 1 <80>
+mul in 2 <79 80> out 1 <81>
+const-mul-14 in 1 <79> out 1 <82>
+mul in 2 <81 82> out 1 <83>
+const-mul-14 in 1 <81> out 1 <84>
+mul in 2 <83 84> out 1 <85>
+const-mul-14 in 1 <83> out 1 <86>
+mul in 2 <85 86> out 1 <87>
+const-mul-14 in 1 <85> out 1 <88>
+mul in 2 <87 88> out 1 <89>
+const-mul-14 in 1 <87> out 1 <90>
+mul in 2 <89 90> out 1 <91>
+const-mul-14 in 1 <89> out 1 <92>
+mul in 2 <91 92> out 1 <93>
+const-mul-14 in 1 <91> out 1 <94>
+mul in 2 <93 94> out 1 <95>
+const-mul-14 in 1 <93> out 1 <96>
+mul in 2 <95 96> out 1 <97>
+const-mul-14 in 1 <95> out 1 <98>
+mul in 2 <97 98> out 1 <99>
+const-mul-14 in 1 <97> out 1 <100>
+mul in 2 <99 100> out 1 <101>
+const-mul-14 in 1 <99> out 1 <102>
+mul in 2 <101 102> out 1 <103>
+const-mul-14 in 1 <101> out 1 <104>
+mul in 2 <103 104> out 1 <105>
+const-mul-14 in 1 <103> out 1 <106>
+mul in 2 <105 106> out 1 <107>
+const-mul-14 in 1 <105> out 1 <108>
+mul in 2 <107 108> out 1 <109>
+const-mul-14 in 1 <107> out 1 <110>
+mul in 2 <109 110> out 1 <111>
+const-mul-14 in 1 <109> out 1 <112>
+mul in 2 <111 112> out 1 <113>
+const-mul-14 in 1 <111> out 1 <114>
+mul in 2 <113 114> out 1 <115>
+const-mul-14 in 1 <113> out 1 <116>
+mul in 2 <115 116> out 1 <117>
+const-mul-14 in 1 <115> out 1 <118>
+mul in 2 <117 118> out 1 <119>
+const-mul-14 in 1 <117> out 1 <120>
+mul in 2 <119 120> out 1 <121>
+const-mul-14 in 1 <119> out 1 <122>
+mul in 2 <121 122> out 1 <123>
+const-mul-14 in 1 <121> out 1 <124>
+mul in 2 <123 124> out 1 <125>
+const-mul-14 in 1 <123> out 1 <126>
+mul in 2 <125 126> out 1 <127>
+output 127			 # output of fibonacci[0]
