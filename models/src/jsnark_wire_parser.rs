@@ -101,24 +101,9 @@ impl<'a, E: StarkField> JsnarkWireReaderParser<E> {
         //         }
         //     }
         // }
-        // match crate::io::read_lines(wire_file) {
-        //     Ok(lines) => {
-        //         for line in lines {
-        //             match line {
-        //                 Ok(ip) => {
-        //                     wire_parser.process_line(ip);
-        //                 }
-        //                 Err(e) => println!("{:?}", e),
-        //             }
-        //         }
-        //     }
-        //     Err(e) => println!("{:?}", e),
-        // }
-       
-        match crate::io::open_file(wire_file) {
-            Ok(file) => {
-                let reader = BufReader::new(file);
-                for line in reader.lines() {
+        match crate::io::read_lines(wire_file) {
+            Ok(lines) => {
+                for line in lines {
                     match line {
                         Ok(ip) => {
                             wire_parser.process_line(ip);
@@ -129,6 +114,21 @@ impl<'a, E: StarkField> JsnarkWireReaderParser<E> {
             }
             Err(e) => println!("{:?}", e),
         }
+       
+        // match crate::io::open_file(wire_file) {
+        //     Ok(file) => {
+        //         let reader = BufReader::new(file);
+        //         for line in reader.lines() {
+        //             match line {
+        //                 Ok(ip) => {
+        //                     wire_parser.process_line(ip);
+        //                 }
+        //                 Err(e) => println!("{:?}", e),
+        //             }
+        //         }
+        //     }
+        //     Err(e) => println!("{:?}", e),
+        // }
 
         self.pad_power_two();
 
