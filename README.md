@@ -23,3 +23,6 @@ In this work, we organize the code as a Rust workspace with the following crates
 * `low_degree_verifier`: This is the verifier corresponding to the `low_degree_prover`.
 * `models`: This crate contains the R1CS struct and various other structs modelling the arithmetization. 
 
+# License
+
+This project is [MIT licensed](LICENSE). 
