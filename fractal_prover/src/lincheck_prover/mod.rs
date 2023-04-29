@@ -99,7 +99,7 @@ impl<
             query,
             accumulator,
             &options.h_domain,
-            &options.h_domain_inv_twiddles,
+            options
         )?;
         Ok(())
     }
@@ -181,7 +181,7 @@ impl<
                 query,
                 accumulator,
                 &options.summing_domain,
-                &options.k_domain_inv_twiddles,
+                options
             )
             .unwrap();
     }

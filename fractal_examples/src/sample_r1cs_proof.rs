@@ -75,16 +75,27 @@ pub(crate) fn orchestrate_r1cs_example<
     wire_file: &str,
     verbose: bool,
 ) {
+
+    let now = Instant::now();
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
     arith_parser.parse_arith_file(&arith_file, verbose);
     println!("Parsed the arith file");
     let mut r1cs = arith_parser.r1cs_instance;
+    println!(
+        "---------------------\nArith File parsed in {} ms",
+        now.elapsed().as_millis()
+    );
 
+    let now = Instant::now();
     let mut wires_parser = JsnarkWireReaderParser::<B>::new().unwrap();
     println!("Got the wire parser");
-    wires_parser.parse_wire_file(&wire_file, true);
+    wires_parser.parse_wire_file(&wire_file, verbose);
     let wires = wires_parser.wires;
     println!("Len wires = {}", wires.len());
+    println!(
+        "---------------------\nWire File parsed in {} ms",
+        now.elapsed().as_millis()
+    );
     // 0. Compute num_non_zero by counting max(number of non-zero elts across A, B, C).
 
     // let num_input_variables = r1cs.clone().num_cols();
@@ -223,7 +234,8 @@ struct ExampleOptions {
     #[structopt(
         short = "a",
         long = "arith_file",
-        default_value = "fractal_examples/jsnark_outputs/fftexample_8.arith"
+        //default_value = "fractal_examples/jsnark_outputs/fibonacciexample_15.arith"
+        default_value = "fractal_examples/jsnark_outputs/fftexample_10.arith"
     )]
     arith_file: String,
 
@@ -231,7 +243,8 @@ struct ExampleOptions {
     #[structopt(
         short = "w",
         long = "wire_file",
-        default_value = "fractal_examples/jsnark_outputs/fftexample_8.wires"
+        //default_value = "fractal_examples/jsnark_outputs/fibonacciexample_15.wires"
+        default_value = "fractal_examples/jsnark_outputs/fftexample_10.wires"
     )]
     wires_file: String,
 

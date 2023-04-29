@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::{convert::TryInto, marker::PhantomData};
 
 use crate::errors::ProverError;
@@ -72,37 +73,63 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     /// This function computes the first layer of the fractal sumcheck
     #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
     pub fn sumcheck_layer_one(
-        &self,
+        &mut self,
         accumulator: &mut Accumulator<B, E, H>,
-        summing_domain: &Vec<B>,
-        summing_domain_inv_twiddles: &Vec<B>,
+        domain: &Vec<B>,
+        options: &FractalProverOptions<B>
     ) {
         // compute the polynomial g such that Sigma(g, sigma) = summing_poly
         // compute the polynomial e such that e = (Sigma(g, sigma) - summing_poly)/v_H over the summing domain H.
         debug!("Starting a sumcheck proof");
 
         let _sigma_inv = self.sigma.inv();
-        let summing_domain_len = summing_domain.len();
-        let summing_domain_e: Vec<E> = summing_domain.iter().map(|x| E::from(*x)).collect();
 
-        let numerator_vals = polynom::eval_many(&self.numerator_coeffs, &summing_domain_e);
-        let mut denominator_vals = polynom::eval_many(&self.denominator_coeffs, &summing_domain_e);
+        //todo: don't need to recompute these here. You could try searching options for something the right size?
+        let inv_twiddles = fft::get_inv_twiddles(domain.len());
+
+        // the following fft code could be replaced with: 
+        // let domain_e: Vec<E> = domain.iter().map(|x| E::from(*x)).collect();
+        // numerator_vals = polynom::eval_many(&self.numerator_coeffs, &domain_e);
+        // denominator_vals = polynom::eval_many(&self.denominator_coeffs, &domain_e);
+        // ffts are used for efficiency, even though more evaluations are calculated than necessary sometimes.
+        let numerator_vals: Vec<E>;
+        let mut denominator_vals: Vec<E>;
+
+        let num_factor = max(1, self.numerator_coeffs.len().next_power_of_two() / domain.len());
+        pad_with_zeroes(&mut self.numerator_coeffs, num_factor * domain.len());
+        let num_twiddles = fft::get_twiddles(num_factor * domain.len());
+        let numerator_more_vals = fft::evaluate_poly_with_offset(&self.numerator_coeffs, &num_twiddles, self.eta,1);
+        numerator_vals = (0..domain.len()).into_iter().map(|i| numerator_more_vals[num_factor * i]).collect();
+
+        // save some work if the denominator happens to be a constant
+        if self.denominator_coeffs.len() == 1{
+            denominator_vals = vec![self.denominator_coeffs[0]; domain.len()];
+        }
+        else {
+            let denom_factor = max(1, self.denominator_coeffs.len().next_power_of_two() / domain.len());
+            pad_with_zeroes(&mut self.denominator_coeffs, denom_factor * domain.len());
+            let denom_twiddles = fft::get_twiddles(denom_factor * domain.len());
+            let denominator_more_vals = fft::evaluate_poly_with_offset(&self.denominator_coeffs, &denom_twiddles, self.eta,1);
+            denominator_vals = (0..domain.len()).into_iter().map(|i| denominator_more_vals[denom_factor * i]).collect();
+        }
+
+        // invert all denominator values at once for much cheaper
         denominator_vals = batch_inversion(&denominator_vals);
-        let f_hat_evals: Vec<E> = (0..summing_domain_len)
+        let f_hat_evals: Vec<E> = (0..domain.len())
             .into_iter()
             .map(|i| numerator_vals[i] * denominator_vals[i])
             .collect();
 
         let mut f_hat_coeffs = f_hat_evals;
-        pad_with_zeroes(&mut f_hat_coeffs, summing_domain.len());
+        pad_with_zeroes(&mut f_hat_coeffs, domain.len());
         fft::interpolate_poly_with_offset(
             &mut f_hat_coeffs,
-            &summing_domain_inv_twiddles,
+            &inv_twiddles,
             self.eta,
         );
 
         let x_coeffs = vec![E::ZERO, E::ONE];
-        let sub_factor = self.sigma / E::from(summing_domain.len() as u64);
+        let sub_factor = self.sigma / E::from(domain.len() as u64);
         let f_hat_minus_sub_factor = polynom::sub(&f_hat_coeffs, &vec![E::from(sub_factor)]);
         assert_eq!(f_hat_minus_sub_factor[0], E::ZERO);
         let g_hat_coeffs = polynom::div(&f_hat_minus_sub_factor, &x_coeffs);
@@ -112,7 +139,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             &self.numerator_coeffs,
             &self.denominator_coeffs,
             self.eta,
-            summing_domain_len,
+            domain.len(),
         );
         accumulator.add_polynomial_e(g_hat_coeffs, self.g_degree);
         accumulator.add_polynomial_e(e_hat_coeffs, self.e_degree);
@@ -193,11 +220,11 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         &mut self,
         _query: E,
         accumulator: &mut Accumulator<B, E, H>,
-        summing_domain: &Vec<B>,
-        summing_domain_inv_twiddles: &Vec<B>,
+        domain: &Vec<B>,
+        options: &FractalProverOptions<B>
     ) -> Result<(), ProverError> {
         if self.get_current_layer() == 0 {
-            self.sumcheck_layer_one(accumulator, summing_domain, summing_domain_inv_twiddles);
+            self.sumcheck_layer_one(accumulator, domain, options);
             self.current_layer += 1;
         }
         Ok(())

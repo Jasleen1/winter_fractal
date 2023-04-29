@@ -28,6 +28,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
     }
 
     // Handlers.
+    #[cfg_attr(feature = "flame_it", flame)]
     fn handle_total(&mut self, total: usize) {
         if self.verbose {
             println!("TOTAL: {}", total)
@@ -47,6 +48,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         println!("NOTIMPL OUTPUT: {}", wire_id);
     }
 
+    #[cfg_attr(feature = "flame_it", flame)]
     fn handle_add(&mut self, coeff: E, in_args: Vec<usize>, out_args: Vec<usize>) {
         if self.verbose {
             println!("CONST ADD: {} {:?} {:?}", coeff, in_args, out_args)
@@ -69,6 +71,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         self.r1cs_instance.add_rows(new_row_a, new_row_b, new_row_c);
     }
 
+    #[cfg_attr(feature = "flame_it", flame)]
     fn handle_mul(&mut self, coeff: E, in_args: Vec<usize>, out_args: Vec<usize>) {
         if self.verbose {
             println!("MUL: {} {:?} {:?}", coeff, in_args, out_args)
@@ -94,6 +97,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         self.r1cs_instance.add_rows(new_row_a, new_row_b, new_row_c);
     }
 
+    #[cfg_attr(feature = "flame_it", flame)]
     fn handle_xor(&mut self, in_args: Vec<usize>, out_args: Vec<usize>) {
         if self.verbose {
             println!("XOR: {:?} {:?}", in_args, out_args)
@@ -118,6 +122,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         self.r1cs_instance.add_rows(new_row_a, new_row_b, new_row_c);
     }
 
+    #[cfg_attr(feature = "flame_it", flame)]
     fn handle_or(&mut self, in_args: Vec<usize>, out_args: Vec<usize>) {
         if self.verbose {
             println!("OR: {:?} {:?}", in_args, out_args)
@@ -147,6 +152,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
     }
 
     // An extended command.
+    #[cfg_attr(feature = "flame_it", flame)]
     fn handle_extended(&mut self, raw_cmd: String, in_args: String, out_args: String) {
         let in_vals = self.parse_index_vector(&in_args);
         let out_vals = self.parse_index_vector(&out_args);
@@ -206,6 +212,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         return vals;
     }
 
+    #[cfg_attr(feature = "flame_it", flame)]
     fn process_line(&mut self, line: String) {
         if self.verbose {
             println!("{}", line);

@@ -38,6 +38,7 @@ impl<'a, E: StarkField> JsnarkWireParser<'a, E> {
 }
 
 impl<'a, E: StarkField> LineProcessor for JsnarkWireParser<'a, E> {
+    #[cfg_attr(feature = "flame_it", flame)]
     fn process_line(&mut self, line: String) {
         if self.verbose {
             println!("{}", line);
