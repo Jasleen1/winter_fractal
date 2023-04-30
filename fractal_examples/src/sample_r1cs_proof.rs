@@ -198,7 +198,7 @@ pub(crate) fn orchestrate_r1cs_example<
     let pub_inputs_bytes = vec![0u8, 1u8, 2u8];
     //let pub_inputs_bytes = vec![];
     let mut prover =
-        FractalProver::<B, E, H>::new(prover_key, vec![], wires, pub_inputs_bytes.clone());
+        FractalProver::<B, E, H>::new(prover_key.into(), vec![], wires, pub_inputs_bytes.clone());
     let now = Instant::now();
     let proof = prover
         .generate_proof(&None, pub_inputs_bytes.clone(), &prover_options)

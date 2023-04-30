@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 use fractal_indexer::{index::IndexParams, snark_keys::*};
 use fractal_proofs::{
@@ -27,7 +27,7 @@ pub struct FractalProver<
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
 > {
-    pub prover_key: Option<ProverKey<B, E, H>>,
+    pub prover_key: Arc<ProverKey<B, E, H>>,
     // options: FractalProverOptions<B>,
     witness: Vec<B>,
     variable_assignment: Vec<B>,
@@ -50,13 +50,13 @@ impl<
 {
     /// Creates a new fractal prover
     pub fn new(
-        prover_key: ProverKey<B, E, H>,
+        prover_key: Arc<ProverKey<B, E, H>>,
         witness: Vec<B>,
         variable_assignment: Vec<B>,
         pub_input_bytes: Vec<u8>,
     ) -> Self {
         FractalProver {
-            prover_key: Some(prover_key),
+            prover_key,
             // options,
             witness,
             variable_assignment,
@@ -69,11 +69,6 @@ impl<
             z_coeffs: Vec::new(),
             lincheck_provers: Vec::new(),
         }
-    }
-
-    /// Returns the prover key for this prover.
-    pub fn get_prover_key_ref(&self) -> &ProverKey<B, E, H> {
-        self.prover_key.as_ref().unwrap()
     }
 
     // Multiply a matrix times a vector of evaluations, then interpolate a poly and return its coeffs.
@@ -101,28 +96,28 @@ impl<
         fft::interpolate_poly_with_offset(
             &mut z_coeffs,
             &inv_twiddles_h,
-            self.prover_key.as_ref().unwrap().params.eta,
+            self.prover_key.params.eta,
         ); // coeffs
 
         let f_az_coeffs = &mut self.compute_matrix_mul_poly_coeffs(
-            &self.prover_key.as_ref().unwrap().matrix_a_index.matrix,
+            &self.prover_key.matrix_a_index.matrix,
             &self.variable_assignment.clone(),
             &inv_twiddles_h,
-            self.prover_key.as_ref().unwrap().params.eta,
+            self.prover_key.params.eta,
         )?;
 
         let f_bz_coeffs = &mut self.compute_matrix_mul_poly_coeffs(
-            &self.prover_key.as_ref().unwrap().matrix_b_index.matrix,
+            &self.prover_key.matrix_b_index.matrix,
             &self.variable_assignment.clone(),
             &inv_twiddles_h,
-            self.prover_key.as_ref().as_ref().unwrap().params.eta,
+            self.prover_key.params.eta,
         )?;
 
         let f_cz_coeffs = &mut self.compute_matrix_mul_poly_coeffs(
-            &self.prover_key.as_ref().unwrap().matrix_c_index.matrix,
+            &self.prover_key.matrix_c_index.matrix,
             &self.variable_assignment.clone(),
             &inv_twiddles_h,
-            self.prover_key.as_ref().unwrap().params.eta,
+            self.prover_key.as_ref().params.eta,
         )?;
 
         self.f_az_coeffs = f_az_coeffs.to_vec();
@@ -155,9 +150,9 @@ impl<
         );
 
         // Don't worry, the matrix indexes are actually smart pointers. clone doesn't allocate new memory.
-        let a_index = self.prover_key.as_ref().unwrap().matrix_a_index.clone();
-        let b_index = self.prover_key.as_ref().unwrap().matrix_b_index.clone();
-        let c_index = self.prover_key.as_ref().unwrap().matrix_c_index.clone();
+        let a_index = self.prover_key.matrix_a_index.clone();
+        let b_index = self.prover_key.matrix_b_index.clone();
+        let c_index = self.prover_key.matrix_c_index.clone();
 
         let mut lincheck_prover_a = LincheckProver::<B, E, H>::new(
             a_index,
@@ -257,7 +252,7 @@ impl<
     ) -> Result<TopLevelProof<B, E, H>, ProverError> {
         // let options = self.get_fractal_options();
         let mut coin = RandomCoin::<B, H>::new(&public_inputs_bytes);
-        coin.reseed(self.prover_key.as_ref().unwrap().accumulator.get_layer_commitment(1)?);
+        coin.reseed(self.prover_key.accumulator.get_layer_commitment(1)?);
 
         let mut channel = DefaultFractalProverChannel::<B, E, H>::new(
             options.evaluation_domain.len(),
@@ -271,7 +266,7 @@ impl<
             options.num_queries,
             options.fri_options.clone(),
             public_inputs_bytes,
-            self.prover_key.as_ref().unwrap().params.max_degree
+            self.prover_key.params.max_degree
         );
         let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 2];
         let mut local_queries = Vec::<E>::new();
@@ -321,8 +316,6 @@ impl<
 
         let preprocessing_decommitment = self
             .prover_key
-            .as_ref()
-            .unwrap()
             .accumulator
             .decommit_layer_with_queries(1, &queries)?;
 

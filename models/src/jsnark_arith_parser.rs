@@ -37,7 +37,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
     }
 
     fn handle_input(&mut self, wire_id: usize) {
-        println!("NOTIMPL INPUT: {}", wire_id);
+        //println!("NOTIMPL INPUT: {}", wire_id);
     }
 
     fn handle_nizkinput(&mut self, wire_id: usize) {
@@ -45,7 +45,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
     }
 
     fn handle_output(&mut self, wire_id: usize) {
-        println!("NOTIMPL OUTPUT: {}", wire_id);
+        //println!("NOTIMPL OUTPUT: {}", wire_id);
     }
 
     #[cfg_attr(feature = "flame_it", flame)]
@@ -243,7 +243,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
             }
             None => {}
         }
-        
+
         // Arity 1 commands:
         match scanf!(buf, "total {}", usize) {
             Some(total) => {
