@@ -777,6 +777,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "nohash-hasher"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
+
+[[package]]
 name = "num-bigint"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1646,9 +1652,12 @@ name = "winter-models"
 version = "0.1.0"
 dependencies = [
  "displaydoc",
+ "flame",
+ "flamer",
  "fractal-math",
  "lazy_static 1.4.0",
  "log",
+ "nohash-hasher",
  "regex",
  "rustc-hash",
  "serde",
