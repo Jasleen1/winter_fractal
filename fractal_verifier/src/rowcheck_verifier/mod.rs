@@ -438,7 +438,7 @@ mod test {
 
         // Check correctness of FRI
         println!("About to check fri");
-        accumulator_verifier.verify_fri_proof(commit, fri_proof, pub_input_bytes.clone())?;
+        accumulator_verifier.verify_fri_proof(commit, &fri_proof, &pub_input_bytes)?;
         /* Proof verification complete */
 
         // Also testing that the get_layer_commitment function is working as expected for the accum

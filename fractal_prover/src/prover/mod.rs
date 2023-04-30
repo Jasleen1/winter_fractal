@@ -311,7 +311,7 @@ impl<
             acc.decommit_layer_with_queries(3, &queries)?,
         ];
 
-        println!("Finished decommitting");
+        //println!("Finished decommitting");
 
         let gammas = vec![
             self.lincheck_provers[0].retrieve_gamma(beta)?,

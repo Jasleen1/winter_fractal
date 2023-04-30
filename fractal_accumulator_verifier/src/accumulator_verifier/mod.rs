@@ -153,8 +153,8 @@ impl<
     pub fn verify_fri_proof(
         &mut self,
         last_layer_commit: H::Digest,
-        proof: LowDegreeBatchProof<B, E, H>,
-        pub_inputs_bytes: Vec<u8>,
+        proof: &LowDegreeBatchProof<B, E, H>,
+        pub_inputs_bytes: &Vec<u8>,
     ) -> Result<(), AccumulatorVerifierError> {
         let mut coin = RandomCoin::<B, H>::new(&pub_inputs_bytes);
         coin.reseed(last_layer_commit);

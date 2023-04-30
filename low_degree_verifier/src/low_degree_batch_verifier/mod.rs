@@ -15,14 +15,14 @@ pub fn verify_low_degree_batch_proof<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
-    proof: LowDegreeBatchProof<B, E, H>,
+    proof: &LowDegreeBatchProof<B, E, H>,
     max_degrees: Vec<usize>,
     public_coin: &mut RandomCoin<B, H>,
     num_queries: usize,
 ) -> Result<(), LowDegreeVerifierError> {
     let mut channel = DefaultFractalVerifierChannel::<E, H>::new(
-        proof.fri_proof,
-        proof.commitments,
+        proof.fri_proof.clone(),
+        proof.commitments.clone(),
         proof.num_evaluations,
         proof.options.folding_factor(),
     )?;
@@ -91,8 +91,8 @@ pub fn verify_low_degree_batch_proof<
         eval_domain_size,
         max_degrees,
         proof.fri_max_degree,
-        proof.all_unpadded_queried_evaluations,
-        proof.composed_queried_evaluations,
+        &proof.all_unpadded_queried_evaluations,
+        &proof.composed_queried_evaluations,
         queried_positions,
         alphas,
         betas,
@@ -109,8 +109,8 @@ fn verify_lower_degree_batch<
     eval_domain_size: usize,
     original_degrees: Vec<usize>,
     fri_max_degree: usize,
-    original_evals: Vec<Vec<E>>,
-    final_evals: Vec<E>,
+    original_evals: &Vec<Vec<E>>,
+    final_evals: &Vec<E>,
     positions: Vec<usize>,
     alphas: Vec<E>,
     betas: Vec<E>,
@@ -214,7 +214,7 @@ mod test {
         ];
         let proof = prover.generate_proof(&mut channel);
         assert!(
-            verify_low_degree_batch_proof(proof, max_degrees, &mut public_coin, num_queries)
+            verify_low_degree_batch_proof(&proof, max_degrees, &mut public_coin, num_queries)
                 .is_ok()
         );
 
@@ -232,7 +232,7 @@ mod test {
 
         let proof2 = prover.generate_proof(&mut channel);
         assert!(
-            verify_low_degree_batch_proof(proof2, max_degrees2, &mut public_coin, num_queries)
+            verify_low_degree_batch_proof(&proof2, max_degrees2, &mut public_coin, num_queries)
                 .is_ok()
         );
 

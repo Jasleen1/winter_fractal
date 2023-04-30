@@ -28,7 +28,7 @@ pub fn verify_sumcheck_proof<
 ) -> Result<(), SumcheckVerifierError> {
     // let mut public_coin = RandomCoin::new(&[]);
     verify_low_degree_batch_proof(
-        proof.batch_proof,
+        &proof.batch_proof,
         vec![g_max_degree, e_max_degree],
         public_coin,
         num_queries,

@@ -131,8 +131,8 @@ pub fn verify_layered_lincheck_proof_from_top<
 
     accumulator_verifier.verify_fri_proof(
         proof.layer_commitments[1],
-        proof.low_degree_proof,
-        pub_inputs_bytes,
+        &proof.low_degree_proof,
+        &pub_inputs_bytes,
     )?;
 
     Ok(())

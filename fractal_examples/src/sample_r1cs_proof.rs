@@ -209,7 +209,7 @@ pub(crate) fn orchestrate_r1cs_example<
     );
 
     let now = Instant::now();
-    verify_layered_fractal_proof_from_top(verifier_key, proof, pub_inputs_bytes, options).unwrap();
+    verify_layered_fractal_proof_from_top(&verifier_key, &proof, &pub_inputs_bytes, &options).unwrap();
     println!(
         "---------------------\nProof verified in {} ms",
         now.elapsed().as_millis()

@@ -89,10 +89,10 @@ pub fn verify_layered_fractal_proof_from_top<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
-    verifier_key: VerifierKey<B, H>,
-    proof: TopLevelProof<B, E, H>,
-    pub_inputs_bytes: Vec<u8>,
-    options: FractalOptions<B>,
+    verifier_key: &VerifierKey<B, H>,
+    proof: &TopLevelProof<B, E, H>,
+    pub_inputs_bytes: &Vec<u8>,
+    options: &FractalOptions<B>,
 ) -> Result<(), FractalVerifierError> {
     let mut accumulator_verifier: AccumulatorVerifier<B, E, H> = AccumulatorVerifier::new(
         options.evaluation_domain.len(),
@@ -131,8 +131,8 @@ pub fn verify_layered_fractal_proof_from_top<
 
     accumulator_verifier.verify_fri_proof(
         proof.layer_commitments[1],
-        proof.low_degree_proof,
-        pub_inputs_bytes,
+        &proof.low_degree_proof,
+        &pub_inputs_bytes,
     )?;
 
     Ok(())
