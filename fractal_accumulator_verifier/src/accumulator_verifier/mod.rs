@@ -163,7 +163,7 @@ impl<
             max_degrees.extend(v);
         }
         let res = verify_low_degree_batch_proof(proof, max_degrees, &mut coin, self.num_queries);
-        println!("res = {:?}", res);
+        //println!("res = {:?}", res);
         Ok(res?)
     }
 
