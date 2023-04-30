@@ -59,7 +59,7 @@ pub struct IndexDomains<B: StarkField> {
     pub inv_twiddles_k_elts: Vec<B>,
     pub twiddles_l_elts: Vec<B>,
     pub eta: B,
-    pub eta_k: B
+    pub eta_k: B,
 }
 
 /// ***************  HELPERS *************** \\\
@@ -73,9 +73,7 @@ pub struct IndexDomains<B: StarkField> {
 /// Perhaps we can add a function "get_subgroup_of_size" or "get_generator_of_order"
 /// Generators are needed here since we'll need those for FFT-friendly subgroups anyway.
 #[cfg_attr(feature = "flame_it", flame)]
-pub fn build_index_domains<B: StarkField>(
-    params: IndexParams<B>,
-) -> IndexDomains<B> {
+pub fn build_index_domains<B: StarkField>(params: IndexParams<B>) -> IndexDomains<B> {
     let num_input_variables = params.num_input_variables;
     let num_constraints = params.num_constraints;
     let num_non_zero = params.num_non_zero;

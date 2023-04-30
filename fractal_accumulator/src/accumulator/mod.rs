@@ -272,8 +272,11 @@ impl<
         );
 
         channel.public_coin.reseed(channel_state);
-        let mut low_degree_prover =
-            LowDegreeBatchProver::<B, E, H>::new(&self.evaluation_domain, self.fri_options.clone(), self.max_degree);
+        let mut low_degree_prover = LowDegreeBatchProver::<B, E, H>::new(
+            &self.evaluation_domain,
+            self.fri_options.clone(),
+            self.max_degree,
+        );
 
         for i in 0..self.fri_max_degrees_ext.len() {
             //println!("prover adding max_degree_ext {}", self.fri_max_degrees_ext.get(i).unwrap());
@@ -468,7 +471,7 @@ mod test {
                 num_queries,
                 fri_options,
                 vec![],
-                max_degree
+                max_degree,
             );
         let alphas = acc.draw_queries(Some(20))?;
         assert!(alphas.len() == 20);

@@ -29,7 +29,6 @@ use winter_math::FieldElement;
 use winter_math::StarkField;
 use winter_math::*;
 
-
 pub fn get_example_setup<
     B: StarkField,
     E: FieldElement<BaseField = B>,
@@ -93,7 +92,11 @@ fn files_to_setup_outputs<
     let num_non_zero = r1cs.max_num_nonzero().next_power_of_two();
     let num_constraints =
         max(max(r1cs.A.l0_norm(), r1cs.B.l0_norm()), r1cs.C.l0_norm()).next_power_of_two();
-    let max_degree = FractalProver::<B,E,H>::get_max_degree_constraint(num_input_variables, num_non_zero, num_constraints);
+    let max_degree = FractalProver::<B, E, H>::get_max_degree_constraint(
+        num_input_variables,
+        num_non_zero,
+        num_constraints,
+    );
     // TODO: make the calculation of eta automated
     let eta = B::GENERATOR.exp(B::PositiveInteger::from(2 * B::TWO_ADICITY));
     let eta_k = B::GENERATOR.exp(B::PositiveInteger::from(1337 * B::TWO_ADICITY));

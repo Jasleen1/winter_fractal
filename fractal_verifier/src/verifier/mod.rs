@@ -234,7 +234,7 @@ fn parse_proofs_for_subroutines<
     E: FieldElement<BaseField = B>,
     H: ElementHasher<BaseField = B>,
 >(
-    verifier_key: &VerifierKey<B,H>,
+    verifier_key: &VerifierKey<B, H>,
     proof: &TopLevelProof<B, E, H>,
     public_inputs_bytes: &Vec<u8>,
 ) -> LayeredFractalProof<B, E> {
@@ -281,9 +281,8 @@ fn parse_proofs_for_subroutines<
     let alpha: E = coin.draw().expect("failed to draw FRI alpha");
     coin.reseed(proof.layer_commitments[0]);
     let beta: E = coin.draw().expect("failed to draw FRI alpha");
-    
 
-//    coin.reseed(proof.layer_commitments[1]);
+    //    coin.reseed(proof.layer_commitments[1]);
 
     let gammas = &proof.unverified_misc;
 

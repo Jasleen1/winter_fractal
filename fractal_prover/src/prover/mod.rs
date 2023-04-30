@@ -229,10 +229,22 @@ impl<
         FRACTAL_LAYERS
     }
 
-    fn get_max_degree_constraint(num_input_variables: usize, num_non_zero: usize, num_constraints: usize) -> usize {
+    fn get_max_degree_constraint(
+        num_input_variables: usize,
+        num_non_zero: usize,
+        num_constraints: usize,
+    ) -> usize {
         core::cmp::max(
-            LincheckProver::<B,E,H>::get_max_degree_constraint(num_input_variables, num_non_zero, num_constraints),
-            RowcheckProver::<B,E,H>::get_max_degree_constraint(num_input_variables, num_non_zero, num_constraints)
+            LincheckProver::<B, E, H>::get_max_degree_constraint(
+                num_input_variables,
+                num_non_zero,
+                num_constraints,
+            ),
+            RowcheckProver::<B, E, H>::get_max_degree_constraint(
+                num_input_variables,
+                num_non_zero,
+                num_constraints,
+            ),
         )
     }
 }
@@ -266,7 +278,7 @@ impl<
             options.num_queries,
             options.fri_options.clone(),
             public_inputs_bytes,
-            self.prover_key.params.max_degree
+            self.prover_key.params.max_degree,
         );
         let mut layer_commitments = [<H as Hasher>::hash(&[0u8]); 2];
         let mut local_queries = Vec::<E>::new();
@@ -283,7 +295,7 @@ impl<
             // Doing this rn to make sure prover and verifier sample identically
             if i > 0 {
                 // argument to get_layer_commitment is offset by 1 because we used the accumulator earlier
-                let previous_commit = acc.get_layer_commitment(i+1)?;
+                let previous_commit = acc.get_layer_commitment(i + 1)?;
                 channel.commit_fractal_iop_layer(previous_commit);
                 coin.reseed(previous_commit);
             }

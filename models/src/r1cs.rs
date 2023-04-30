@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 
 use nohash_hasher::NoHashHasher;
@@ -47,11 +47,14 @@ pub fn valid_matrix<E: StarkField>(
     }
 }
 
-fn compress_matrix<E: StarkField>(longer_matrix: Vec<Vec<E>>) -> Vec<HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>>> {
-    let mut out_matrix = Vec::<HashMap::<usize, E, BuildHasherDefault<NoHashHasher<usize>>>>::new();
+fn compress_matrix<E: StarkField>(
+    longer_matrix: Vec<Vec<E>>,
+) -> Vec<HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>>> {
+    let mut out_matrix = Vec::<HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>>>::new();
     for row in longer_matrix.iter() {
-        let mut compressed_row = HashMap::<usize, E, BuildHasherDefault<NoHashHasher<usize>>>::default();
-        for (loc, elt)  in row.iter().enumerate() {
+        let mut compressed_row =
+            HashMap::<usize, E, BuildHasherDefault<NoHashHasher<usize>>>::default();
+        for (loc, elt) in row.iter().enumerate() {
             if *elt != E::ZERO {
                 compressed_row.insert(loc, *elt);
             }
@@ -83,9 +86,7 @@ impl<E: StarkField> Matrix<E> {
 
     // L0 norm, number of nonzero elements.
     pub fn l0_norm(&self) -> usize {
-        let l0_norm = self.mat.iter().fold(0, |a, row| {
-            a + row.len()
-        });
+        let l0_norm = self.mat.iter().fold(0, |a, row| a + row.len());
         l0_norm
     }
 
@@ -135,23 +136,38 @@ impl<E: StarkField> Matrix<E> {
 
     #[cfg_attr(feature = "flame_it", flame)]
     //fn compress_row(new_row: &Vec<E>) -> FxHashMap<usize, E> {
-    fn compress_row(new_row: &Vec<E>) -> HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>> {
+    fn compress_row(
+        new_row: &Vec<E>,
+    ) -> HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>> {
         //let mut new_row_comp = FxHashMap::<usize, E>::default();
-        let mut new_row_comp = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_comp =
+            HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
         for (loc, val) in new_row.iter().enumerate() {
             if *val != E::ZERO {
                 new_row_comp.insert(loc, *val);
             }
         }
         new_row_comp
-    } 
+    }
 
     #[cfg_attr(feature = "flame_it", flame)]
-    pub fn add_row(&mut self, new_row: &Vec<E>) {
+    pub fn add_row_vec(&mut self, new_row: &Vec<E>) {
         if new_row.len() != self.dims.1 {
             // FIXME: add error handling
         }
         self.mat.push(Self::compress_row(&new_row));
+        self.dims.0 = self.dims.0 + 1;
+    }
+
+    #[cfg_attr(feature = "flame_it", flame)]
+    pub fn add_row(
+        &mut self,
+        new_row: &HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>>,
+    ) {
+        // if new_row.len() != self.dims.1 {
+        //     // FIXME: add error handling
+        // }
+        self.mat.push(new_row.clone());
         self.dims.0 = self.dims.0 + 1;
     }
 
@@ -188,10 +204,12 @@ impl<E: StarkField> Matrix<E> {
         }
     }
 
-    fn row_to_vec(&self, row: &HashMap::<usize, E, BuildHasherDefault<NoHashHasher<usize>>>) -> Vec<E> {
+    fn row_to_vec(
+        &self,
+        row: &HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>>,
+    ) -> Vec<E> {
         let mut vec_form = vec![E::ZERO; self.dims.1];
-        row.iter()
-        .map(|(&loc, val)| vec_form[loc] = *val);
+        row.iter().map(|(&loc, val)| vec_form[loc] = *val);
         vec_form
     }
 
@@ -279,10 +297,22 @@ impl<E: StarkField> R1CS<E> {
     }
 
     #[cfg_attr(feature = "flame_it", flame)]
-    pub fn add_rows(&mut self, new_row_a: Vec<E>, new_row_b: Vec<E>, new_row_c: Vec<E>) {
-        self.A.add_row(&new_row_a);
-        self.B.add_row(&new_row_b);
-        self.C.add_row(&new_row_c);
+    pub fn add_rows_vec(&mut self, new_row_a: Vec<E>, new_row_b: Vec<E>, new_row_c: Vec<E>) {
+        self.A.add_row_vec(&new_row_a);
+        self.B.add_row_vec(&new_row_b);
+        self.C.add_row_vec(&new_row_c);
+    }
+
+    #[cfg_attr(feature = "flame_it", flame)]
+    pub fn add_rows(
+        &mut self,
+        new_row_a: &HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>>,
+        new_row_b: &HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>>,
+        new_row_c: &HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>>,
+    ) {
+        self.A.add_row(new_row_a);
+        self.B.add_row(new_row_b);
+        self.C.add_row(new_row_c);
     }
 
     pub fn pad_power_two(&mut self) {
