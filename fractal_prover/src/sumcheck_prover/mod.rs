@@ -76,7 +76,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         &mut self,
         accumulator: &mut Accumulator<B, E, H>,
         domain: &Vec<B>,
-        options: &FractalProverOptions<B>
+        options: &FractalProverOptions<B>,
     ) {
         // compute the polynomial g such that Sigma(g, sigma) = summing_poly
         // compute the polynomial e such that e = (Sigma(g, sigma) - summing_poly)/v_H over the summing domain H.
@@ -87,7 +87,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         //todo: don't need to recompute these here. You could try searching options for something the right size?
         let inv_twiddles = fft::get_inv_twiddles(domain.len());
 
-        // the following fft code could be replaced with: 
+        // the following fft code could be replaced with:
         // let domain_e: Vec<E> = domain.iter().map(|x| E::from(*x)).collect();
         // numerator_vals = polynom::eval_many(&self.numerator_coeffs, &domain_e);
         // denominator_vals = polynom::eval_many(&self.denominator_coeffs, &domain_e);
@@ -95,22 +95,39 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let numerator_vals: Vec<E>;
         let mut denominator_vals: Vec<E>;
 
-        let num_factor = max(1, self.numerator_coeffs.len().next_power_of_two() / domain.len());
+        let num_factor = max(
+            1,
+            self.numerator_coeffs.len().next_power_of_two() / domain.len(),
+        );
         pad_with_zeroes(&mut self.numerator_coeffs, num_factor * domain.len());
         let num_twiddles = fft::get_twiddles(num_factor * domain.len());
-        let numerator_more_vals = fft::evaluate_poly_with_offset(&self.numerator_coeffs, &num_twiddles, self.eta,1);
-        numerator_vals = (0..domain.len()).into_iter().map(|i| numerator_more_vals[num_factor * i]).collect();
+        let numerator_more_vals =
+            fft::evaluate_poly_with_offset(&self.numerator_coeffs, &num_twiddles, self.eta, 1);
+        numerator_vals = (0..domain.len())
+            .into_iter()
+            .map(|i| numerator_more_vals[num_factor * i])
+            .collect();
 
         // save some work if the denominator happens to be a constant
-        if self.denominator_coeffs.len() == 1{
+        if self.denominator_coeffs.len() == 1 {
             denominator_vals = vec![self.denominator_coeffs[0]; domain.len()];
-        }
-        else {
-            let denom_factor = max(1, self.denominator_coeffs.len().next_power_of_two() / domain.len());
+        } else {
+            let denom_factor = max(
+                1,
+                self.denominator_coeffs.len().next_power_of_two() / domain.len(),
+            );
             pad_with_zeroes(&mut self.denominator_coeffs, denom_factor * domain.len());
             let denom_twiddles = fft::get_twiddles(denom_factor * domain.len());
-            let denominator_more_vals = fft::evaluate_poly_with_offset(&self.denominator_coeffs, &denom_twiddles, self.eta,1);
-            denominator_vals = (0..domain.len()).into_iter().map(|i| denominator_more_vals[denom_factor * i]).collect();
+            let denominator_more_vals = fft::evaluate_poly_with_offset(
+                &self.denominator_coeffs,
+                &denom_twiddles,
+                self.eta,
+                1,
+            );
+            denominator_vals = (0..domain.len())
+                .into_iter()
+                .map(|i| denominator_more_vals[denom_factor * i])
+                .collect();
         }
 
         // invert all denominator values at once for much cheaper
@@ -122,11 +139,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
 
         let mut f_hat_coeffs = f_hat_evals;
         pad_with_zeroes(&mut f_hat_coeffs, domain.len());
-        fft::interpolate_poly_with_offset(
-            &mut f_hat_coeffs,
-            &inv_twiddles,
-            self.eta,
-        );
+        fft::interpolate_poly_with_offset(&mut f_hat_coeffs, &inv_twiddles, self.eta);
 
         let x_coeffs = vec![E::ZERO, E::ONE];
         let sub_factor = self.sigma / E::from(domain.len() as u64);
@@ -221,7 +234,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         _query: E,
         accumulator: &mut Accumulator<B, E, H>,
         domain: &Vec<B>,
-        options: &FractalProverOptions<B>
+        options: &FractalProverOptions<B>,
     ) -> Result<(), ProverError> {
         if self.get_current_layer() == 0 {
             self.sumcheck_layer_one(accumulator, domain, options);

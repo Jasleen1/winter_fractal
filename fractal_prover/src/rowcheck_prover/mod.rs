@@ -129,8 +129,12 @@ impl<
         self.current_layer
     }
 
-    fn get_max_degree_constraint(num_input_variables: usize, _num_non_zero: usize, num_constraints: usize) -> usize {
+    fn get_max_degree_constraint(
+        num_input_variables: usize,
+        _num_non_zero: usize,
+        num_constraints: usize,
+    ) -> usize {
         let h_domain_len = std::cmp::max(num_input_variables, num_constraints);
-        (h_domain_len -2).next_power_of_two()
+        (h_domain_len - 2).next_power_of_two()
     }
 }

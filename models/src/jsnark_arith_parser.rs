@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
 use std::io::BufRead;
 use std::io::BufReader;
 
 use lazy_static::lazy_static;
+use nohash_hasher::NoHashHasher;
 use regex::Regex;
 use sscanf::scanf;
 use winter_math::StarkField;
@@ -71,11 +74,12 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         new_row_b[0] = E::ONE;
         new_row_c[c_pos] = E::ONE;
 
-        self.r1cs_instance.add_rows(new_row_a, new_row_b, new_row_c);
+        self.r1cs_instance
+            .add_rows_vec(new_row_a, new_row_b, new_row_c);
     }
 
     #[cfg_attr(feature = "flame_it", flame)]
-    fn handle_mul(&mut self, coeff: E, in_args: Vec<usize>, out_args: Vec<usize>) {
+    fn handle_mul_vec(&mut self, coeff: E, in_args: Vec<usize>, out_args: Vec<usize>) {
         if self.verbose {
             println!("MUL: {} {:?} {:?}", coeff, in_args, out_args)
         };
@@ -97,7 +101,35 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         }
         new_row_c[c_pos] = E::ONE;
 
-        self.r1cs_instance.add_rows(new_row_a, new_row_b, new_row_c);
+        self.r1cs_instance
+            .add_rows_vec(new_row_a, new_row_b, new_row_c);
+    }
+
+    #[cfg_attr(feature = "flame_it", flame)]
+    fn handle_mul(&mut self, coeff: E, in_args: Vec<usize>, out_args: Vec<usize>) {
+        if self.verbose {
+            println!("MUL: {} {:?} {:?}", coeff, in_args, out_args)
+        };
+
+        let numcols = self.r1cs_instance.num_cols();
+        let mut new_row_a = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_b = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_c = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+
+        let a_pos = in_args[0];
+        let c_pos = out_args[0];
+
+        new_row_a.insert(a_pos, E::from(coeff));
+        if in_args.len() > 1 {
+            let b_pos = in_args[1];
+            new_row_b.insert(b_pos, E::ONE);
+        } else {
+            new_row_b.insert(0, E::ONE);
+        }
+        new_row_c.insert(c_pos, E::ONE);
+
+        self.r1cs_instance
+            .add_rows(&new_row_a, &new_row_b, &new_row_c);
     }
 
     #[cfg_attr(feature = "flame_it", flame)]
@@ -122,7 +154,8 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         new_row_c[b_pos] = E::ONE;
         new_row_c[c_pos] = E::ONE.neg();
 
-        self.r1cs_instance.add_rows(new_row_a, new_row_b, new_row_c);
+        self.r1cs_instance
+            .add_rows_vec(new_row_a, new_row_b, new_row_c);
     }
 
     #[cfg_attr(feature = "flame_it", flame)]
@@ -147,7 +180,8 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         new_row_c[b_pos] = E::ONE;
         new_row_c[c_pos] = E::ONE.neg();
 
-        self.r1cs_instance.add_rows(new_row_a, new_row_b, new_row_c);
+        self.r1cs_instance
+            .add_rows_vec(new_row_a, new_row_b, new_row_c);
     }
 
     fn handle_nonzero(&mut self, in_args: Vec<usize>, out_args: Vec<usize>) {
@@ -228,7 +262,6 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         let mut parts = line.split("#");
         let mut buf = parts.next().unwrap();
         buf = buf.trim();
-
 
         // Extended commands, including with implicit inputs (coefficients):
         match scanf!(

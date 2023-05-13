@@ -20,7 +20,6 @@ pub struct IndexedMatrix<B: StarkField> {
     pub row_poly: Vec<B>,
     pub col_poly: Vec<B>,
     pub val_poly: Vec<B>,
-
     //pub row_evals_on_l: Vec<E>,
     //pub col_evals_on_l: Vec<E>,
     //pub val_evals_on_l: Vec<E>,
@@ -66,7 +65,7 @@ pub fn index_matrix<B: StarkField>(
         let c_derivative = compute_derivative_xx(c, h_size);
         col_derivatives.push(c_derivative);
     }
-    
+
     for r_int in 0..num_rows {
         for c_int in mat.mat[r_int].keys() {
             if mat.mat[r_int][&c_int] == B::ZERO {
@@ -80,10 +79,9 @@ pub fn index_matrix<B: StarkField>(
             row_elts[count] = c;
             col_elts[count] = r;
             val_elts[count] = mat.mat[r_int][&c_int] / col_derivatives[*c_int];
-                // * polynomial_utils::compute_derivative_on_single_val(r, h_size)
-                // / ( * compute_derivative_xx(r, h_size));
+            // * polynomial_utils::compute_derivative_on_single_val(r, h_size)
+            // / ( * compute_derivative_xx(r, h_size));
             count += 1;
-        
         }
     }
     // println!("Clone 1");

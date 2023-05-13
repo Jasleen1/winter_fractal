@@ -102,9 +102,8 @@ fn test_single_indexed_matrix_17() {
         eta_k: SmallFieldElement17::ONE,
     };
     println!("104");
-    let domains: IndexDomains<
-        smallprimefield::BaseElement<17, 3, 4>,
-    > = build_index_domains(params.clone());
+    let domains: IndexDomains<smallprimefield::BaseElement<17, 3, 4>> =
+        build_index_domains(params.clone());
     println!("Domains {:?}", domains);
     let indexed_a = IndexedMatrix::new(matrix_a, &domains);
     println!("Indexed a is {:?}", indexed_a);

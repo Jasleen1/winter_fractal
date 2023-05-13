@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, usize, sync::Arc, collections::HashMap, hash::BuildHasherDefault};
 
-use fractal_indexer::{hash_values, snark_keys::*, index::IndexParams};
+use fractal_indexer::{hash_values, index::IndexParams, snark_keys::*};
 use fractal_utils::polynomial_utils::*;
 use models::r1cs::Matrix;
 use nohash_hasher::NoHashHasher;
@@ -97,12 +97,7 @@ impl<
             e_degree,
         );
 
-        product_sumcheck_prover.run_next_layer(
-            query,
-            accumulator,
-            &options.h_domain,
-            options
-        )?;
+        product_sumcheck_prover.run_next_layer(query, accumulator, &options.h_domain, options)?;
         Ok(())
     }
 
@@ -179,12 +174,7 @@ impl<
         );
 
         matrix_sumcheck_prover
-            .run_next_layer(
-                query,
-                accumulator,
-                &options.summing_domain,
-                options
-            )
+            .run_next_layer(query, accumulator, &options.summing_domain, options)
             .unwrap();
     }
 
@@ -233,9 +223,24 @@ impl<
 
         let summing_twiddles = fft::get_twiddles(options.summing_domain.len());
 
-        let col_evals = fft::evaluate_poly_with_offset(&self.prover_matrix_index.col_poly, &summing_twiddles, options.eta_k,1);
-        let val_evals = fft::evaluate_poly_with_offset(&self.prover_matrix_index.val_poly, &summing_twiddles, options.eta_k,1);
-        let row_evals = fft::evaluate_poly_with_offset(&self.prover_matrix_index.row_poly, &summing_twiddles, options.eta_k,1);
+        let col_evals = fft::evaluate_poly_with_offset(
+            &self.prover_matrix_index.col_poly,
+            &summing_twiddles,
+            options.eta_k,
+            1,
+        );
+        let val_evals = fft::evaluate_poly_with_offset(
+            &self.prover_matrix_index.val_poly,
+            &summing_twiddles,
+            options.eta_k,
+            1,
+        );
+        let row_evals = fft::evaluate_poly_with_offset(
+            &self.prover_matrix_index.row_poly,
+            &summing_twiddles,
+            options.eta_k,
+            1,
+        );
 
         let mut denom_terms: Vec<E> = col_evals
             .iter()
@@ -422,12 +427,16 @@ impl<
         2
     }
 
-    fn get_max_degree_constraint(num_input_variables: usize, num_non_zero: usize, num_constraints: usize) -> usize {
+    fn get_max_degree_constraint(
+        num_input_variables: usize,
+        num_non_zero: usize,
+        num_constraints: usize,
+    ) -> usize {
         let summing_domain_len = num_non_zero;
         let h_domain_len = std::cmp::max(num_input_variables, num_constraints);
         let v = vec![
-            h_domain_len -2, //product sumcheck g_degree
-            summing_domain_len -2, //matrix sumcheck g_degree
+            h_domain_len - 2,           //product sumcheck g_degree
+            summing_domain_len - 2,     //matrix sumcheck g_degree
             2 * summing_domain_len - 3, //matrix sumcheck e_degree
         ];
         v.iter().max().unwrap().next_power_of_two()

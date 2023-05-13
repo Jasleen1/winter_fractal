@@ -75,7 +75,6 @@ pub(crate) fn orchestrate_r1cs_example<
     wire_file: &str,
     verbose: bool,
 ) {
-
     let now = Instant::now();
     let mut arith_parser = JsnarkArithReaderParser::<B>::new().unwrap();
     arith_parser.parse_arith_file(&arith_file, verbose);
@@ -106,7 +105,11 @@ pub(crate) fn orchestrate_r1cs_example<
     let num_non_zero = r1cs.max_num_nonzero().next_power_of_two();
     let num_constraints =
         max(max(r1cs.A.num_rows(), r1cs.B.num_rows()), r1cs.C.num_rows()).next_power_of_two();
-    let max_degree = FractalProver::<B,E,H>::get_max_degree_constraint(num_input_variables, num_non_zero, num_constraints);
+    let max_degree = FractalProver::<B, E, H>::get_max_degree_constraint(
+        num_input_variables,
+        num_non_zero,
+        num_constraints,
+    );
     // TODO: make the calculation of eta automated
     let eta = B::GENERATOR.exp(B::PositiveInteger::from(2 * B::TWO_ADICITY));
     let eta_k = B::GENERATOR.exp(B::PositiveInteger::from(1337 * B::TWO_ADICITY));
@@ -209,7 +212,8 @@ pub(crate) fn orchestrate_r1cs_example<
     );
 
     let now = Instant::now();
-    verify_layered_fractal_proof_from_top(&verifier_key, &proof, &pub_inputs_bytes, &options).unwrap();
+    verify_layered_fractal_proof_from_top(&verifier_key, &proof, &pub_inputs_bytes, &options)
+        .unwrap();
     println!(
         "---------------------\nProof verified in {} ms",
         now.elapsed().as_millis()

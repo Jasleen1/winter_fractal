@@ -46,7 +46,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             constituant_polynomials: Vec::new(),
             evaluation_domain: evaluation_domain_e,
             max_degrees: Vec::new(),
-            fri_max_degree: fri_max_degree-1, //todo: the fri_max_degree should probably just be 1 less throughout the codebase
+            fri_max_degree: fri_max_degree - 1, //todo: the fri_max_degree should probably just be 1 less throughout the codebase
             fri_options,
             _h: PhantomData,
         }
@@ -162,7 +162,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         pad_with_zeroes(&mut composed_evals, eval_domain_size);
         fft::evaluate_poly(&mut composed_evals, &eval_domain_twiddles);
         //let composed_evals: Vec<E> =
-            //polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
+        //polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
         flame::end("composed_evals");
 
         let mut fri_prover =
@@ -171,7 +171,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             );
         fri_prover.build_layers(channel, composed_evals.clone());
         let fri_proof = fri_prover.build_proof(&queried_positions);
-        
+
         // use only the commitments that we just added
         let commitments = channel.layer_commitments()[commitment_idx..].to_vec();
         let composed_queried_evaluations = queried_positions

@@ -1,4 +1,4 @@
-use std::io::{BufReader, BufRead};
+use std::io::{BufRead, BufReader};
 
 use sscanf::scanf;
 use winter_math::StarkField;
@@ -114,7 +114,7 @@ impl<'a, E: StarkField> JsnarkWireReaderParser<E> {
         //     }
         //     Err(e) => println!("{:?}", e),
         // }
-       
+
         match crate::io::open_file(wire_file) {
             Ok(file) => {
                 let reader = BufReader::new(file);

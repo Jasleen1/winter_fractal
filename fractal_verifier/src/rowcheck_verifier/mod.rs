@@ -354,7 +354,7 @@ mod test {
             fractal_options.num_queries,
             fractal_options.fri_options.clone(),
             vec![],
-            prover_key.params.max_degree
+            prover_key.params.max_degree,
         );
 
         accumulator.add_unchecked_polynomial(f_az_coeffs.clone());
