@@ -1,8 +1,10 @@
-use std::{marker::PhantomData, usize, sync::Arc};
+use std::{marker::PhantomData, usize, sync::Arc, collections::HashMap, hash::BuildHasherDefault};
 
 use fractal_indexer::{hash_values, snark_keys::*, index::IndexParams};
 use fractal_utils::polynomial_utils::*;
 use models::r1cs::Matrix;
+use nohash_hasher::NoHashHasher;
+use rustc_hash::FxHashMap;
 
 use crate::{errors::ProverError, sumcheck_prover::*, LayeredProver, LayeredSubProver};
 use fractal_accumulator::accumulator::Accumulator;
@@ -246,17 +248,34 @@ impl<
             .map(|id| E::from(val_evals[id]) * denom_terms[id])
             .collect();
 
-        let mut sum_without_v_h_alpha = vec![];
 
-        for x_val_id in 0..options.summing_domain.len() {
-            // this division calculates (v_H(X)/ (X - row(k)))
-            let div_res_b = polynom::syn_div(&v_h_x, 1, row_evals[x_val_id]);
-            let div_res: Vec<E> = div_res_b.iter().map(|c| E::from(*c)).collect();
-            // term = (v_H(X)/ (X - row(k))) * (val(k)/ (alpha - col(k)))
-            let term = polynom::mul_by_scalar(&div_res, coefficient_values[x_val_id]);
-            sum_without_v_h_alpha = polynom::add(&sum_without_v_h_alpha, &term);
+        // For efficiency, we compute t_alpha as a evaluations over the H domain, as this allows us to skip most of the computation
+        // Below is a commented, slow version of what we're trying to do (but which is maybe easier to understand)
+        /*let mut evals_h = vec![];
+        for h_elt in options.h_domain.iter(){
+            let mut val = E::ZERO;
+            for k_idx in 0..options.summing_domain.len(){
+                if h_elt != &row_evals[k_idx]{
+                    continue;
+                }
+                val += E::from(compute_derivative_on_single_val(h_elt.clone(), options.h_domain.len() as u128)) * coefficient_values[k_idx];
+            }
+            evals_h.push(val);
+        }*/
+
+        // Instead of a double loop, use a hashmap to be able to look up which h_domain element a given row_poly evaluation is equal to
+        // As E doesn't implement Hash, we need to hash its bytes representation instead
+        let mut locations = FxHashMap::<&[u8], usize>::default();
+        let _: Vec<_> = options.h_domain.iter().enumerate().map(|(i, h)| locations.insert(h.as_bytes(), i)).collect();
+
+        let mut evals_h = vec![E::ZERO; options.h_domain.len()];
+        for k_idx in 0..options.summing_domain.len(){
+            let h_idx = *locations.get(row_evals[k_idx].as_bytes()).unwrap();
+            evals_h[h_idx] += E::from(compute_derivative_on_single_val(row_evals[k_idx], options.h_domain.len() as u128)) * coefficient_values[k_idx];
         }
-        polynom::mul_by_scalar(&sum_without_v_h_alpha, v_h_alpha)
+
+        fft::interpolate_poly_with_offset(&mut evals_h, &options.h_domain_inv_twiddles, options.eta);
+        polynom::mul_by_scalar(&evals_h, v_h_alpha)
     }
 
     /*#[cfg_attr(feature = "flame_it", flame("lincheck_prover"))]
