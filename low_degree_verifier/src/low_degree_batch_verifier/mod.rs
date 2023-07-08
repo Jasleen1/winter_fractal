@@ -45,7 +45,7 @@ pub fn verify_low_degree_batch_proof<
         .draw_integers(num_queries, eval_domain_size)
         .unwrap();
 
-    flame::start("verify fri");
+    // flame::start("verify fri");
     let fri_verifier = FriVerifier::<B, E, DefaultFractalVerifierChannel<E, H>, H>::new(
         &mut channel,
         public_coin,
@@ -57,7 +57,7 @@ pub fn verify_low_degree_batch_proof<
         &proof.composed_queried_evaluations,
         &queried_positions,
     )?;
-    flame::end("verify fri");
+    // flame::end("verify fri");
 
     // Verify that merkle leaves are correct
     flame::start("verify merkle leaves");

@@ -8,10 +8,11 @@ use std::cmp::max;
 use std::time::Instant;
 
 use fractal_proofs::{fft, FractalProverOptions, Serializable};
+use fractal_prover::batched_lincheck_full_prover::BatchedFractalProver;
 use fractal_prover::LayeredProver;
 use fractal_prover::{prover::FractalProver, LayeredSubProver};
 use fractal_utils::FractalOptions;
-use fractal_verifier::verifier::verify_layered_fractal_proof_from_top;
+use fractal_verifier::verifier_with_batched_lincheck::verify_layered_fractal_proof_from_top;
 use models::r1cs::Matrix;
 use winter_fri::FriOptions;
 
@@ -200,8 +201,12 @@ pub(crate) fn orchestrate_r1cs_example<
     println!("Prover and verifier keys generated");
     let pub_inputs_bytes = vec![0u8, 1u8, 2u8];
     //let pub_inputs_bytes = vec![];
-    let mut prover =
-        FractalProver::<B, E, H>::new(prover_key.into(), vec![], wires, pub_inputs_bytes.clone());
+    let mut prover = BatchedFractalProver::<B, E, H>::new(
+        prover_key.into(),
+        vec![],
+        wires,
+        pub_inputs_bytes.clone(),
+    );
     let now = Instant::now();
     let proof = prover
         .generate_proof(&None, pub_inputs_bytes.clone(), &prover_options)

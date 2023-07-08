@@ -146,6 +146,19 @@ pub struct LayeredLincheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
     pub gamma: E,
 }
 
+pub struct BatchedLayeredLincheckProof<B: StarkField, E: FieldElement<BaseField = B>> {
+    pub row_vals: [Vec<E>; 3],
+    pub col_vals: [Vec<E>; 3],
+    pub val_vals: [Vec<E>; 3],
+    pub f_z_vals: Vec<E>,
+    pub f_mz_vals: [Vec<E>; 3],
+    pub t_alpha_vals: Vec<E>,
+    pub product_sumcheck_vals: Vec<(E, E)>,
+    pub matrix_sumcheck_vals: Vec<(E, E)>,
+    pub alpha: E,
+    pub beta: E,
+    pub gamma: E,
+}
 // impl<B: StarkField, E: FieldElement<BaseField = B>> Serializable
 //     for LayeredLincheckProof<B, E>
 // {

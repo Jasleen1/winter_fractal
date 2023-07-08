@@ -11,6 +11,8 @@ use log;
 use winter_crypto::ElementHasher;
 use winter_fri::{FriOptions, ProverChannel};
 use winter_math::StarkField;
+pub mod batched_lincheck_full_prover;
+pub mod batched_lincheck_prover;
 pub mod errors;
 pub mod lincheck_prover;
 pub mod prover;

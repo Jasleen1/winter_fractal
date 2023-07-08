@@ -19,6 +19,13 @@ bench = false
 doc = false
 debug = 1
 
+[[bin]]
+name = "fractal-orchestrator-2"
+path = "src/sample_r1cs_proof_batched.rs"
+bench = false
+doc = false
+debug = 1
+
 [features]
 default = ["flame_it"]
 flame_it = ["flame", "flamer", "fractal_utils/flame_it", "fractal_indexer/flame_it", "fractal_prover/flame_it", "fractal_verifier/flame_it", "models/flame_it"]
