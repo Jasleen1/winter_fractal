@@ -14,12 +14,15 @@ use winter_fri::{FriOptions, ProverChannel};
 use winter_math::{FieldElement, StarkField};
 use winter_utils::transpose_slice;
 
-use fractal_accumulator::accumulator::{Accumulator, self};
+use fractal_accumulator::accumulator::{self, Accumulator};
 use fractal_utils::channel::DefaultFractalProverChannel;
 
 use crate::{
-    errors::ProverError, lincheck_prover::LincheckProver, rowcheck_prover::RowcheckProver,
-    LayeredProver, LayeredSubProver, FRACTAL_LAYERS, batched_lincheck_prover::{BatchedLincheckProver, self},
+    batched_lincheck_prover::{self, BatchedLincheckProver},
+    errors::ProverError,
+    lincheck_prover::LincheckProver,
+    rowcheck_prover::RowcheckProver,
+    LayeredProver, LayeredSubProver, FRACTAL_LAYERS,
 };
 
 pub struct BatchedFractalProver<
@@ -157,16 +160,19 @@ impl<
         let prover_matrix_indexes = [
             self.prover_key.matrix_a_index.clone(),
             self.prover_key.matrix_b_index.clone(),
-            self.prover_key.matrix_c_index.clone()
+            self.prover_key.matrix_c_index.clone(),
         ];
 
         let mut batched_lincheck_prover = BatchedLincheckProver::<B, E, H>::new(
-            prover_matrix_indexes, 
-            [self.f_az_coeffs.to_vec(), 
-            self.f_bz_coeffs.to_vec(),
-            self.f_cz_coeffs.to_vec()], 
-            self.z_coeffs.to_vec());
-        
+            prover_matrix_indexes,
+            [
+                self.f_az_coeffs.to_vec(),
+                self.f_bz_coeffs.to_vec(),
+                self.f_cz_coeffs.to_vec(),
+            ],
+            self.z_coeffs.to_vec(),
+        );
+
         // let mut lincheck_prover_a = LincheckProver::<B, E, H>::new(
         //     a_index,
         //     self.f_az_coeffs.to_vec(),
@@ -336,7 +342,7 @@ impl<
         ];
 
         //println!("Finished decommitting");
-        let gamma =  &self.lincheck_prover[0].retrieve_gamma(beta)?;
+        let gamma = &self.lincheck_prover[0].retrieve_gamma(beta)?;
         let gammas = vec![
             *gamma,
             // self.lincheck_provers[0].retrieve_gamma(beta)?,

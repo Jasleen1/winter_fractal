@@ -13,7 +13,7 @@ use low_degree_prover::low_degree_batch_prover::LowDegreeBatchProver;
 use low_degree_prover::low_degree_prover::LowDegreeProver;
 use winter_crypto::ElementHasher;
 use winter_fri::{DefaultProverChannel, FriOptions};
-use winter_math::{fft, FieldElement, StarkField, utils, log2};
+use winter_math::{fft, log2, utils, FieldElement, StarkField};
 
 use fractal_proofs::{polynom, OracleQueries, SumcheckProof};
 #[cfg(test)]
@@ -139,7 +139,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             .map(|i| numerator_vals[i] * inv_denominator_vals[i])
             .collect();
 
-
         let mut sum_val = E::ZERO;
         for term in f_hat_evals.clone() {
             sum_val = sum_val + term;
@@ -147,7 +146,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
 
         println!("sum_val = {:?}", sum_val);
         println!("sigma = {:?}", self.sigma);
-        
 
         let mut f_hat_coeffs = f_hat_evals;
         pad_with_zeroes(&mut f_hat_coeffs, domain.len());
@@ -167,7 +165,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         //     self.eta,
         //     domain.len(),
         // );
-
 
         println!("Domain size = {}", domain.len());
         let mut numerator = numerator_vals.clone();
@@ -252,17 +249,17 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         flame::end("submul");
         divide_by_vanishing_in_place(&mut sigma_minus_f, E::from(eta), summing_domain_len);
         // Now we want to lower the degree to sigma_minus_f to where we want it
-        let summing_domain_base = B::get_root_of_unity(log2(summing_domain_len));
-        let summing_domain = utils::get_power_series_with_offset(summing_domain_base, eta, summing_domain_len);
-        let summing_domain_e = summing_domain.iter().map(|x| E::from(*x)).collect::<Vec<E>>();
+        // let summing_domain_base = B::get_root_of_unity(log2(summing_domain_len));
+        // let summing_domain = utils::get_power_series_with_offset(summing_domain_base, eta, summing_domain_len);
+        // let summing_domain_e = summing_domain.iter().map(|x| E::from(*x)).collect::<Vec<E>>();
 
-        let mut sigma_minus_f_evals = polynom::eval_many(&sigma_minus_f, &summing_domain_e);
-        let inv_twiddles = fft::get_inv_twiddles(summing_domain_len);
-        fft::interpolate_poly_with_offset(&mut sigma_minus_f_evals, &inv_twiddles, eta);
+        // // let mut sigma_minus_f_evals = polynom::eval_many(&sigma_minus_f, &summing_domain_e);
+        // // let inv_twiddles = fft::get_inv_twiddles(summing_domain_len);
+        // // fft::interpolate_poly_with_offset(&mut sigma_minus_f_evals, &inv_twiddles, eta);
 
-        sigma_minus_f_evals
-        //let vanishing_on_x = get_vanishing_poly(E::from(eta), summing_domain_len);
-        //polynom::div(&sigma_minus_f, &vanishing_on_x)
+        sigma_minus_f
+        // let vanishing_on_x = get_vanishing_poly(E::from(eta), summing_domain_len);
+        // polynom::div(&sigma_minus_f, &vanishing_on_x)
     }
 
     // #[cfg_attr(feature = "flame_it", flame("sumcheck_prover"))]
@@ -294,15 +291,14 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     //     let inv_twiddles = fft::get_inv_twiddles(summing_domain_len);
     //     let summing_domain_base = B::get_root_of_unity(log2(summing_domain_len));
     //     let summing_domain = utils::get_power_series_with_offset(summing_domain_base, eta, summing_domain_len);
-        
+
     //     // fractal_utils::polynomial_utils::pad_with_zeroes(&mut sigma_minus_f, summing_domain_len);
     //     // fft::evaluate_poly(&mut sigma_minus_f, &twiddles);
     //     let summing_domain_e = summing_domain.iter().map(|x| E::from(*x)).collect::<Vec<E>>();
-        
+
     //     // let sigma_minus_f_evals = polynom::eval_many(&sigma_minus_f, &summing_domain_e);
 
     //     divide_by_vanishing_in_place(&mut sigma_minus_f, E::from(eta), summing_domain_len);
-
 
     //     let mut sigma_minus_f_evals = polynom::eval_many(&sigma_minus_f, &summing_domain_e);
 
@@ -315,7 +311,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     //     // println!("div_evals = {:?}", div_evals);
     //     fft::interpolate_poly_with_offset(&mut sigma_minus_f_evals, &inv_twiddles, eta);
     //     // let div_coeffs = polynom::interpolate(&summing_domain_e, &sigma_minus_f_evals, true);
-        
+
     //     // div_coeffs.to_vec()
     //     sigma_minus_f_evals
 
@@ -325,8 +321,6 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     //     //let vanishing_on_x = get_vanishing_poly(E::from(eta), summing_domain_len);
     //     //polynom::div(&sigma_minus_f, &vanishing_on_x)
     // }
-
-
 
     fn get_current_layer(&self) -> usize {
         self.current_layer

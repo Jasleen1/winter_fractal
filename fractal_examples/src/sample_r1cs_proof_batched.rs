@@ -106,7 +106,7 @@ pub(crate) fn orchestrate_r1cs_example<
     let num_non_zero = r1cs.max_num_nonzero().next_power_of_two();
     let num_constraints =
         max(max(r1cs.A.num_rows(), r1cs.B.num_rows()), r1cs.C.num_rows()).next_power_of_two();
-    let max_degree = FractalProver::<B, E, H>::get_max_degree_constraint(
+    let max_degree = FractalProver::<B, E, H>::get_max_degree_constraint_batched(
         num_input_variables,
         num_non_zero,
         num_constraints,

@@ -404,6 +404,21 @@ impl<
 
         poly
     }
+
+    pub fn get_max_degree_constraint_batched(
+        num_input_variables: usize,
+        num_non_zero: usize,
+        num_constraints: usize,
+    ) -> usize {
+        let summing_domain_len = num_non_zero;
+        let h_domain_len = std::cmp::max(num_input_variables, num_constraints);
+        let v = vec![
+            h_domain_len - 2,           //product sumcheck g_degree
+            summing_domain_len - 2,     //matrix sumcheck g_degree
+            6 * summing_domain_len - 5, //matrix sumcheck e_degree
+        ];
+        v.iter().max().unwrap().next_power_of_two()
+    }
 }
 
 impl<

@@ -335,11 +335,8 @@ pub(crate) fn verify_layered_lincheck_proof<
             f_1[matrix_id] = etas[matrix_id] * proof.f_mz_vals[matrix_id][i];
         }
 
-
         let f_2 = proof.f_z_vals[i];
         let t_alpha = proof.t_alpha_vals[i];
-
-        
 
         product_sumcheck_g_decommits.push(proof.product_sumcheck_vals[i].0);
         product_sumcheck_e_decommits.push(proof.product_sumcheck_vals[i].1);
@@ -350,12 +347,14 @@ pub(crate) fn verify_layered_lincheck_proof<
         }
 
         if queried_positions[i] == 697 {
-            println!("F1s = {:?}, {:?}, {:?}", proof.f_mz_vals[0][i], proof.f_mz_vals[1][i], proof.f_mz_vals[2][i]);
+            println!(
+                "F1s = {:?}, {:?}, {:?}",
+                proof.f_mz_vals[0][i], proof.f_mz_vals[1][i], proof.f_mz_vals[2][i]
+            );
             println!("f_1 comb = {:?}", f_1[0] + f_1[1] + f_1[2]);
             println!("f_2 = {:?}", f_2);
             println!("t_alpha = {:?}", t_alpha);
             println!("Full term = {:?}", product_numerator_term);
-            
         }
 
         product_sumcheck_numerator_decommits.push(product_numerator_term);
@@ -366,19 +365,20 @@ pub(crate) fn verify_layered_lincheck_proof<
         let mut mat_numerator_term = E::ZERO;
         let mut mat_denom_term = E::ONE;
         for matrix_id in 0..3 {
-            let mat_denom_other_two = (proof.beta - proof.row_vals[(matrix_id + 1) % 3][i]) 
+            let mat_denom_other_two = (proof.beta - proof.row_vals[(matrix_id + 1) % 3][i])
                 * (proof.alpha - proof.col_vals[(matrix_id + 1) % 3][i])
                 * (proof.beta - proof.row_vals[(matrix_id + 2) % 3][i])
                 * (proof.alpha - proof.col_vals[(matrix_id + 2) % 3][i]);
-            mat_numerator_term =
-                mat_numerator_term + (proof.val_vals[matrix_id][i] * mat_denom_other_two * etas[matrix_id]);
-            mat_denom_term = mat_denom_term * (proof.alpha - proof.col_vals[matrix_id][i])
+            mat_numerator_term = mat_numerator_term
+                + (proof.val_vals[matrix_id][i] * mat_denom_other_two * etas[matrix_id]);
+            mat_denom_term = mat_denom_term
+                * (proof.alpha - proof.col_vals[matrix_id][i])
                 * (proof.beta - proof.row_vals[matrix_id][i]);
         }
 
         if queried_positions[i] == 697 {
             let matrix_id = 0;
-            let mat_denom_other_two = (proof.beta - proof.row_vals[(matrix_id + 1) % 3][i]) 
+            let mat_denom_other_two = (proof.beta - proof.row_vals[(matrix_id + 1) % 3][i])
                 * (proof.alpha - proof.col_vals[(matrix_id + 1) % 3][i])
                 * (proof.beta - proof.row_vals[(matrix_id + 2) % 3][i])
                 * (proof.alpha - proof.col_vals[(matrix_id + 2) % 3][i]);
@@ -435,7 +435,7 @@ pub(crate) fn verify_layered_lincheck_proof<
     )?;
 
     accumulator_verifier.add_constraint(k_domain_size - 2, starting_layer + 1);
-    accumulator_verifier.add_constraint(2 * k_domain_size - 3, starting_layer + 1);
+    accumulator_verifier.add_constraint(6 * k_domain_size - 5, starting_layer + 1);
 
     Ok(())
 }

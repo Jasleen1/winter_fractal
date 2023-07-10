@@ -93,12 +93,15 @@ impl<
         let g_degree = options.h_domain.len() - 2;
         let e_degree = options.h_domain.len() - 1;
 
-        println!("Product poly degree = {:?}", polynom::degree_of(&poly_prod_coeffs));
+        println!(
+            "Product poly degree = {:?}",
+            polynom::degree_of(&poly_prod_coeffs)
+        );
 
         // Validate the sum
         let mut sum_val = E::ZERO;
         for elt in options.h_domain.clone() {
-            sum_val = sum_val + polynom::eval(&poly_prod_coeffs.clone(), E::from(elt)) ;
+            sum_val = sum_val + polynom::eval(&poly_prod_coeffs.clone(), E::from(elt));
         }
         println!("Sum that should be 0 = {:?}", sum_val);
 
@@ -137,7 +140,8 @@ impl<
         // if we wanted to be really fancy, we could extract this from the accumulator...
         let etas = self.etas.unwrap();
         let gamma = polynom::eval(&self.t_alpha.as_ref().unwrap(), beta);
-        let v_h_alpha = compute_vanishing_poly(alpha, E::from(options.eta), options.size_subgroup_h);
+        let v_h_alpha =
+            compute_vanishing_poly(alpha, E::from(options.eta), options.size_subgroup_h);
         let v_h_beta = compute_vanishing_poly(beta, E::from(options.eta), options.size_subgroup_h);
         /////// Do all this for matrix A
         let matrix_proof_numerator_a = polynom::mul_by_scalar(
@@ -146,8 +150,7 @@ impl<
                 .iter()
                 .map(|i| E::from(*i))
                 .collect::<Vec<E>>(),
-                v_h_alpha
-                * v_h_beta,
+            v_h_alpha * v_h_beta,
         );
 
         let mut alpha_minus_col_a =
@@ -173,8 +176,7 @@ impl<
                 .iter()
                 .map(|i| E::from(*i))
                 .collect::<Vec<E>>(),
-                v_h_alpha
-                * v_h_beta,
+            v_h_alpha * v_h_beta,
         );
 
         let mut alpha_minus_col_b =
@@ -201,8 +203,7 @@ impl<
                 .iter()
                 .map(|i| E::from(*i))
                 .collect::<Vec<E>>(),
-                v_h_alpha
-                * v_h_beta,
+            v_h_alpha * v_h_beta,
         );
         // let mut alpha_minus_row_c =
         //     polynom::mul_by_scalar(&self.prover_matrix_indexes[0].row_poly, -B::ONE)
@@ -251,12 +252,27 @@ impl<
             &polynom::mul_by_scalar(&fft_mul(&matrix_proof_numerator_c, &denom_ab), etas[2]),
         );
 
-        println!("b_row degree = {:?}", polynom::degree_of(&self.prover_matrix_indexes[1].row_poly));
-        println!("b_col degree = {:?}", polynom::degree_of(&self.prover_matrix_indexes[1].col_poly));
+        println!(
+            "b_row degree = {:?}",
+            polynom::degree_of(&self.prover_matrix_indexes[1].row_poly)
+        );
+        println!(
+            "b_col degree = {:?}",
+            polynom::degree_of(&self.prover_matrix_indexes[1].col_poly)
+        );
 
-        println!("Degree a = {}", polynom::degree_of(&matrix_proof_denominator_a));
-        println!("Degree b = {}", polynom::degree_of(&matrix_proof_denominator_b));
-        println!("Degree c = {}", polynom::degree_of(&matrix_proof_denominator_c));
+        println!(
+            "Degree a = {}",
+            polynom::degree_of(&matrix_proof_denominator_a)
+        );
+        println!(
+            "Degree b = {}",
+            polynom::degree_of(&matrix_proof_denominator_b)
+        );
+        println!(
+            "Degree c = {}",
+            polynom::degree_of(&matrix_proof_denominator_c)
+        );
         println!("Degree ab = {}", polynom::degree_of(&denom_ab));
         println!("Degree bc = {}", polynom::degree_of(&denom_bc));
         println!("Degree ac = {}", polynom::degree_of(&denom_ac));
@@ -264,7 +280,6 @@ impl<
         let matrix_proof_denominator = fft_mul(&denom_bc, &matrix_proof_denominator_a);
 
         let totes = 2 * options.l_domain_twiddles.len();
-        
 
         let matrix_a_num_evals = &mut matrix_proof_numerator_a.clone();
         let denom_bc_evals = &mut denom_bc.clone();
@@ -288,12 +303,20 @@ impl<
         // println!("Denominator = {:?}", matrix_denom_evals[697]);
         // println!("denom_bc = {:?}", denom_bc_evals[697]);
         // println!("etas = {:?}", etas);
-        println!("numerator degree = {:?}", polynom::degree_of(&matrix_proof_numerator));
-        println!("denominator degree = {:?}", polynom::degree_of(&matrix_proof_denominator));
+        println!(
+            "numerator degree = {:?}",
+            polynom::degree_of(&matrix_proof_numerator)
+        );
+        println!(
+            "denominator degree = {:?}",
+            polynom::degree_of(&matrix_proof_denominator)
+        );
         // Validating that the sum is what we'd expect
         let mut sum_val = E::ZERO;
         for elt in options.summing_domain.clone() {
-            sum_val = sum_val + (polynom::eval(&matrix_proof_numerator, E::from(elt))/ polynom::eval(&matrix_proof_denominator, E::from(elt))) ;
+            sum_val = sum_val
+                + (polynom::eval(&matrix_proof_numerator, E::from(elt))
+                    / polynom::eval(&matrix_proof_denominator, E::from(elt)));
         }
         println!("Sum = {:?}", sum_val);
         println!("gamma = {:?}", gamma);
@@ -309,7 +332,7 @@ impl<
             gamma,
             options.eta_k,
             options.summing_domain.len() - 2,
-            2 * options.summing_domain.len() - 3,
+            6 * options.summing_domain.len() - 5,
         );
 
         matrix_sumcheck_prover
@@ -627,22 +650,32 @@ impl<
                     .collect::<Vec<E>>(),
                 etas[2],
             ),
-        );  
-
- 
+        );
 
         let query_pos = 697;
-        let f_1_a_eval = polynom::eval(&self.f_1_poly_coeffs[0], options.evaluation_domain[query_pos]);
-        let f_1_b_eval = polynom::eval(&self.f_1_poly_coeffs[1], options.evaluation_domain[query_pos]);
-        let f_1_c_eval = polynom::eval(&self.f_1_poly_coeffs[2], options.evaluation_domain[query_pos]);
+        let f_1_a_eval = polynom::eval(
+            &self.f_1_poly_coeffs[0],
+            options.evaluation_domain[query_pos],
+        );
+        let f_1_b_eval = polynom::eval(
+            &self.f_1_poly_coeffs[1],
+            options.evaluation_domain[query_pos],
+        );
+        let f_1_c_eval = polynom::eval(
+            &self.f_1_poly_coeffs[2],
+            options.evaluation_domain[query_pos],
+        );
         let f_2_eval = polynom::eval(&self.f_2_poly_coeffs, options.evaluation_domain[query_pos]);
-   
 
         println!("F1s = {:?}, {:?}, {:?}", f_1_a_eval, f_1_b_eval, f_1_c_eval);
-        println!("f_sum = {:?}", (etas[0] * E::from(f_1_a_eval)) + (etas[1] * E::from(f_1_b_eval)) + (etas[2] * E::from(f_1_c_eval)));
+        println!(
+            "f_sum = {:?}",
+            (etas[0] * E::from(f_1_a_eval))
+                + (etas[1] * E::from(f_1_b_eval))
+                + (etas[2] * E::from(f_1_c_eval))
+        );
         println!("Etas = {:?}", etas);
         println!("f_2 = {:?}", f_2_eval);
-
 
         let mut poly = polynom::sub(
             &fft_mul(&u_alpha_coeffs, &f_1_sum_poly_coeffs),
@@ -669,7 +702,6 @@ impl<
         fractal_utils::polynomial_utils::pad_with_zeroes(t_alpha_eval, totes);
         fft::evaluate_poly(t_alpha_eval, &options.l_domain_twiddles);
         println!("t_alpha eval = {:?}", t_alpha_eval[query_pos]);
-
 
         poly
     }

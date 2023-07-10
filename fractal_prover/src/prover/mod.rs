@@ -194,6 +194,25 @@ impl<
         }
         Ok(())
     }
+
+    pub fn get_max_degree_constraint_batched(
+        num_input_variables: usize,
+        num_non_zero: usize,
+        num_constraints: usize,
+    ) -> usize {
+        core::cmp::max(
+            LincheckProver::<B, E, H>::get_max_degree_constraint_batched(
+                num_input_variables,
+                num_non_zero,
+                num_constraints,
+            ),
+            RowcheckProver::<B, E, H>::get_max_degree_constraint(
+                num_input_variables,
+                num_non_zero,
+                num_constraints,
+            ),
+        )
+    }
 }
 
 impl<

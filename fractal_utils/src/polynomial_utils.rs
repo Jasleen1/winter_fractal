@@ -147,7 +147,12 @@ pub fn get_randomized_complementary_poly<E: FieldElement>(
     alpha: E,
     beta: E,
 ) -> Vec<E> {
-    assert!(desired_degree >= current_degree);
+    assert!(
+        desired_degree >= current_degree,
+        "Desired = {:?}, current = {:?}",
+        desired_degree,
+        current_degree
+    );
     let comp_deg = desired_degree - current_degree;
     let mut out_poly = vec![E::ZERO; comp_deg];
     out_poly.push(alpha);
