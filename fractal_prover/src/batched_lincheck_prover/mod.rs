@@ -93,17 +93,17 @@ impl<
         let g_degree = options.h_domain.len() - 2;
         let e_degree = options.h_domain.len() - 1;
 
-        println!(
-            "Product poly degree = {:?}",
-            polynom::degree_of(&poly_prod_coeffs)
-        );
+        // println!(
+        //     "Product poly degree = {:?}",
+        //     polynom::degree_of(&poly_prod_coeffs)
+        // );
 
         // Validate the sum
-        let mut sum_val = E::ZERO;
-        for elt in options.h_domain.clone() {
-            sum_val = sum_val + polynom::eval(&poly_prod_coeffs.clone(), E::from(elt));
-        }
-        println!("Sum that should be 0 = {:?}", sum_val);
+        // let mut sum_val = E::ZERO;
+        // for elt in options.h_domain.clone() {
+        //     sum_val = sum_val + polynom::eval(&poly_prod_coeffs.clone(), E::from(elt));
+        // }
+        // println!("Sum that should be 0 = {:?}", sum_val);
 
         let mut product_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
             poly_prod_coeffs.clone(),
@@ -252,30 +252,7 @@ impl<
             &polynom::mul_by_scalar(&fft_mul(&matrix_proof_numerator_c, &denom_ab), etas[2]),
         );
 
-        println!(
-            "b_row degree = {:?}",
-            polynom::degree_of(&self.prover_matrix_indexes[1].row_poly)
-        );
-        println!(
-            "b_col degree = {:?}",
-            polynom::degree_of(&self.prover_matrix_indexes[1].col_poly)
-        );
-
-        println!(
-            "Degree a = {}",
-            polynom::degree_of(&matrix_proof_denominator_a)
-        );
-        println!(
-            "Degree b = {}",
-            polynom::degree_of(&matrix_proof_denominator_b)
-        );
-        println!(
-            "Degree c = {}",
-            polynom::degree_of(&matrix_proof_denominator_c)
-        );
-        println!("Degree ab = {}", polynom::degree_of(&denom_ab));
-        println!("Degree bc = {}", polynom::degree_of(&denom_bc));
-        println!("Degree ac = {}", polynom::degree_of(&denom_ac));
+       
 
         let matrix_proof_denominator = fft_mul(&denom_bc, &matrix_proof_denominator_a);
 
@@ -286,15 +263,15 @@ impl<
         let matrix_num_evals = &mut matrix_proof_numerator.clone();
         let matrix_denom_evals = &mut matrix_proof_denominator.clone();
 
-        fractal_utils::polynomial_utils::pad_with_zeroes(denom_bc_evals, totes);
-        fractal_utils::polynomial_utils::pad_with_zeroes(matrix_a_num_evals, totes);
-        fractal_utils::polynomial_utils::pad_with_zeroes(matrix_num_evals, totes);
-        fractal_utils::polynomial_utils::pad_with_zeroes(matrix_denom_evals, totes);
+        // fractal_utils::polynomial_utils::pad_with_zeroes(denom_bc_evals, totes);
+        // fractal_utils::polynomial_utils::pad_with_zeroes(matrix_a_num_evals, totes);
+        // fractal_utils::polynomial_utils::pad_with_zeroes(matrix_num_evals, totes);
+        // fractal_utils::polynomial_utils::pad_with_zeroes(matrix_denom_evals, totes);
 
-        fft::evaluate_poly(denom_bc_evals, &options.l_domain_twiddles);
-        fft::evaluate_poly(matrix_a_num_evals, &options.l_domain_twiddles);
-        fft::evaluate_poly(matrix_num_evals, &options.l_domain_twiddles);
-        fft::evaluate_poly(matrix_denom_evals, &options.l_domain_twiddles);
+        // fft::evaluate_poly(denom_bc_evals, &options.l_domain_twiddles);
+        // fft::evaluate_poly(matrix_a_num_evals, &options.l_domain_twiddles);
+        // fft::evaluate_poly(matrix_num_evals, &options.l_domain_twiddles);
+        // fft::evaluate_poly(matrix_denom_evals, &options.l_domain_twiddles);
 
         // println!("Matrix num evals {:?}", matrix_num_evals);
         // println!("row val for a = {:?}", polynom::eval(&self.prover_matrix_indexes[0].row_poly, options.evaluation_domain[697]));
@@ -303,14 +280,14 @@ impl<
         // println!("Denominator = {:?}", matrix_denom_evals[697]);
         // println!("denom_bc = {:?}", denom_bc_evals[697]);
         // println!("etas = {:?}", etas);
-        println!(
-            "numerator degree = {:?}",
-            polynom::degree_of(&matrix_proof_numerator)
-        );
-        println!(
-            "denominator degree = {:?}",
-            polynom::degree_of(&matrix_proof_denominator)
-        );
+        // println!(
+        //     "numerator degree = {:?}",
+        //     polynom::degree_of(&matrix_proof_numerator)
+        // );
+        // println!(
+        //     "denominator degree = {:?}",
+        //     polynom::degree_of(&matrix_proof_denominator)
+        // );
         // Validating that the sum is what we'd expect
         let mut sum_val = E::ZERO;
         for elt in options.summing_domain.clone() {
@@ -318,13 +295,13 @@ impl<
                 + (polynom::eval(&matrix_proof_numerator, E::from(elt))
                     / polynom::eval(&matrix_proof_denominator, E::from(elt)));
         }
-        println!("Sum = {:?}", sum_val);
-        println!("gamma = {:?}", gamma);
+        // println!("Sum = {:?}", sum_val);
+        // println!("gamma = {:?}", gamma);
 
-        let num_a_poly = polynom::mul(&matrix_proof_numerator_a, &denom_bc);
-        // let num_a_poly = matrix_proof_numerator_a.clone();
+        // let num_a_poly = polynom::mul(&matrix_proof_numerator_a, &denom_bc);
+        // // let num_a_poly = matrix_proof_numerator_a.clone();
 
-        println!("A degree = {:?}", polynom::degree_of(&num_a_poly));
+        // println!("A degree = {:?}", polynom::degree_of(&num_a_poly));
 
         let mut matrix_sumcheck_prover = RationalSumcheckProver::<B, E, H>::new(
             matrix_proof_numerator,
@@ -653,29 +630,29 @@ impl<
         );
 
         let query_pos = 697;
-        let f_1_a_eval = polynom::eval(
-            &self.f_1_poly_coeffs[0],
-            options.evaluation_domain[query_pos],
-        );
-        let f_1_b_eval = polynom::eval(
-            &self.f_1_poly_coeffs[1],
-            options.evaluation_domain[query_pos],
-        );
-        let f_1_c_eval = polynom::eval(
-            &self.f_1_poly_coeffs[2],
-            options.evaluation_domain[query_pos],
-        );
-        let f_2_eval = polynom::eval(&self.f_2_poly_coeffs, options.evaluation_domain[query_pos]);
+        // let f_1_a_eval = polynom::eval(
+        //     &self.f_1_poly_coeffs[0],
+        //     options.evaluation_domain[query_pos],
+        // );
+        // let f_1_b_eval = polynom::eval(
+        //     &self.f_1_poly_coeffs[1],
+        //     options.evaluation_domain[query_pos],
+        // );
+        // let f_1_c_eval = polynom::eval(
+        //     &self.f_1_poly_coeffs[2],
+        //     options.evaluation_domain[query_pos],
+        // );
+        // let f_2_eval = polynom::eval(&self.f_2_poly_coeffs, options.evaluation_domain[query_pos]);
 
-        println!("F1s = {:?}, {:?}, {:?}", f_1_a_eval, f_1_b_eval, f_1_c_eval);
-        println!(
-            "f_sum = {:?}",
-            (etas[0] * E::from(f_1_a_eval))
-                + (etas[1] * E::from(f_1_b_eval))
-                + (etas[2] * E::from(f_1_c_eval))
-        );
-        println!("Etas = {:?}", etas);
-        println!("f_2 = {:?}", f_2_eval);
+        // println!("F1s = {:?}, {:?}, {:?}", f_1_a_eval, f_1_b_eval, f_1_c_eval);
+        // println!(
+        //     "f_sum = {:?}",
+        //     (etas[0] * E::from(f_1_a_eval))
+        //         + (etas[1] * E::from(f_1_b_eval))
+        //         + (etas[2] * E::from(f_1_c_eval))
+        // );
+        // println!("Etas = {:?}", etas);
+        // println!("f_2 = {:?}", f_2_eval);
 
         let mut poly = polynom::sub(
             &fft_mul(&u_alpha_coeffs, &f_1_sum_poly_coeffs),
@@ -692,16 +669,16 @@ impl<
 
         fractal_utils::polynomial_utils::get_to_degree_size(&mut poly);
 
-        let totes = 2 * options.l_domain_twiddles.len();
-        let full_eval = &mut poly.clone();
-        fractal_utils::polynomial_utils::pad_with_zeroes(full_eval, totes);
-        fft::evaluate_poly(full_eval, &options.l_domain_twiddles);
-        println!("full eval = {:?}", full_eval[query_pos]);
+        // let totes = 2 * options.l_domain_twiddles.len();
+        // let full_eval = &mut poly.clone();
+        // fractal_utils::polynomial_utils::pad_with_zeroes(full_eval, totes);
+        // fft::evaluate_poly(full_eval, &options.l_domain_twiddles);
+        // println!("full eval = {:?}", full_eval[query_pos]);
 
-        let t_alpha_eval = &mut t_alpha_coeffs.clone();
-        fractal_utils::polynomial_utils::pad_with_zeroes(t_alpha_eval, totes);
-        fft::evaluate_poly(t_alpha_eval, &options.l_domain_twiddles);
-        println!("t_alpha eval = {:?}", t_alpha_eval[query_pos]);
+        // let t_alpha_eval = &mut t_alpha_coeffs.clone();
+        // fractal_utils::polynomial_utils::pad_with_zeroes(t_alpha_eval, totes);
+        // fft::evaluate_poly(t_alpha_eval, &options.l_domain_twiddles);
+        // println!("t_alpha eval = {:?}", t_alpha_eval[query_pos]);
 
         poly
     }
@@ -721,7 +698,7 @@ impl<
     ) -> Result<(), ProverError> {
         match self.get_current_layer() {
             0 => {
-                println!("Initial alpha = {}", query);
+                // println!("Initial alpha = {}", query);
                 let mut coin = RandomCoin::<B, H>::new(&[0]);
                 coin.reseed(H::hash(&query.to_bytes()));
                 let etas = [

@@ -99,8 +99,8 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             1,
             self.numerator_coeffs.len().next_power_of_two() / domain.len(),
         );
-        println!("Num factor = {:?}", num_factor);
-        println!("Original = {:?}", self.numerator_coeffs.len());
+        // println!("Num factor = {:?}", num_factor);
+        // println!("Original = {:?}", self.numerator_coeffs.len());
         pad_with_zeroes(&mut self.numerator_coeffs, num_factor * domain.len());
         let num_twiddles = fft::get_twiddles(num_factor * domain.len());
         let numerator_more_vals =
@@ -144,13 +144,13 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             sum_val = sum_val + term;
         }
 
-        println!("sum_val = {:?}", sum_val);
-        println!("sigma = {:?}", self.sigma);
+        // println!("sum_val = {:?}", sum_val);
+        // println!("sigma = {:?}", self.sigma);
 
         let mut f_hat_coeffs = f_hat_evals;
         pad_with_zeroes(&mut f_hat_coeffs, domain.len());
         fft::interpolate_poly_with_offset(&mut f_hat_coeffs, &inv_twiddles, self.eta);
-        println!("f_hat degree = {:?}", polynom::degree_of(&f_hat_coeffs));
+        // println!("f_hat degree = {:?}", polynom::degree_of(&f_hat_coeffs));
 
         let x_coeffs = vec![E::ZERO, E::ONE];
         let sub_factor = self.sigma / E::from(domain.len() as u64);
@@ -166,7 +166,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         //     domain.len(),
         // );
 
-        println!("Domain size = {}", domain.len());
+        // println!("Domain size = {}", domain.len());
         let mut numerator = numerator_vals.clone();
         fft::interpolate_poly_with_offset(&mut numerator, &inv_twiddles, self.eta);
 
@@ -181,10 +181,10 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             domain.len(),
         );
 
-        println!("e actual degree = {:?}", polynom::degree_of(&e_hat_coeffs));
-        println!("e expected degree = {:?}", self.e_degree);
-        println!("g actual degree = {:?}", polynom::degree_of(&g_hat_coeffs));
-        println!("g expected degree = {:?}", self.g_degree);
+        // println!("e actual degree = {:?}", polynom::degree_of(&e_hat_coeffs));
+        // println!("e expected degree = {:?}", self.e_degree);
+        // println!("g actual degree = {:?}", polynom::degree_of(&g_hat_coeffs));
+        // println!("g expected degree = {:?}", self.g_degree);
 
         accumulator.add_polynomial_e(g_hat_coeffs, self.g_degree);
         accumulator.add_polynomial_e(e_hat_coeffs, self.e_degree);

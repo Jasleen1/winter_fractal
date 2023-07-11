@@ -237,10 +237,10 @@ pub fn parse_proofs_for_subroutines<
     // coin.reseed(proof.layer_commitments[0]);
     // let beta: E = coin.draw().expect("failed to draw FRI alpha");
 
-    println!("Verifer alpha, beta: {}, {}", &alpha, &beta);
+
 
     let gammas = &proof.unverified_misc;
-    println!("Gammas {:?}", gammas);
+
     BatchedLayeredLincheckProof {
         row_vals: [row_a, row_b, row_c],
         col_vals: [col_a, col_b, col_c],
@@ -299,15 +299,13 @@ pub(crate) fn verify_layered_lincheck_proof<
     ));
 
     let mut coin = RandomCoin::<B, H>::new(&[0]);
-    println!("Alpha = {:?}", proof.alpha);
+    // println!("Alpha = {:?}", proof.alpha);
     coin.reseed(H::hash(&proof.alpha.to_bytes()));
     let etas = [
         coin.draw().expect("failed to draw FRI alpha"),
         coin.draw().expect("failed to draw FRI alpha"),
         coin.draw().expect("failed to draw FRI alpha"),
     ];
-    println!("Etas = {:?}", etas);
-    println!("beta = {:?}", proof.beta);
 
     let v_h_alpha = compute_vanishing_poly::<B, E>(proof.alpha, h_size_u64, eta);
     let v_h_beta = compute_vanishing_poly::<B, E>(proof.beta, h_size_u64, eta);
@@ -346,16 +344,6 @@ pub(crate) fn verify_layered_lincheck_proof<
             product_numerator_term = product_numerator_term + (u_alpha * f_1[matrix_id]);
         }
 
-        if queried_positions[i] == 697 {
-            println!(
-                "F1s = {:?}, {:?}, {:?}",
-                proof.f_mz_vals[0][i], proof.f_mz_vals[1][i], proof.f_mz_vals[2][i]
-            );
-            println!("f_1 comb = {:?}", f_1[0] + f_1[1] + f_1[2]);
-            println!("f_2 = {:?}", f_2);
-            println!("t_alpha = {:?}", t_alpha);
-            println!("Full term = {:?}", product_numerator_term);
-        }
 
         product_sumcheck_numerator_decommits.push(product_numerator_term);
 
@@ -376,19 +364,7 @@ pub(crate) fn verify_layered_lincheck_proof<
                 * (proof.beta - proof.row_vals[matrix_id][i]);
         }
 
-        if queried_positions[i] == 697 {
-            let matrix_id = 0;
-            let mat_denom_other_two = (proof.beta - proof.row_vals[(matrix_id + 1) % 3][i])
-                * (proof.alpha - proof.col_vals[(matrix_id + 1) % 3][i])
-                * (proof.beta - proof.row_vals[(matrix_id + 2) % 3][i])
-                * (proof.alpha - proof.col_vals[(matrix_id + 2) % 3][i]);
-            // println!("Numerator = {:?}", mat_numerator_term  * v_h_alpha * v_h_beta);
-            // println!("Denom = {:?}", mat_denom_term);
-            // println!("row val for a = {:?}", proof.row_vals[0][i]);
-            // println!("a term numerator = {:?}", proof.val_vals[0][i] * v_h_alpha * v_h_beta);
-            // println!("denom bc = {:?}", mat_denom_other_two);
-            // println!("etas = {:?}", etas);
-        }
+        
 
         matrix_sumcheck_numerator_decommits.push(mat_numerator_term * v_h_alpha * v_h_beta);
         matrix_sumcheck_denominator_decommits.push(mat_denom_term);
