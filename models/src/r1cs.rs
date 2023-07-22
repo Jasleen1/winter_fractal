@@ -47,6 +47,50 @@ pub fn valid_matrix<E: StarkField>(
     }
 }
 
+/// This function takes as input a permutation, representated by
+/// a vector with the following convention: permutation[i] is the original position of the element
+/// we would like to end up here.
+/// For example, if we want to turn the matrix (represented [row, row]) [[a b c d] [e f g h]]
+/// to transform to [[d a b c] [g e f g]], the permutation respresenting this is
+/// [3 0 1 2].
+pub fn generate_permutation_matrix_left_mul<E: StarkField>(permutation: Vec<usize>) -> Matrix<E> {
+    let mut rows = vec![
+        HashMap::<usize, E, BuildHasherDefault<NoHashHasher<usize>>>::default();
+        permutation.len()
+    ];
+    for i in 0..permutation.len() {
+        rows[permutation[i]].insert(i, E::ONE);
+    }
+    Matrix {
+        name: "row_major_perm".to_string(),
+        mat: rows,
+        dims: (permutation.len(), permutation.len()),
+    }
+}
+
+pub fn generate_permutation_matrix_right_mul<E: StarkField>(permutation: Vec<usize>) -> Matrix<E> {
+    let mut cols = vec![
+        HashMap::<usize, E, BuildHasherDefault<NoHashHasher<usize>>>::default();
+        permutation.len()
+    ];
+    for i in 0..permutation.len() {
+        cols[i].insert(permutation[i], E::ONE);
+    }
+    Matrix {
+        name: "col_major_perm".to_string(),
+        mat: cols,
+        dims: (permutation.len(), permutation.len()),
+    }
+}
+
+fn check_permutation_validity(permutation: Vec<usize>) -> bool {
+    // We want to check that the values in this permutation are
+    // 0-length(permutation) - 1 and that no element of this set is skipped.
+    let mut perm = permutation;
+    perm.sort();
+    *perm == (0..perm.len()).collect::<Vec<usize>>()
+}
+
 fn compress_matrix<E: StarkField>(
     longer_matrix: Vec<Vec<E>>,
 ) -> Vec<HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>>> {
