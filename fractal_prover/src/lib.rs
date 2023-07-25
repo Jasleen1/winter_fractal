@@ -4,7 +4,8 @@ use errors::ProverError;
 use fractal_accumulator::{accumulator::Accumulator, errors::AccumulatorProverError};
 use fractal_indexer::{index::IndexParams, snark_keys::ProverKey};
 use fractal_proofs::{
-    FieldElement, FractalProverOptions, IopData, LayeredProof, LowDegreeBatchProof, TopLevelProof,
+    FieldElement, FractalProverOptions, IopData, LayeredProof, LinkedProof, LowDegreeBatchProof,
+    TopLevelProof,
 };
 use fractal_utils::channel::DefaultFractalProverChannel;
 use log;
@@ -15,6 +16,7 @@ pub mod batched_lincheck_full_prover;
 pub mod batched_lincheck_prover;
 pub mod errors;
 pub mod lincheck_prover;
+pub mod linked_prover;
 pub mod prover;
 pub mod rowcheck_prover;
 pub mod sumcheck_prover;
@@ -132,4 +134,28 @@ pub trait LayeredProver<
     //     }
     //     Ok(acc.create_fri_proof()?)
     // }
+}
+
+pub trait CommonRSData<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher + ElementHasher<BaseField = B>,
+>
+{
+}
+
+pub trait LinkedProver<
+    B: StarkField,
+    E: FieldElement<BaseField = B>,
+    H: ElementHasher + ElementHasher<BaseField = B>,
+    C: CommonRSData<B, E, H>,
+    P: LinkedProof<B, E, H>,
+>
+{
+    fn commit_common(common_data: C);
+    fn generate_proof_1() -> Result<(), ProverError>;
+    fn generate_proof_2() -> Result<(), ProverError>;
+    fn generate_link_proof_1() -> Result<(), ProverError>;
+    fn generate_link_proof_2() -> Result<(), ProverError>;
+    fn generate_proof() -> Result<P, ProverError>;
 }

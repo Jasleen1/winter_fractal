@@ -4,7 +4,7 @@ pub use std::convert::TryInto;
 use std::{fmt::Display, marker::PhantomData, usize};
 
 pub use fractal_utils::{errors::MatrixError, matrix_utils::*, polynomial_utils::*, *};
-use winter_crypto::{BatchMerkleProof, Hasher};
+use winter_crypto::{BatchMerkleProof, Hasher, ElementHasher};
 use winter_fri::{DefaultProverChannel, FriOptions, FriProof};
 pub use winter_math::{fft, fields::f128::BaseElement, FieldElement, StarkField, *};
 pub use winter_utils::{
@@ -304,3 +304,11 @@ pub struct TopLevelProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hashe
     pub unverified_misc: Vec<E>,
     pub low_degree_proof: LowDegreeBatchProof<B, E, H>,
 }
+
+/// We will use this trait to generate linked proofs,
+/// for commit and prove systems as in LegoSNARK.
+pub trait LinkedProof<
+B: StarkField,
+E: FieldElement<BaseField = B>,
+H: Hasher
+> {}
