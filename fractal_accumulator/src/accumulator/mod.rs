@@ -443,7 +443,7 @@ impl<
 
 #[cfg(test)]
 mod test {
-    use fractal_proofs::{fields::QuadExtension, utils, BaseElement, MultiPoly};
+    use fractal_proofs::{fields::QuadExtension, BaseElement, MultiPoly};
     use fractal_utils::polynomial_utils::MultiEval;
     use std::{convert::TryInto, marker::PhantomData, thread::AccessError};
     use winter_crypto::{hashers::Blake3_256, BatchMerkleProof, ElementHasher, MerkleTree};
@@ -462,7 +462,7 @@ mod test {
         let l_field_size: usize = 4 * max_degree.next_power_of_two();
         let l_field_base = BaseElement::get_root_of_unity(l_field_size.trailing_zeros());
         let offset = BaseElement::ONE;
-        let evaluation_domain = utils::get_power_series(l_field_base, l_field_size);
+        let evaluation_domain = winter_math::get_power_series(l_field_base, l_field_size);
         let mut acc =
             Accumulator::<BaseElement, QuadExtension<BaseElement>, Blake3_256<BaseElement>>::new(
                 evaluation_domain.len(),
@@ -473,6 +473,7 @@ mod test {
                 vec![],
                 max_degree,
             );
+        acc.commit_layer()?;
         let alphas = acc.draw_queries(Some(20))?;
         assert!(alphas.len() == 20);
         Ok(())

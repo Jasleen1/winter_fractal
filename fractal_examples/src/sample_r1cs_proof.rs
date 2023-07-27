@@ -31,7 +31,7 @@ use winter_crypto::ElementHasher;
 
 use winter_math::fields::f64::BaseElement;
 use winter_math::fields::QuadExtension;
-// use winter_math::utils;
+// // use winter_math::utils;
 use winter_math::FieldElement;
 use winter_math::StarkField;
 

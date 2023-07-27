@@ -250,7 +250,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         divide_by_vanishing_in_place(&mut sigma_minus_f, E::from(eta), summing_domain_len);
         // Now we want to lower the degree to sigma_minus_f to where we want it
         // let summing_domain_base = B::get_root_of_unity(log2(summing_domain_len));
-        // let summing_domain = utils::get_power_series_with_offset(summing_domain_base, eta, summing_domain_len);
+        // let summing_domain = winter_math::get_power_series_with_offset(summing_domain_base, eta, summing_domain_len);
         // let summing_domain_e = summing_domain.iter().map(|x| E::from(*x)).collect::<Vec<E>>();
 
         // // let mut sigma_minus_f_evals = polynom::eval_many(&sigma_minus_f, &summing_domain_e);
@@ -290,7 +290,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     //     // let twiddles = fft::get_twiddles(summing_domain_len);
     //     let inv_twiddles = fft::get_inv_twiddles(summing_domain_len);
     //     let summing_domain_base = B::get_root_of_unity(log2(summing_domain_len));
-    //     let summing_domain = utils::get_power_series_with_offset(summing_domain_base, eta, summing_domain_len);
+    //     let summing_domain = winter_math::get_power_series_with_offset(summing_domain_base, eta, summing_domain_len);
 
     //     // fractal_utils::polynomial_utils::pad_with_zeroes(&mut sigma_minus_f, summing_domain_len);
     //     // fft::evaluate_poly(&mut sigma_minus_f, &twiddles);

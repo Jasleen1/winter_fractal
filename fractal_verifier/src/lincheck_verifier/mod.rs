@@ -596,7 +596,7 @@ mod test {
     use winter_crypto::{ElementHasher, RandomCoin};
     use winter_fri::{FriOptions, FriVerifier, ProverChannel};
     use winter_math::fields::f64::BaseElement;
-    use winter_math::utils;
+    // // use winter_math::utils;
     use winter_math::StarkField;
 
     #[cfg_attr(feature = "flame_it", flame)]
