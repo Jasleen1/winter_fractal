@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, usize, sync::Arc, collections::HashMap, hash::BuildHasherDefault};
+use std::{collections::HashMap, hash::BuildHasherDefault, marker::PhantomData, sync::Arc, usize};
 
 use fractal_indexer::{hash_values, index::IndexParams, snark_keys::*};
 use fractal_utils::polynomial_utils::*;
@@ -253,7 +253,6 @@ impl<
             .map(|id| E::from(val_evals[id]) * denom_terms[id])
             .collect();
 
-
         // For efficiency, we compute t_alpha as a evaluations over the H domain, as this allows us to skip most of the computation
         // Below is a commented, slow version of what we're trying to do (but which is maybe easier to understand)
         /*let mut evals_h = vec![];
@@ -271,15 +270,27 @@ impl<
         // Instead of a double loop, use a hashmap to be able to look up which h_domain element a given row_poly evaluation is equal to
         // As E doesn't implement Hash, we need to hash its bytes representation instead
         let mut locations = FxHashMap::<&[u8], usize>::default();
-        let _: Vec<_> = options.h_domain.iter().enumerate().map(|(i, h)| locations.insert(h.as_bytes(), i)).collect();
+        let _: Vec<_> = options
+            .h_domain
+            .iter()
+            .enumerate()
+            .map(|(i, h)| locations.insert(h.as_bytes(), i))
+            .collect();
 
         let mut evals_h = vec![E::ZERO; options.h_domain.len()];
-        for k_idx in 0..options.summing_domain.len(){
+        for k_idx in 0..options.summing_domain.len() {
             let h_idx = *locations.get(row_evals[k_idx].as_bytes()).unwrap();
-            evals_h[h_idx] += E::from(compute_derivative_on_single_val(row_evals[k_idx], options.h_domain.len() as u128)) * coefficient_values[k_idx];
+            evals_h[h_idx] += E::from(compute_derivative_on_single_val(
+                row_evals[k_idx],
+                options.h_domain.len() as u128,
+            )) * coefficient_values[k_idx];
         }
 
-        fft::interpolate_poly_with_offset(&mut evals_h, &options.h_domain_inv_twiddles, options.eta);
+        fft::interpolate_poly_with_offset(
+            &mut evals_h,
+            &options.h_domain_inv_twiddles,
+            options.eta,
+        );
         polynom::mul_by_scalar(&evals_h, v_h_alpha)
     }
 

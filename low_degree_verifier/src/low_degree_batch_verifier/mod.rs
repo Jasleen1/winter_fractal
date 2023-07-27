@@ -159,7 +159,7 @@ mod test {
     use winter_crypto::{ElementHasher, RandomCoin};
     use winter_fri::{FriOptions, FriVerifier, ProverChannel};
     use winter_math::fields::f64::BaseElement;
-    use winter_math::utils;
+    // use winter_math::utils;
     use winter_math::StarkField;
 
     #[test]
@@ -179,7 +179,7 @@ mod test {
         let max_degree: usize = 63;
         let l_field_size: usize = 4 * max_degree.next_power_of_two();
         let l_field_base = B::get_root_of_unity(l_field_size.trailing_zeros());
-        let evaluation_domain = utils::get_power_series(l_field_base, l_field_size);
+        let evaluation_domain = winter_math::get_power_series(l_field_base, l_field_size);
 
         //TODO: RandomCoin needs to be able to sample from the extension field, but currently can't
         //let mut public_coin = RandomCoin::<B, H>::new(&[]);

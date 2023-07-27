@@ -516,6 +516,8 @@ dependencies = [
  "fractal_utils",
  "log",
  "low_degree_prover",
+ "nohash-hasher",
+ "rustc-hash",
  "serde",
  "thiserror",
  "winter-crypto",
