@@ -209,7 +209,7 @@ impl<E: StarkField> Matrix<E> {
         row: &HashMap<usize, E, BuildHasherDefault<NoHashHasher<usize>>>,
     ) -> Vec<E> {
         let mut vec_form = vec![E::ZERO; self.dims.1];
-        row.iter().map(|(&loc, val)| vec_form[loc] = *val);
+        row.iter().for_each(|(&loc, val)| vec_form[loc] = *val);
         vec_form
     }
 
