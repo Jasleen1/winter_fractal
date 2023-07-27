@@ -252,8 +252,6 @@ impl<
             &polynom::mul_by_scalar(&fft_mul(&matrix_proof_numerator_c, &denom_ab), etas[2]),
         );
 
-       
-
         let matrix_proof_denominator = fft_mul(&denom_bc, &matrix_proof_denominator_a);
 
         let totes = 2 * options.l_domain_twiddles.len();

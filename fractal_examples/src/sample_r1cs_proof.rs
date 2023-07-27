@@ -31,7 +31,7 @@ use winter_crypto::ElementHasher;
 
 use winter_math::fields::f64::BaseElement;
 use winter_math::fields::QuadExtension;
-use winter_math::utils;
+// use winter_math::utils;
 use winter_math::FieldElement;
 use winter_math::StarkField;
 
@@ -148,7 +148,7 @@ pub(crate) fn orchestrate_r1cs_example<
     let size_subgroup_k = index_domains.k_field.len().next_power_of_two();
 
     let evaluation_domain =
-        utils::get_power_series(index_domains.l_field_base, index_domains.l_field_len);
+        winter_math::get_power_series(index_domains.l_field_base, index_domains.l_field_len);
 
     let summing_domain = index_domains.k_field;
 

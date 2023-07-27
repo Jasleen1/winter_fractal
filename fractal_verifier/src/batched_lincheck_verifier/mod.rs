@@ -237,8 +237,6 @@ pub fn parse_proofs_for_subroutines<
     // coin.reseed(proof.layer_commitments[0]);
     // let beta: E = coin.draw().expect("failed to draw FRI alpha");
 
-
-
     let gammas = &proof.unverified_misc;
 
     BatchedLayeredLincheckProof {
@@ -344,7 +342,6 @@ pub(crate) fn verify_layered_lincheck_proof<
             product_numerator_term = product_numerator_term + (u_alpha * f_1[matrix_id]);
         }
 
-
         product_sumcheck_numerator_decommits.push(product_numerator_term);
 
         matrix_sumcheck_g_decommits.push(proof.matrix_sumcheck_vals[i].0);
@@ -363,8 +360,6 @@ pub(crate) fn verify_layered_lincheck_proof<
                 * (proof.alpha - proof.col_vals[matrix_id][i])
                 * (proof.beta - proof.row_vals[matrix_id][i]);
         }
-
-        
 
         matrix_sumcheck_numerator_decommits.push(mat_numerator_term * v_h_alpha * v_h_beta);
         matrix_sumcheck_denominator_decommits.push(mat_denom_term);

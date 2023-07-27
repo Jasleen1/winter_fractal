@@ -13,7 +13,7 @@ use low_degree_prover::low_degree_batch_prover::LowDegreeBatchProver;
 use low_degree_prover::low_degree_prover::LowDegreeProver;
 use winter_crypto::ElementHasher;
 use winter_fri::{DefaultProverChannel, FriOptions};
-use winter_math::{fft, log2, utils, FieldElement, StarkField};
+use winter_math::{fft, log2, FieldElement, StarkField};
 
 use fractal_proofs::{polynom, OracleQueries, SumcheckProof};
 #[cfg(test)]
