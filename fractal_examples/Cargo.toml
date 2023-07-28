@@ -42,6 +42,7 @@ fractal_verifier = {path = "../fractal_verifier" }
 lazy_static = "1.4.0"
 log = { version = "0.4", default-features = false }
 models = { version = "0.1.0", path = "../models", package = "winter-models", default-features = false }
+reports = { version = "0.1.0", path = "../reports", package = "reports", default-features = false }
 regex = "1"
 serde = { version = "1.0.117", features = ["derive"] }
 sscanf = "0.1.4"

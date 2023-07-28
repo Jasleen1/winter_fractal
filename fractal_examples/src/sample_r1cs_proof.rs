@@ -25,6 +25,7 @@ use fractal_indexer::{
 
 use models::jsnark_arith_parser::JsnarkArithReaderParser;
 use models::jsnark_wire_parser::JsnarkWireReaderParser;
+use reports::reporter::generate_flame_report;
 
 use winter_crypto::hashers::{Blake3_256, Rp64_256};
 use winter_crypto::ElementHasher;
@@ -61,7 +62,7 @@ fn main() {
     );
 
     #[cfg(feature = "flame_it")]
-    flame::dump_html(&mut std::fs::File::create("stats/flame-graph.html").unwrap()).unwrap();
+    generate_flame_report("sample_r1cs");
 }
 
 #[cfg_attr(feature = "flame_it", flame)]

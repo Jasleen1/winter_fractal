@@ -1,0 +1,34 @@
+[package]
+name = "reports"
+version = "0.1.0"
+description = "Performance reporting library for the Winterfell STARK prover/verifier"
+authors = ["winterfell contributors"]
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/novifinancial/winterfell"
+documentation = "https://docs.rs/winter-math/0.3.0"
+categories = ["cryptography", "no-std"]
+keywords = ["crypto", "finite-fields", "polynomials", "fft"]
+edition = "2021"
+rust-version = "1.60"
+
+[lib]
+bench = false
+
+[features]
+concurrent = ["winter-utils/concurrent", "std"]
+default = ["std", "flame_it"]
+std = ["winter-utils/std"]
+flame_it = ["flame", "flamer"]
+
+[dependencies]
+flame = { version = "0.2", optional = true }
+flamer = { version = "0.3", optional = true }
+
+winter-utils = "0.4.0"
+
+[dev-dependencies]
+
+# Allow math in docs
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", ".cargo/katex-header.html"]

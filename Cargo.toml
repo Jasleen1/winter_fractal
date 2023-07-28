@@ -12,7 +12,8 @@ members = [
   "fractal_verifier",
   "low_degree_prover",
   "low_degree_verifier",
-  "models"
+  "models",
+  "reports"
 ]
 
 [profile.release]
