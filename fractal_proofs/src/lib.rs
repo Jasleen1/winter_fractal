@@ -287,12 +287,51 @@ pub struct LowDegreeBatchProof<B: StarkField, E: FieldElement<BaseField = B>, H:
     pub fri_max_degree: usize,
 }
 
+impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
+    for LowDegreeBatchProof<B, E, H>
+{
+    fn write_into<W: ByteWriter>(&self, target: &mut W) {
+        target.write_u64(self.options.folding_factor() as u64);
+        target.write_u64(self.options.max_remainder_size() as u64);
+        target.write_u64(self.options.blowup_factor() as u64);
+
+        target.write_u64(self.num_evaluations as u64);
+        self.queried_positions.iter().for_each(|pos| target.write_u64(*pos as u64));
+        self.all_unpadded_queried_evaluations.iter().for_each(|r| r.iter().for_each(|e| e.write_into(target)));
+        self.composed_queried_evaluations.iter().for_each(|e| e.write_into(target));
+        self.commitments.iter().for_each(|c| c.write_into(target));
+        self.tree_root.write_into(target);
+        self.tree_proof.serialize_nodes().iter().for_each(|b| target.write_u8(*b));
+        self.fri_proof.write_into(target);
+        self.max_degrees.iter().for_each(|d| target.write_u64(*d as u64));
+        target.write_u64(self.fri_max_degree as u64);
+    }
+}
+
 // identifies structs with only the field elements used in an IOP. No hashes / decommitment proofs
 pub trait IopData<B: StarkField, E: FieldElement<BaseField = B>> {}
 impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E> for LayeredRowcheckProof<B, E> {}
 impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E> for LayeredLincheckProof<B, E> {}
 impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E> for LayeredSumcheckProof<B, E> {}
 impl<B: StarkField, E: FieldElement<BaseField = B>> IopData<B, E> for LayeredFractalProof<B, E> {}
+
+// TODO: figure out using these instead of the ubiquitous tuples.
+// (Copy/clone are not making it easy to swap.)
+pub struct BatchMerkleDecommitment<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
+    element_matrix: Vec<Vec<E>>,
+    batch_merkle_proof: BatchMerkleProof<H>,
+}
+
+impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
+    for BatchMerkleDecommitment<B, E, H>
+{
+    /// Serializes `self` and writes the resulting bytes into the `target` writer.
+    fn write_into<W: ByteWriter>(&self, target: &mut W) {
+        target.write_u64(self.element_matrix.len().try_into().unwrap());
+        self.element_matrix.iter().for_each(|row| row.iter().for_each(|e| e.write_into(target)));
+        self.batch_merkle_proof.serialize_nodes().iter().for_each(|b| target.write_u8(*b));
+    }
+}
 
 pub struct TopLevelProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> {
     pub preprocessing_decommitment: (Vec<Vec<E>>, BatchMerkleProof<H>),
@@ -303,4 +342,34 @@ pub struct TopLevelProof<B: StarkField, E: FieldElement<BaseField = B>, H: Hashe
     pub initial_decommitment: (Vec<Vec<E>>, BatchMerkleProof<H>),
     pub unverified_misc: Vec<E>,
     pub low_degree_proof: LowDegreeBatchProof<B, E, H>,
+}
+
+// TODO: Turn the decommitment pairs into a proper Serializable struct.  Some inane blockers.
+fn serialize_batch_merkle_decommitment<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher, W: ByteWriter>(
+    packed_decom: &(Vec<Vec<E>>, BatchMerkleProof<H>),
+    target: &mut W) {
+
+    let element_matrix = &packed_decom.0;
+    let batch_merkle_proof = &packed_decom.1;
+
+    target.write_u64(element_matrix.len().try_into().unwrap());
+
+    element_matrix.iter().for_each(|row| row.iter().for_each(|e| e.write_into(target)));
+    batch_merkle_proof.serialize_nodes().iter().for_each(|b| target.write_u8(*b));
+}
+
+impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
+    for TopLevelProof<B, E, H>
+{
+    /// Serializes `self` and writes the resulting bytes into the `target` writer.
+    fn write_into<W: ByteWriter>(&self, target: &mut W) {
+        serialize_batch_merkle_decommitment(&self.preprocessing_decommitment, target);
+        self.layer_commitments.write_into(target);
+        self.layer_decommitments.iter().for_each(|d| serialize_batch_merkle_decommitment(d, target));
+
+        self.initial_commitment.write_into(target);
+        serialize_batch_merkle_decommitment(&self.initial_decommitment, target);
+        self.unverified_misc.write_into(target);
+        self.low_degree_proof.write_into(target);
+    }
 }
