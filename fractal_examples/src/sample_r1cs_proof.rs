@@ -45,7 +45,7 @@ extern crate flamer;
 #[cfg_attr(feature = "flame_it", flame("main"))]
 fn main() {
     let mut options = ExampleOptions::from_args();
-    options.verbose = false;
+    //options.verbose = false;
     if options.verbose {
         println!(
             "Arith file {}, wire value  file {}",
@@ -62,7 +62,8 @@ fn main() {
     );
 
     #[cfg(feature = "flame_it")]
-    generate_flame_report("sample_r1cs");
+    let filename = std::path::Path::new(&options.arith_file).file_stem().unwrap().to_str().unwrap();
+    generate_flame_report(None, format!("r1cs:{filename}").as_str());
 }
 
 #[cfg_attr(feature = "flame_it", flame)]

@@ -18,4 +18,5 @@ extern crate flame;
 #[macro_use]
 extern crate flamer;
 
+pub mod flame_local;
 pub mod reporter;

@@ -62,7 +62,10 @@ fn main() {
     );
 
     #[cfg(feature = "flame_it")]
-    generate_flame_report("sample_r1cs");
+    {
+        let filename = std::path::Path::new(&options.arith_file).file_stem().unwrap().to_str().unwrap();
+        generate_flame_report(format!("r1cs_batched:{filename}").as_str());
+    }
 }
 
 #[cfg_attr(feature = "flame_it", flame)]
