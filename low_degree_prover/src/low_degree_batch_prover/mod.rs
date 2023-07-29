@@ -114,6 +114,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         let eval_domain_size = self.evaluation_domain.len();
         let eval_domain_twiddles: Vec<B> = fft::get_twiddles(eval_domain_size);
 
+        #[cfg(feature = "flame_it")]
         flame::start("loop1");
         for poly in self.constituant_polynomials.iter() {
             let mut unpadded_evals = poly.clone();
@@ -121,8 +122,10 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             fft::evaluate_poly(&mut unpadded_evals, &eval_domain_twiddles);
             all_unpadded_evaluations.push(unpadded_evals);
         }
+        #[cfg(feature = "flame_it")]
         flame::end("loop1");
 
+        #[cfg(feature = "flame_it")]
         flame::start("make tree");
         let zipped_evals = Self::zip_evals(
             all_unpadded_evaluations.clone(),
@@ -134,16 +137,21 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             .collect::<Vec<_>>();
         let tree = MerkleTree::<H>::new(eval_hashes).unwrap();
         let tree_root = *tree.root();
+        #[cfg(feature = "flame_it")]
         flame::end("make tree");
 
+        #[cfg(feature = "flame_it")]
         flame::start("commit_fri_layer");
         channel.commit_fri_layer(tree_root);
+        #[cfg(feature = "flame_it")]
         flame::end("commit_fri_layer");
 
         let queried_positions = channel.draw_query_positions();
 
+        #[cfg(feature = "flame_it")]
         flame::start("tree_proof");
         let tree_proof = tree.prove_batch(&queried_positions).unwrap();
+        #[cfg(feature = "flame_it")]
         flame::end("tree_proof");
 
         let commitment_idx = channel.layer_commitments().len();
@@ -156,6 +164,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
             all_unpadded_queried_evaluations.push(unpadded_queried_evaluations);
         }
 
+        #[cfg(feature = "flame_it")]
         flame::start("composed_evals");
         // println!("randomized sum, eval domain: {}, {}", &self.randomized_sum.len(), self.evaluation_domain.len());
         let mut composed_evals = self.randomized_sum.clone();
@@ -163,6 +172,7 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
         fft::evaluate_poly(&mut composed_evals, &eval_domain_twiddles);
         //let composed_evals: Vec<E> =
         //polynom::eval_many(&self.randomized_sum, &self.evaluation_domain);
+        #[cfg(feature = "flame_it")]
         flame::end("composed_evals");
 
         let mut fri_prover =

@@ -598,6 +598,7 @@ impl<
         let u_alpha_coeffs = polynom::syn_div(&u_numerator, 1, alpha);
         //let reconstituted = polynom::mul(&u_alpha_coeffs, &u_denominator);
 
+        #[cfg(feature = "flame_it")]
         flame::start("submul");
         let etas = self.etas.unwrap();
         // FIXME: Optimize
@@ -663,6 +664,7 @@ impl<
                     .collect::<Vec<E>>(),
             ),
         );
+        #[cfg(feature = "flame_it")]
         flame::end("submul");
 
         fractal_utils::polynomial_utils::get_to_degree_size(&mut poly);

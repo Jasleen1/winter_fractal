@@ -235,18 +235,28 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: ElementHasher<BaseField =
     ) -> Vec<E> {
         let dividing_factor: u64 = summing_domain_len.try_into().unwrap();
         let x_func = [E::ZERO, E::ONE];
+
+        #[cfg(feature = "flame_it")]
         flame::start("mul");
         let mut sigma_function = polynom::mul(&x_func, &g_hat_coeffs);
+        #[cfg(feature = "flame_it")]
         flame::end("mul");
+
+        #[cfg(feature = "flame_it")]
         flame::start("inv");
         sigma_function[0] += E::from(self.sigma) * E::from(dividing_factor).inv();
+        #[cfg(feature = "flame_it")]
         flame::end("inv");
+
+        #[cfg(feature = "flame_it")]
         flame::start("submul");
         let mut sigma_minus_f = polynom::sub(
             &fft_mul(&sigma_function, &summing_poly_denominator),
             &summing_poly_numerator,
         );
+        #[cfg(feature = "flame_it")]
         flame::end("submul");
+
         divide_by_vanishing_in_place(&mut sigma_minus_f, E::from(eta), summing_domain_len);
         // Now we want to lower the degree to sigma_minus_f to where we want it
         // let summing_domain_base = B::get_root_of_unity(log2(summing_domain_len));

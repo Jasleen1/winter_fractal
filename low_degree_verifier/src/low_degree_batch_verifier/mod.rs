@@ -60,6 +60,7 @@ pub fn verify_low_degree_batch_proof<
     // flame::end("verify fri");
 
     // Verify that merkle leaves are correct
+    #[cfg(feature = "flame_it")]
     flame::start("verify merkle leaves");
     for i in (0..queried_positions.len()).into_iter() {
         let evals_at_idx: Vec<E> = proof
@@ -80,11 +81,14 @@ pub fn verify_low_degree_batch_proof<
             return Err(LowDegreeVerifierError::MerkleTreeErr);
         }
     }
+    #[cfg(feature = "flame_it")]
     flame::end("verify merkle leaves");
 
+    #[cfg(feature = "flame_it")]
     flame::start("verify merkle batch");
     MerkleTree::verify_batch(&proof.tree_root, &queried_positions, &proof.tree_proof)
         .map_err(|_e| LowDegreeVerifierError::MerkleTreeErr)?;
+    #[cfg(feature = "flame_it")]
     flame::end("verify merkle batch");
 
     verify_lower_degree_batch::<B, E, H>(
