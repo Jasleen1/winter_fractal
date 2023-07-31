@@ -14,6 +14,13 @@ debug = 1
 
 [[bin]]
 name = "fractal-orchestrator"
+path = "src/r1cs_orchestrator.rs"
+bench = false
+doc = false
+debug = 1
+
+[[bin]]
+name = "fractal-orchestrator-1"
 path = "src/sample_r1cs_proof.rs"
 bench = false
 doc = false
