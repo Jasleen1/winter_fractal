@@ -110,7 +110,7 @@ impl<
     H: ElementHasher + ElementHasher<BaseField = B>,
     const N: usize> ProofSystemOrchestrator::<B, E, H, N> {
 
-    fn new(arith_file: String, wire_file: String, batched: bool, verbose: bool) -> Self {
+    pub fn new(arith_file: String, wire_file: String, batched: bool, verbose: bool) -> Self {
         Self {
             arith_file,
             wire_file,
