@@ -293,7 +293,8 @@ impl<
         fractal_options: &FractalOptions<B>,
     ) {
 
-        let now = Instant::now();
+        // let now = Instant::now();
+
         // Choose from different implementations of
         // verify_layered_fractal_proof_from_top(&verifier_key, &proof, &pub_inputs_bytes, &fractal_options).unwrap(),
         match self.batched {
@@ -301,11 +302,11 @@ impl<
             true => batched_verify_fractal_top(&verifier_key, &proof, &pub_inputs_bytes, &fractal_options).unwrap(),
         }
 
-        println!(
-            "---------------------\nProof verified in {} ms",
-            now.elapsed().as_millis()
-        );
-        println!("Finished!");
+        // println!(
+        //     "---------------------\nProof verified in {} ms",
+        //     now.elapsed().as_millis()
+        // );
+        // println!("Finished!");
     }
 
     pub fn prove_and_verify(
