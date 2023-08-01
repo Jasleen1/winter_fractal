@@ -88,7 +88,7 @@ fn main() {
 // plain_verify_fractal_top; see get_max_degree_constraint_batched;
 // see Proving trait.
 
-struct ProofSystemOrchestrator<
+pub struct ProofSystemOrchestrator<
     B: StarkField,
     E: FieldElement<BaseField = B>,
     H: ElementHasher + ElementHasher<BaseField = B>,
