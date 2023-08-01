@@ -379,14 +379,14 @@ impl<
     ) -> TopLevelProof<B, E, H> {
         let mut prover =
             FractalProver::<B, E, H>::new(prover_key.into(), vec![], wires.clone(), pub_inputs_bytes.clone());
-        let now = Instant::now();
+        // let now = Instant::now();
         let proof = prover
             .generate_proof(&None, pub_inputs_bytes.clone(), &prover_options)
             .unwrap();
-        println!(
-            "---------------------\nProof generated (fractal) in {} ms",
-            now.elapsed().as_millis()
-        );
+        // println!(
+        //     "---------------------\nProof generated (fractal) in {} ms",
+        //     now.elapsed().as_millis()
+        // );
         proof
     }
 }
@@ -429,14 +429,14 @@ impl<
     ) -> TopLevelProof<B, E, H> {
         let mut prover =
             BatchedFractalProver::<B, E, H>::new(prover_key.into(), vec![], wires.clone(), pub_inputs_bytes.clone());
-        let now = Instant::now();
+        // let now = Instant::now();
         let proof = prover
             .generate_proof(&None, pub_inputs_bytes.clone(), &prover_options)
             .unwrap();
-        println!(
-            "---------------------\nProof generated (batched fractal) in {} ms",
-            now.elapsed().as_millis()
-        );
+        // println!(
+        //     "---------------------\nProof generated (batched fractal) in {} ms",
+        //     now.elapsed().as_millis()
+        // );
         proof
     }
 }
