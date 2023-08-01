@@ -13,6 +13,7 @@
 // eventually dishonest provers).
 
 use std::cmp::max;
+use std::sync::Arc;
 use std::time::Instant;
 
 use fractal_proofs::{fft, FractalProverOptions, TopLevelProof};
@@ -130,7 +131,7 @@ impl<
         self.prove_and_verify(prover_key, verifier_key, &fractal_options, &wires, prover_options);
     }
 
-    pub fn prepare(&self) -> (ProverKey<B,E,H>, VerifierKey<B,H>, FractalOptions<B>, Vec<B>, FractalProverOptions<B>) {
+    pub fn prepare(&self) -> (Arc<ProverKey<B,E,H>>, VerifierKey<B,H>, FractalOptions<B>, Vec<B>, FractalProverOptions<B>) {
 
         let now = Instant::now();
 
@@ -260,15 +261,15 @@ impl<
         println_if!(self.verbose, "Prover and verifier keys generated");
 
         // Return:
-        (prover_key, verifier_key, fractal_options, wires, prover_options)
+        (Arc::new(prover_key), verifier_key, fractal_options, wires, prover_options)
     }
 
     pub fn prove(
         &self,
         pub_inputs_bytes: &Vec<u8>,
-        prover_key: ProverKey<B,E,H>,
+        prover_key: Arc<ProverKey<B,E,H>>,
         wires: &Vec<B>,
-        prover_options: FractalProverOptions<B>,
+        prover_options: &FractalProverOptions<B>,
     ) -> TopLevelProof<B, E, H> {
 
         match self.batched {
@@ -286,7 +287,7 @@ impl<
 
     pub fn verify(
         &self,
-        proof: TopLevelProof<B, E, H>,
+        proof: &TopLevelProof<B, E, H>,
         pub_inputs_bytes: &Vec<u8>,
         verifier_key: &VerifierKey<B,H>,
         fractal_options: &FractalOptions<B>,
@@ -309,7 +310,7 @@ impl<
 
     pub fn prove_and_verify(
         &self,
-        prover_key: ProverKey<B,E,H>,
+        prover_key: Arc<ProverKey<B,E,H>>,
         verifier_key: VerifierKey<B,H>,
         fractal_options: &FractalOptions<B>,
         wires: &Vec<B>,
@@ -319,8 +320,8 @@ impl<
         let pub_inputs_bytes = vec![0u8, 1u8, 2u8];
         //let pub_inputs_bytes = vec![];
 
-        let proof = self.prove(&pub_inputs_bytes, prover_key, wires, prover_options);
-        self.verify(proof, &pub_inputs_bytes, &verifier_key, &fractal_options);
+        let proof = self.prove(&pub_inputs_bytes, prover_key, wires, &prover_options);
+        self.verify(&proof, &pub_inputs_bytes, &verifier_key, &fractal_options);
     }
 }
 
@@ -334,9 +335,9 @@ pub trait Proving<
 
     fn issue_proof(&self, 
         pub_inputs_bytes: &Vec<u8>,
-        prover_key: ProverKey<B,E,H>,
+        prover_key: Arc<ProverKey<B,E,H>>,
         wires: &Vec<B>,
-        prover_options: FractalProverOptions<B>,
+        prover_options: &FractalProverOptions<B>,
     ) -> TopLevelProof<B, E, H>;
 }
 
@@ -372,9 +373,9 @@ impl<
     fn issue_proof(
         &self,
         pub_inputs_bytes: &Vec<u8>,
-        prover_key: ProverKey<B,E,H>,
+        prover_key: Arc<ProverKey<B,E,H>>,
         wires: &Vec<B>,
-        prover_options: FractalProverOptions<B>,
+        prover_options: &FractalProverOptions<B>,
     ) -> TopLevelProof<B, E, H> {
         let mut prover =
             FractalProver::<B, E, H>::new(prover_key.into(), vec![], wires.clone(), pub_inputs_bytes.clone());
@@ -422,9 +423,9 @@ impl<
     fn issue_proof(
         &self,
         pub_inputs_bytes: &Vec<u8>,
-        prover_key: ProverKey<B,E,H>,
+        prover_key: Arc<ProverKey<B,E,H>>,
         wires: &Vec<B>,
-        prover_options: FractalProverOptions<B>,
+        prover_options: &FractalProverOptions<B>,
     ) -> TopLevelProof<B, E, H> {
         let mut prover =
             BatchedFractalProver::<B, E, H>::new(prover_key.into(), vec![], wires.clone(), pub_inputs_bytes.clone());
