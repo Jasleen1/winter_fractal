@@ -46,8 +46,8 @@ use winter_math::StarkField;
 
 #[cfg(feature = "flame_it")]
 extern crate flame;
+
 #[cfg(feature = "flame_it")]
-#[macro_use]
 extern crate flamer;
 
 // At some point, someone wanted to try this.
@@ -58,11 +58,11 @@ macro_rules! println_if {
     ($verbose:expr, $($x:tt)*) => { if $verbose { println!($($x)*) } }
 }
 
-#[cfg_attr(feature = "flame_it", flame("main"))]
+#[cfg_attr(feature = "flame_it", flamer::flame("main"))]
 fn main() {
     let options = OrchestratorOptions::from_args();
     println_if!(options.verbose,
-        "Arith file {}, wire value  file {}",
+        "Arith file {}, wire value file {}",
         options.arith_file, options.wires_file
     );
 
@@ -122,7 +122,7 @@ impl<
         }
     }
 
-    #[cfg_attr(feature = "flame_it", flame)]
+    #[cfg_attr(feature = "flame_it", flamer::flame)]
     pub fn orchestrate(&self) {
         let (prover_key, verifier_key, fractal_options, wires, prover_options) = self.prepare();
 
