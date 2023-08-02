@@ -1,3 +1,5 @@
+#![allow(dead_code,unused_imports)]
+
 use std::{cmp::max, marker::PhantomData};
 
 // TODO: This class will include the indexes of 3 matrices

@@ -1,3 +1,4 @@
+#![allow(dead_code,unused_imports)]
 use crate::errors::*;
 use crate::polynomial_utils;
 use fractal_math::FieldElement;

@@ -1,3 +1,4 @@
+#![allow(dead_code,unused_imports)]
 use crate::errors::AccumulatorProverError;
 use fractal_proofs::{LowDegreeBatchProof, MultiPoly};
 use fractal_utils::channel::DefaultFractalProverChannel;

@@ -1,3 +1,4 @@
+#![allow(dead_code,unused_imports)]
 use crate::errors::LowDegreeVerifierError;
 
 use fractal_proofs::{polynom, FieldElement, LowDegreeProof};

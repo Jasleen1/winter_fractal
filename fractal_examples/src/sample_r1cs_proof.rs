@@ -3,6 +3,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#![allow(dead_code,unused_imports)]
+
 use core::num;
 use std::cmp::max;
 use std::time::Instant;
@@ -44,7 +46,7 @@ extern crate flamer;
 
 #[cfg_attr(feature = "flame_it", flame("main"))]
 fn main() {
-    let mut options = ExampleOptions::from_args();
+    let options = ExampleOptions::from_args();
     //options.verbose = false;
     if options.verbose {
         println!(

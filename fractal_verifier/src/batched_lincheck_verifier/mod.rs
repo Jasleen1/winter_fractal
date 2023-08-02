@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::errors::{LincheckVerifierError, SumcheckVerifierError};
 use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
 

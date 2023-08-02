@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::errors::SumcheckVerifierError;
 
 use fractal_accumulator::accumulator;

@@ -1,3 +1,4 @@
+#![allow(dead_code,unused_imports)]
 use std::cmp::max;
 use std::{convert::TryInto, marker::PhantomData};
 

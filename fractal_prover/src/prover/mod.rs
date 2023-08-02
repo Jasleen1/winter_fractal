@@ -1,3 +1,4 @@
+#![allow(dead_code,unused_imports)]
 use std::{marker::PhantomData, sync::Arc};
 
 use fractal_indexer::{index::IndexParams, snark_keys::*};

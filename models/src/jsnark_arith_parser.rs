@@ -1,3 +1,5 @@
+#![allow(dead_code,unused_imports)]
+
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::io::BufRead;

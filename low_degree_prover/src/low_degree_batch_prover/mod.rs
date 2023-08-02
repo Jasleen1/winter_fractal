@@ -1,3 +1,5 @@
+#![allow(dead_code,unused_imports)]
+
 use std::{convert::TryInto, marker::PhantomData, ops::Add};
 
 use fractal_utils::polynomial_utils::*;

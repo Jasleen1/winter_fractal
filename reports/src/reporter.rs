@@ -1,3 +1,4 @@
+#![allow(dead_code,unused_imports)]
 
 use super::flame_local::{merge_repeated_spans, dump_html_custom};
 

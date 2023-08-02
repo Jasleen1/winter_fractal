@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::errors::RowcheckVerifierError;
 use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
 use low_degree_verifier::low_degree_verifier::verify_low_degree_proof;

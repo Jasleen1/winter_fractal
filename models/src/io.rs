@@ -1,3 +1,5 @@
+#![allow(dead_code,unused_imports)]
+
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;

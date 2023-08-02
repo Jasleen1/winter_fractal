@@ -1,3 +1,5 @@
+#![allow(dead_code,unused_imports)]
+
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;

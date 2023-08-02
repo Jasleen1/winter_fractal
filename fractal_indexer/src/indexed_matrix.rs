@@ -1,5 +1,7 @@
 // TODO Implement an indexed matrix struct with row, col and val and evaluations on an eval domain
 
+#![allow(dead_code,unused_imports)]
+
 use std::convert::TryInto;
 
 // TODO: This implementation assumes all matrices are square and all inputs are public, ie no witness. Update to accomodate this.

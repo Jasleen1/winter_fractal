@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //use core::num::dec2flt::parse;
 
 use crate::{
@@ -8,16 +10,16 @@ use crate::{
 use fractal_accumulator_verifier::accumulator_verifier::AccumulatorVerifier;
 use fractal_indexer::snark_keys::*;
 use fractal_proofs::{
-    FieldElement, FractalProof, IopData, LayeredFractalProof, LayeredLincheckProof,
-    LayeredRowcheckProof, MultiEval, MultiPoly, StarkField, TopLevelProof,
-};
+    FieldElement, LayeredFractalProof, LayeredLincheckProof,
+    LayeredRowcheckProof, StarkField, TopLevelProof};
+//use fractal_proofs::{FractalProof, IopData, MultiEval, MultiPoly};
 
-use fractal_utils::channel::DefaultFractalProverChannel;
+//use fractal_utils::channel::DefaultFractalProverChannel;
 use fractal_utils::FractalOptions;
-use log::debug;
+//use log::debug;
 use winter_crypto::{ElementHasher, RandomCoin};
 
-use crate::{lincheck_verifier::verify_lincheck_proof, rowcheck_verifier::verify_rowcheck_proof};
+//use crate::{lincheck_verifier::verify_lincheck_proof, rowcheck_verifier::verify_rowcheck_proof};
 
 /*pub fn verify_fractal_proof<
     B: StarkField,

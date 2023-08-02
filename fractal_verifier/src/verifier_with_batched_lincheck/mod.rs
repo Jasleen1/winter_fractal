@@ -1,3 +1,5 @@
+#![allow(dead_code,unused_imports)]
+
 //use core::num::dec2flt::parse;
 
 use crate::{

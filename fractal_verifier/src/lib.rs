@@ -1,3 +1,4 @@
+#![allow(dead_code,unused_imports)]
 mod batched_lincheck_verifier;
 pub mod channel;
 pub mod errors;

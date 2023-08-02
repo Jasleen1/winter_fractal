@@ -12,6 +12,8 @@
 // but may have optimizations such as batching, or maybe
 // eventually dishonest provers).
 
+#![allow(dead_code,unused_imports)]
+
 use std::cmp::max;
 use std::sync::Arc;
 use std::time::Instant;
