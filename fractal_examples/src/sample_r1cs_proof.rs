@@ -66,7 +66,7 @@ fn main() {
     #[cfg(feature = "flame_it")]
     {
         let filename = std::path::Path::new(&options.arith_file).file_stem().unwrap().to_str().unwrap();
-        generate_flame_report(None, format!("r1cs:{filename}").as_str());
+        generate_flame_report(None, format!("r1cs:{filename}").as_str(), None);
     }
 }
 

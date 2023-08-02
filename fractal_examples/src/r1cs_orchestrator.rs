@@ -61,6 +61,11 @@ macro_rules! println_if {
     ($verbose:expr, $($x:tt)*) => { if $verbose { println!($($x)*) } }
 }
 
+// THe Orchestrator binary runs a proof system (P, V) and generates a flame
+// report in `gen/reports` containing three artifacts:
+//   - <name>.html          ordinary flame report
+//   - <name>-merged.html   flame report with adjacent identical calls merged
+//   - <name>.txt           percentage spent in "utils:fft_mul" (or supply focus_method on CLI)
 #[cfg_attr(feature = "flame_it", flamer::flame("main"))]
 fn main() {
     let options = OrchestratorOptions::from_args();
@@ -77,7 +82,7 @@ fn main() {
     #[cfg(feature = "flame_it")]
     {
         let filename = std::path::Path::new(&options.arith_file).file_stem().unwrap().to_str().unwrap();
-        generate_flame_report(None, format!("r1cs:{filename}").as_str());
+        generate_flame_report(None, format!("r1cs:{filename}").as_str(), Some(options.focus_method.as_str()));
     }
 }
 
@@ -452,7 +457,6 @@ struct OrchestratorOptions {
     #[structopt(
         short = "a",
         long = "arith_file",
-        //default_value = "fractal_examples/jsnark_outputs/fibonacciexample_17.arith"
         default_value = "fractal_examples/jsnark_outputs/fftexample_5.arith"
     )]
     arith_file: String,
@@ -461,7 +465,6 @@ struct OrchestratorOptions {
     #[structopt(
         short = "w",
         long = "wire_file",
-        //default_value = "fractal_examples/jsnark_outputs/fibonacciexample_17.wires"
         default_value = "fractal_examples/jsnark_outputs/fftexample_5.wires"
     )]
     wires_file: String,
@@ -469,6 +472,14 @@ struct OrchestratorOptions {
     /// Elect (poly)batching implementation of (P,V)
     #[structopt(short = "b", long = "batched")]
     batched: bool,
+
+    /// Method to focus on and calculate CPU percentage for.
+    #[structopt(
+        short = "f",
+        long = "focus_method",
+        default_value = "utils::fft_mul"
+    )]
+    focus_method: String,
 
     /// Verbose logging and reporting.
     #[structopt(short = "v", long = "verbose")]

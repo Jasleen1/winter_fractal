@@ -5,9 +5,8 @@ use super::flame_local::{merge_repeated_spans, dump_html_custom};
 use std::io::Write;
 
 #[cfg_attr(feature = "flame_it", flame)]
-pub fn generate_flame_report(report_dir_opt: Option<&str>, filename_prefix: &str) {
+pub fn generate_flame_report(report_dir_opt: Option<&str>, filename_prefix: &str, focus_method: Option<&str>) {
     let report_dir = report_dir_opt.unwrap_or("gen/reports");
-    //let report_dir = "gen/reports";
     std::fs::create_dir_all(report_dir).unwrap();
 
     {
@@ -17,13 +16,14 @@ pub fn generate_flame_report(report_dir_opt: Option<&str>, filename_prefix: &str
         flame::dump_html(file).unwrap_or_else(|why| { println!("! {:?}", why.kind()); });
     }
 
-    {
+    if focus_method.is_some() {
         // Report with repeated spans merged.
+        let method_filter = focus_method.unwrap();
         let html_filespec = format!("{report_dir}/{filename_prefix}-flame-merge.html");
         let html_file = &mut std::fs::File::create(html_filespec).unwrap();
 
         let mut spans = flame::threads().into_iter().next().unwrap().spans;
-        let gatherer = gather_time("utils::fft_mul".to_string(), &spans);
+        let method_metric = gather_time(method_filter.to_string(), &spans);
 
         merge_repeated_spans(&mut spans);
 
@@ -34,8 +34,8 @@ pub fn generate_flame_report(report_dir_opt: Option<&str>, filename_prefix: &str
         let text_filespec = format!("{report_dir}/{filename_prefix}-flame-merge.txt");
         let text_file = std::fs::File::create(text_filespec).unwrap();
         let text_writer = &mut std::io::BufWriter::new(&text_file);
-        writeln!(text_writer, "timemetric: {:?}", gatherer).unwrap();
-        writeln!(text_writer, "timepercent: {}", gatherer.cumul_ns as f64 * 100.0 / gatherer.elapsed_ns as f64).unwrap();
+        writeln!(text_writer, "timemetric: {:?}", method_metric).unwrap();
+        writeln!(text_writer, "timepercent: {}", method_metric.cumul_ns as f64 * 100.0 / method_metric.elapsed_ns as f64).unwrap();
     }
 }
 
