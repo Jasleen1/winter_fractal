@@ -375,3 +375,12 @@ impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> Serializable
         self.low_degree_proof.write_into(target);
     }
 }
+
+impl<B: StarkField, E: FieldElement<BaseField = B>, H: Hasher> TopLevelProof<B, E, H> {
+    /// Serializes this proof into a vector of bytes.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut result = Vec::new();
+        self.write_into(&mut result);
+        result
+    }
+}
