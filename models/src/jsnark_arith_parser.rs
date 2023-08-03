@@ -140,24 +140,46 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
             println!("XOR: {:?} {:?}", in_args, out_args)
         };
 
-        let numcols = self.r1cs_instance.num_cols();
-        let mut new_row_a = vec![E::ZERO; numcols];
-        let mut new_row_b = vec![E::ZERO; numcols];
-        let mut new_row_c = vec![E::ZERO; numcols];
+        let mut new_row_a = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_b = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_c = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
 
         let a_pos = in_args[0];
         let b_pos = in_args[1];
         let c_pos = out_args[0];
 
         // a + b - 2*ab = a XOR b so, 2a*b = a + b - a XOR b.
-        new_row_a[a_pos] = E::from(2u64);
-        new_row_b[b_pos] = E::ONE;
-        new_row_c[a_pos] = E::ONE;
-        new_row_c[b_pos] = E::ONE;
-        new_row_c[c_pos] = E::ONE.neg();
+        new_row_a.insert(a_pos, E::from(2u64));
+        new_row_b.insert(b_pos, E::ONE);
+        new_row_c.insert(a_pos, E::ONE);
+        new_row_c.insert(b_pos, E::ONE);
+        new_row_c.insert(c_pos, E::ONE.neg());
 
         self.r1cs_instance
-            .add_rows_vec(new_row_a, new_row_b, new_row_c);
+            .add_rows(&new_row_a, &new_row_b, &new_row_c);
+    }
+
+    #[cfg_attr(feature = "flame_it", flame)]
+    fn handle_split(&mut self, in_args: Vec<usize>, out_args: Vec<usize>) {
+        if self.verbose {
+            println!("SPLIT: {:?} {:?}", in_args, out_args)
+        };
+
+        let mut new_row_a = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_b = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_c = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+
+        let a_pos = in_args[0];
+        let b_pos = 0;
+        // a + b - 2*ab = a XOR b so, 2a*b = a + b - a XOR b.
+        new_row_a.insert(a_pos, E::from(2u64));
+        new_row_b.insert(b_pos, E::ONE);
+        for c_pos in 0..out_args.len() {
+            new_row_c.insert(out_args[c_pos], E::from(1u64 << c_pos));
+        }
+
+        self.r1cs_instance
+            .add_rows(&new_row_a, &new_row_b, &new_row_c);
     }
 
     #[cfg_attr(feature = "flame_it", flame)]
@@ -187,7 +209,27 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
     }
 
     fn handle_nonzero(&mut self, in_args: Vec<usize>, out_args: Vec<usize>) {
-        println!("NOTIMPL NONZERO: {:?} {:?}", in_args, out_args);
+        if self.verbose {
+            println!("NON-ZERO: {:?} {:?}", in_args, out_args)
+        };
+
+
+        let mut new_row_a = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_b = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_c = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+
+        let a_pos = in_args[0];
+        let b_pos = out_args[0];
+        let c_pos = out_args[1];
+
+        new_row_a.insert(a_pos, E::ONE);
+        new_row_b.insert(b_pos, E::ONE);
+        new_row_c.insert(c_pos, E::ONE);
+
+        self.r1cs_instance
+            .add_rows(&new_row_a, &new_row_b, &new_row_c);
+
+
     }
 
     // An extended command.
@@ -235,6 +277,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
             "xor" => self.handle_xor(in_vals, out_vals),
             "or" => self.handle_or(in_vals, out_vals),
             "zerop" => self.handle_nonzero(in_vals, out_vals),
+            "split" => self.handle_split(in_vals, out_vals),
             _ => println!("NOT HANDLED: {}", raw_cmd),
         }
     }
