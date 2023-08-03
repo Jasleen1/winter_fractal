@@ -63,21 +63,21 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         };
 
         let numcols = self.r1cs_instance.num_cols();
-        let mut new_row_a = vec![E::ZERO; numcols];
-        let mut new_row_b = vec![E::ZERO; numcols];
-        let mut new_row_c = vec![E::ZERO; numcols];
+        let mut new_row_a = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_b = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
+        let mut new_row_c = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
 
         let c_pos = out_args[0];
-
+        new_row_a.insert(0, coeff);
         for a_pos in in_args {
-            new_row_a[a_pos] = E::ONE;
+            new_row_a.insert(a_pos, E::ONE);
         }
-        new_row_a[0] = coeff;
-        new_row_b[0] = E::ONE;
-        new_row_c[c_pos] = E::ONE;
+        
+        new_row_b.insert(0, E::ONE);
+        new_row_c.insert(c_pos, E::ONE);
 
         self.r1cs_instance
-            .add_rows_vec(new_row_a, new_row_b, new_row_c);
+            .add_rows(&new_row_a, &new_row_b, &new_row_c);
     }
 
     #[cfg_attr(feature = "flame_it", flame)]
@@ -171,7 +171,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
 
         let a_pos = in_args[0];
         let b_pos = 0;
-        // a + b - 2*ab = a XOR b so, 2a*b = a + b - a XOR b.
+        
         new_row_a.insert(a_pos, E::ONE);
         new_row_b.insert(b_pos, E::ONE);
         for c_pos in 0..out_args.len() {
