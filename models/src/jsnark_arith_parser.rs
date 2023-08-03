@@ -172,7 +172,7 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         let a_pos = in_args[0];
         let b_pos = 0;
         // a + b - 2*ab = a XOR b so, 2a*b = a + b - a XOR b.
-        new_row_a.insert(a_pos, E::from(2u64));
+        new_row_a.insert(a_pos, E::ONE);
         new_row_b.insert(b_pos, E::ONE);
         for c_pos in 0..out_args.len() {
             new_row_c.insert(out_args[c_pos], E::from(1u64 << c_pos));
