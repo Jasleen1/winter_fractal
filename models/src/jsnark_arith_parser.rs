@@ -68,9 +68,16 @@ impl<'a, E: StarkField> JsnarkArithParser<'a, E> {
         let mut new_row_c = HashMap::<usize, E, nohash_hasher::BuildNoHashHasher<usize>>::default();
 
         let c_pos = out_args[0];
-        new_row_a.insert(0, coeff);
+        let mut seen_pos = vec![];
         for a_pos in in_args {
-            new_row_a.insert(a_pos, E::ONE);
+            if seen_pos.contains(&a_pos) {
+                new_row_a.insert(a_pos, *new_row_a.get(&a_pos).unwrap() + E::ONE);
+            }
+            else {
+                seen_pos.push(a_pos);
+                new_row_a.insert(a_pos, E::ONE);
+            }
+            
         }
         
         new_row_b.insert(0, E::ONE);
